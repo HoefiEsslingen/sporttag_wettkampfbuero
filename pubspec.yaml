@@ -1,0 +1,23 @@
+name: sporttag
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  font_awesome_flutter: ^10.6.0
+  logger: ^2.4.0
+  parse_server_sdk_flutter: ^7.0.0
+  qr_flutter: ^4.1.0
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true

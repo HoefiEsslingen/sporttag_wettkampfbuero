@@ -1,0 +1,164 @@
+import 'package:sporttag/src/logger.util.dart';
+import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
+import 'kind_klasse.dart';
+
+class KindRepository {
+  // Erstellt ein Kind-Objekt aus der Datenbank-Daten (ParseObject)
+  Kind createKindFromParse(ParseObject parseObject) {
+    return Kind(
+      objectId: parseObject.get<String>('objectId') ?? '',
+      vorname: parseObject.get<String>('Vorname') ?? '',
+      nachname: parseObject.get<String>('Nachname') ?? '',
+      jahrgang: parseObject.get<String>('Jahrgang') ?? '',
+      geschlecht: parseObject.get<String>('Geschlecht') ?? '',
+      erreichtePunkte: parseObject.get<int>('Punkte') ?? 0,
+      bezahlt: parseObject.get<bool>('bezahlt') ?? false,
+      riegenNummer: parseObject.get<int>('RiegenNummer') ?? 0,
+    );
+  }
+  // Logger einrichten
+  final log = getLogger();
+
+  // Speichert ein Kind-Objekt in die Back4App-Datenbank
+  Future<void> saveKindToDatabase(Kind kind) async {
+    final ParseObject parseKind = ParseObject('Kind')
+      ..set('Vorname', kind.vorname)
+      ..set('Nachname', kind.nachname)
+      ..set('Jahrgang', kind.jahrgang)
+      ..set('Geschlecht', kind.geschlecht)
+      ..set('Punkte', kind.erreichtePunkte)
+      ..set('bezahlt', kind.bezahlt)
+      ..set('RiegenNummer', kind.riegenNummer);
+
+    if (kind.objectId.isNotEmpty) {
+      // Wenn die objectID existiert, setze sie, um das bestehende Objekt zu aktualisieren
+      parseKind.objectId = kind.objectId;
+    }
+
+    // Speichere das Kind-Objekt in die Datenbank
+    final ParseResponse response = await parseKind.save();
+
+    if (response.success) {
+      log.i('Kind erfolgreich gespeichert.');
+    } else {
+      log.i('Fehler beim Speichern des Kinds: ${response.error?.message}');
+    }
+  }
+
+    // Methode zum Laden eines Kindes anhand des Namens und Jahrgangs aus der Datenbank
+    Future<Kind?> loadKindFromDatabase(
+        String vorname, String nachname, String jahrgang) async {
+      final QueryBuilder<ParseObject> query =
+          QueryBuilder<ParseObject>(ParseObject('Kind'))
+            ..whereEqualTo('Vorname', vorname)
+            ..whereEqualTo('Nachname', nachname)
+            ..whereEqualTo('Jahrgang', jahrgang);
+
+      final ParseResponse response = await query.query();
+
+      if (response.success &&
+          response.results != null &&
+          response.results!.isNotEmpty) {
+        return createKindFromParse(response.results!.first);
+      } else {
+          log.i('Kein Kind gefunden mit Vorname: $vorname, Nachname: $nachname, Jahrgang: $jahrgang');
+        return null;
+      }
+    }
+
+    // NEU: Methode um alle Datensätze der Kind-Tabelle zu laden
+    Future<List<Kind>> loadAllKinder() async {
+      List<Kind> alleKinder = [];
+      List<Kind> kinderTeilListe = [];
+      int limit = 100; // Anzahl der Datensätze pro Seite
+      int skip = 0; // Anzahl der Datensätze, die übersprungen werden
+
+      bool hasMore = true;
+
+      while (hasMore) {
+        final query = QueryBuilder<ParseObject>(ParseObject('Kind'))
+          ..setLimit(limit) // Setzt das Limit auf 100
+          ..setAmountToSkip(skip); // Überspringt die ersten 'skip' Datensätze
+
+        final response = await query.query();
+
+        if (response.success && response.results != null) {
+          kinderTeilListe = response.results!
+              .map((parseObject) =>
+                  createKindFromParse(parseObject as ParseObject))
+              .toList();
+/*       List<ParseObject> results = response.results as List<ParseObject>;
+        for (var result in results) {
+          alleKinder.add(Kind.fromParseObject(
+              result)); // Hier wandelst du die Parse-Objekte in Kind-Objekte um
+        }
+*/
+          skip +=
+              limit; // Überspringt für die nächste Anfrage die bereits geladenen Datensätze
+          if (kinderTeilListe.length < limit) {
+            hasMore =
+                false; // Wenn weniger als 'limit' Datensätze zurückgegeben wurden, gibt es keine weiteren Datensätze
+          }
+        } else {
+          hasMore = false; // Bei Fehler oder keinem Ergebnis beenden
+        }
+        alleKinder.addAll(kinderTeilListe);
+      }
+      return alleKinder;
+/*   final QueryBuilder<ParseObject> query = QueryBuilder<ParseObject>(ParseObject('Kind'));
+
+    final ParseResponse response = await query.query();
+
+    if (response.success && response.results != null) {
+      List<Kind> kinderListe = response.results!
+          .map((parseObject) => createKindFromParse(parseObject as ParseObject))
+          .toList();
+      return kinderListe;
+    } else {
+      print('Fehler beim Laden der Kinderliste: ${response.error?.message}');
+      return [];
+    }
+*/
+    }
+
+    // NEU: Methode, um eine Liste von Kindern als Ganzes in die Datenbank zu speichern
+    Future<void> saveKinderListeToDatabase(List<Kind> kinderListe) async {
+      for (var kind in kinderListe) {
+        await saveKindToDatabase(
+            kind); // Verwendet die vorhandene Methode zum Speichern eines einzelnen Kindes
+      }
+    }
+  }
+/************* 
+Future<List<Kind>> loadAllKinderPaged() async {
+  List<Kind> alleKinder = [];
+  int limit = 100; // Anzahl der Datensätze pro Seite
+  int skip = 0;    // Anzahl der Datensätze, die übersprungen werden
+
+  bool hasMore = true;
+
+  while (hasMore) {
+    final query = QueryBuilder<ParseObject>(ParseObject('Kind'))
+      ..setLimit(limit)  // Setzt das Limit auf 100
+      ..setSkip(skip);   // Überspringt die ersten 'skip' Datensätze
+
+    final response = await query.find();
+
+    if (response.success && response.results != null) {
+      List<ParseObject> results = response.results as List<ParseObject>;
+      for (var result in results) {
+        alleKinder.add(Kind.fromParseObject(result));  // Hier wandelst du die Parse-Objekte in Kind-Objekte um
+      }
+      skip += limit;  // Überspringt für die nächste Anfrage die bereits geladenen Datensätze
+      if (results.length < limit) {
+        hasMore = false;  // Wenn weniger als 'limit' Datensätze zurückgegeben wurden, gibt es keine weiteren Datensätze
+      }
+    } else {
+      hasMore = false;  // Bei Fehler oder keinem Ergebnis beenden
+    }
+  }
+
+  return alleKinder;
+}
+**************/
+
