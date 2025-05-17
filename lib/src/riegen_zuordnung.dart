@@ -23,7 +23,8 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   int? ausgewaehlteRiegenNummer;
   List<Kind> gefilterteKinder = [];
   String? wettbewerb;
-  String qrCodeUrl = ''; //= 'https://gs-gp.eu'; // Platzhalter für die URL des QR-Codes
+  String qrCodeUrl =
+      ''; //= 'https://gs-gp.eu'; // Platzhalter für die URL des QR-Codes
   // Logger einrichten
   final log = getLogger();
 
@@ -53,21 +54,25 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   }
 
   String _updateQrCodeUrl() {
-    if (ausgewaehlteRiegenNummer != null){        // && wettbewerb != null) {
-      qrCodeUrl = 'https://example.com/riege/$ausgewaehlteRiegenNummer';      //?wettbewerb=$wettbewerb';
+    if (ausgewaehlteRiegenNummer != null) {
+      // && wettbewerb != null) {
+      qrCodeUrl =
+          'https://example.com/riege/$ausgewaehlteRiegenNummer'; //?wettbewerb=$wettbewerb';
     } else {
       qrCodeUrl = '';
     }
     return qrCodeUrl;
   }
 
-  void _entferneRiege() {
+  void _entferneRiegeAusDropDownListe() {
     if (ausgewaehlteRiegenNummer != null) {
       setState(() {
-        riegenListe.remove(ausgewaehlteRiegenNummer); // Entfernt die ausgewählte Riege aus der Liste
+        riegenListe.remove(
+            ausgewaehlteRiegenNummer); // Entfernt die ausgewählte Riege aus der Liste
         ausgewaehlteRiegenNummer = null; // Setzt die Auswahl zurück
         gefilterteKinder.clear(); // Löscht die Liste der angezeigten Kinder
-        qrCodeUrl = '';     // Kommentar entfernen, wenn Qr-Code generiert werden kann
+        qrCodeUrl =
+            ''; // Kommentar entfernen, wenn Qr-Code generiert werden kann
       });
     }
   }
@@ -97,13 +102,13 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
                     }).toList(),
                     onChanged: (newValue) {
                       setState(() {
-                       ausgewaehlteRiegenNummer = newValue;
+                        ausgewaehlteRiegenNummer = newValue;
                       });
                       if (newValue != null) {
                         _filterKinderNachRiege(newValue);
                         /* Hier sollte irgendwie die Methode _updateQRCodeUrl() aufgerufen werden */
                         _updateQrCodeUrl();
-                     }
+                      }
                     },
                   ),
                 ],
@@ -133,29 +138,30 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-          if (ausgewaehlteRiegenNummer != null) ...[
-                                        QrImageView(
-                            data: _updateQrCodeUrl() , // hier muss eine Methode hin, die einen QR-Code generiert abhängig von der Riege
-                            version: QrVersions.auto,
-                            size: 200.0,
-                          ),
-                          //                      const SizedBox(height: 20),
-                          TextButton(
-                            onPressed: () {
-                              _entferneRiege();
-                              if(riegenListe.isEmpty){
-                                Navigator.pop(context, false);
-                              }
-                            },
-                            child: Text(
-                              "Riege Nr. ${ausgewaehlteRiegenNummer ?? ''} zugeordnet",
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
+                          if (ausgewaehlteRiegenNummer != null) ...[
+                            QrImageView(
+                              data:
+                                  _updateQrCodeUrl(), // hier muss eine Methode hin, die einen QR-Code generiert abhängig von der Riege
+                              version: QrVersions.auto,
+                              size: 200.0,
+                            ),
+                            //                      const SizedBox(height: 20),
+                            TextButton(
+                              onPressed: () {
+                                _entferneRiegeAusDropDownListe();
+                                if (riegenListe.isEmpty) {
+                                  Navigator.pop(context, false);
+                                }
+                              },
+                              child: Text(
+                                "Riege Nr. ${ausgewaehlteRiegenNummer ?? ''} zugeordnet",
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
                         ],
                       ),
                     ),

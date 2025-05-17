@@ -60,10 +60,12 @@ class MainApp extends StatelessWidget {
       initialRoute: 'home',
       routes: {
         'home': (context) => const Wettkampfbuero(),
+//
+//        'home': (context) => const UrkundenDruck(titel: 'Auswerten mit Urkunden'),
         'anmeldeSeite': (context) => const AnmeldenSporttag(titel: 'Sporttag - Anmeldung'),
         'riegenEinteilung': (context) => const RiegenEinteilung(titel: 'Riegen einteilen'),
         'riegenZuordnung': (context) => const RiegenZuordnung(titel: 'Riegen den Riegenführern zuordnen'),
-        'auswertung': (context) => const UrkundenDruck(titel: 'Auswerten und Urkunden drucken'),
+        'auswertung': (context) => const UrkundenDruck(titel: 'Auswerten mit Urkunden'),
       },
     );
   }

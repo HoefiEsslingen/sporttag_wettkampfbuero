@@ -22,7 +22,7 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
   final int riegenAnzahl = 8;
   List<List<Kind>> alleRiegen = [];
   int? ausgewaehlteRiegenNummer;
-  Map<String, List<Kind>> jahrUgeschlechtListen = {}; // Geschlecht + Jahrgang als Key
+  Map<String, List<Kind>> jahrUgeschlechtMap = {}; // Geschlecht + Jahrgang als Key
   List<MapEntry<String, List<Kind>>> sortierteJahrUgeschlechtListen = [];
   final int aktuellesJahr = DateTime.now().year;
 
@@ -55,14 +55,14 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
     // Gruppiere Kinder nach Jahrgang und Geschlecht
     for (var kind in alleKinder) {
       key = '${kind.jahrgang}_${kind.geschlecht}';
-      if (!jahrUgeschlechtListen.containsKey(key)) {
-        jahrUgeschlechtListen[key] = [];
+      if (!jahrUgeschlechtMap.containsKey(key)) {
+        jahrUgeschlechtMap[key] = [];
       }
-      jahrUgeschlechtListen[key]!.add(kind);
+      jahrUgeschlechtMap[key]!.add(kind);
     }
     // Sortiere die Gruppen nach Jahrgängen und Geschlecht absteigend
     // in eine Liste von Map von Key und Kinderliste
-    sortierteJahrUgeschlechtListen = (jahrUgeschlechtListen.entries.toList()
+    sortierteJahrUgeschlechtListen = (jahrUgeschlechtMap.entries.toList()
       ..sort((a, b) => b.key.compareTo(a.key)));
   } // Ende _generierejahrUgeschlechtListen()
 
@@ -79,6 +79,7 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
       // Der Jahrgang ist im ersten Teil des Schlüssels, z.B. '2021_M' -> '2021'
       String jahrgangStr = jahrGeschlecht.key.split('_')[0];
       int jahrgang = int.parse(jahrgangStr);
+      // bestimme das Alter, welches das Kind in aktuellen Jahr erreicht
       int alter = aktuellesJahr - jahrgang;
 
       // Unterscheide die Altersgruppen und ...
@@ -104,6 +105,9 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
     // Kinderlisten, gruppiert nach Jahrgang und Geschlecht, den Fünfkampfriegen zuordnen
     // ... und zur Verteilung
     List<MapEntry<String, List<Kind>>> aktiveMap = kinderFuenfkampf;
+    // sortiere die aktiveMap absteigend so, 
+    // dass die größte Gruppe mit gleichem Jahrgang und Geschlecht zuerst kommt
+    aktiveMap.sort((mapEntryA, mapEntryB) => mapEntryB.value.length.compareTo(mapEntryA.value.length));
     List<List<Kind>> riegen = fuenfkampfRiegen;
     List<Kind> amWenigstenGefuellteRiege;
 
