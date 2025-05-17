@@ -125,6 +125,9 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
 
     // Kinderlisten den Zehnkampfriegen zuordnen
     aktiveMap = kinderZehnkampf;
+    // sortiere die aktiveMap absteigend so, 
+    // dass die größte Gruppe mit gleichem Jahrgang und Geschlecht zuerst kommt
+    aktiveMap.sort((mapEntryA, mapEntryB) => mapEntryB.value.length.compareTo(mapEntryA.value.length));
     riegen = zehnkampfRiegen;
     for (var jahrGeschlecht in aktiveMap) {
       var jahrGeschlechtKinder = jahrGeschlecht.value;
