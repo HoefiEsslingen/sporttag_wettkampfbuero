@@ -16,6 +16,7 @@ class KindRepository {
       riegenNummer: parseObject.get<int>('RiegenNummer') ?? 0,
     );
   }
+
   // Logger einrichten
   final log = getLogger();
 
@@ -45,120 +46,67 @@ class KindRepository {
     }
   }
 
-    // Methode zum Laden eines Kindes anhand des Namens und Jahrgangs aus der Datenbank
-    Future<Kind?> loadKindFromDatabase(
-        String vorname, String nachname, String jahrgang) async {
-      final QueryBuilder<ParseObject> query =
-          QueryBuilder<ParseObject>(ParseObject('Kind'))
-            ..whereEqualTo('Vorname', vorname)
-            ..whereEqualTo('Nachname', nachname)
-            ..whereEqualTo('Jahrgang', jahrgang);
-
-      final ParseResponse response = await query.query();
-
-      if (response.success &&
-          response.results != null &&
-          response.results!.isNotEmpty) {
-        return createKindFromParse(response.results!.first);
-      } else {
-          log.i('Kein Kind gefunden mit Vorname: $vorname, Nachname: $nachname, Jahrgang: $jahrgang');
-        return null;
-      }
-    }
-
-    // NEU: Methode um alle Datensätze der Kind-Tabelle zu laden
-    Future<List<Kind>> loadAllKinder() async {
-      List<Kind> alleKinder = [];
-      List<Kind> kinderTeilListe = [];
-      int limit = 100; // Anzahl der Datensätze pro Seite
-      int skip = 0; // Anzahl der Datensätze, die übersprungen werden
-
-      bool hasMore = true;
-
-      while (hasMore) {
-        final query = QueryBuilder<ParseObject>(ParseObject('Kind'))
-          ..setLimit(limit) // Setzt das Limit auf 100
-          ..setAmountToSkip(skip); // Überspringt die ersten 'skip' Datensätze
-
-        final response = await query.query();
-
-        if (response.success && response.results != null) {
-          kinderTeilListe = response.results!
-              .map((parseObject) =>
-                  createKindFromParse(parseObject as ParseObject))
-              .toList();
-/*       List<ParseObject> results = response.results as List<ParseObject>;
-        for (var result in results) {
-          alleKinder.add(Kind.fromParseObject(
-              result)); // Hier wandelst du die Parse-Objekte in Kind-Objekte um
-        }
-*/
-          skip +=
-              limit; // Überspringt für die nächste Anfrage die bereits geladenen Datensätze
-          if (kinderTeilListe.length < limit) {
-            hasMore =
-                false; // Wenn weniger als 'limit' Datensätze zurückgegeben wurden, gibt es keine weiteren Datensätze
-          }
-        } else {
-          hasMore = false; // Bei Fehler oder keinem Ergebnis beenden
-        }
-        alleKinder.addAll(kinderTeilListe);
-      }
-      return alleKinder;
-/*   final QueryBuilder<ParseObject> query = QueryBuilder<ParseObject>(ParseObject('Kind'));
+  // Methode zum Laden eines Kindes anhand des Namens und Jahrgangs aus der Datenbank
+  Future<Kind?> loadKindFromDatabase(
+      String vorname, String nachname, String jahrgang) async {
+    final QueryBuilder<ParseObject> query =
+        QueryBuilder<ParseObject>(ParseObject('Kind'))
+          ..whereEqualTo('Vorname', vorname)
+          ..whereEqualTo('Nachname', nachname)
+          ..whereEqualTo('Jahrgang', jahrgang);
 
     final ParseResponse response = await query.query();
 
-    if (response.success && response.results != null) {
-      List<Kind> kinderListe = response.results!
-          .map((parseObject) => createKindFromParse(parseObject as ParseObject))
-          .toList();
-      return kinderListe;
+    if (response.success &&
+        response.results != null &&
+        response.results!.isNotEmpty) {
+      return createKindFromParse(response.results!.first);
     } else {
-      print('Fehler beim Laden der Kinderliste: ${response.error?.message}');
-      return [];
-    }
-*/
-    }
-
-    // NEU: Methode, um eine Liste von Kindern als Ganzes in die Datenbank zu speichern
-    Future<void> saveKinderListeToDatabase(List<Kind> kinderListe) async {
-      for (var kind in kinderListe) {
-        await saveKindToDatabase(
-            kind); // Verwendet die vorhandene Methode zum Speichern eines einzelnen Kindes
-      }
-    }
-  }
-/************* 
-Future<List<Kind>> loadAllKinderPaged() async {
-  List<Kind> alleKinder = [];
-  int limit = 100; // Anzahl der Datensätze pro Seite
-  int skip = 0;    // Anzahl der Datensätze, die übersprungen werden
-
-  bool hasMore = true;
-
-  while (hasMore) {
-    final query = QueryBuilder<ParseObject>(ParseObject('Kind'))
-      ..setLimit(limit)  // Setzt das Limit auf 100
-      ..setSkip(skip);   // Überspringt die ersten 'skip' Datensätze
-
-    final response = await query.find();
-
-    if (response.success && response.results != null) {
-      List<ParseObject> results = response.results as List<ParseObject>;
-      for (var result in results) {
-        alleKinder.add(Kind.fromParseObject(result));  // Hier wandelst du die Parse-Objekte in Kind-Objekte um
-      }
-      skip += limit;  // Überspringt für die nächste Anfrage die bereits geladenen Datensätze
-      if (results.length < limit) {
-        hasMore = false;  // Wenn weniger als 'limit' Datensätze zurückgegeben wurden, gibt es keine weiteren Datensätze
-      }
-    } else {
-      hasMore = false;  // Bei Fehler oder keinem Ergebnis beenden
+      log.i(
+          'Kein Kind gefunden mit Vorname: $vorname, Nachname: $nachname, Jahrgang: $jahrgang');
+      return null;
     }
   }
 
-  return alleKinder;
+  // NEU: Methode um alle Datensätze der Kind-Tabelle zu laden
+  Future<List<Kind>> loadAllKinder() async {
+    List<Kind> alleKinder = [];
+    List<Kind> kinderTeilListe = [];
+    int limit = 100; // Anzahl der Datensätze pro Seite
+    int skip = 0; // Anzahl der Datensätze, die übersprungen werden
+
+    bool hasMore = true;
+
+    while (hasMore) {
+      final query = QueryBuilder<ParseObject>(ParseObject('Kind'))
+        ..setLimit(limit) // Setzt das Limit auf 100
+        ..setAmountToSkip(skip); // Überspringt die ersten 'skip' Datensätze
+
+      final response = await query.query();
+
+      if (response.success && response.results != null) {
+        kinderTeilListe = response.results!
+            .map((parseObject) =>
+                createKindFromParse(parseObject as ParseObject))
+            .toList();
+        skip +=
+            limit; // Überspringt für die nächste Anfrage die bereits geladenen Datensätze
+        if (kinderTeilListe.length < limit) {
+          hasMore =
+              false; // Wenn weniger als 'limit' Datensätze zurückgegeben wurden, gibt es keine weiteren Datensätze
+        }
+      } else {
+        hasMore = false; // Bei Fehler oder keinem Ergebnis beenden
+      }
+      alleKinder.addAll(kinderTeilListe);
+    }
+    return alleKinder;
+  }
+
+  // NEU: Methode, um eine Liste von Kindern als Ganzes in die Datenbank zu speichern
+  Future<void> saveKinderListeToDatabase(List<Kind> kinderListe) async {
+    for (var kind in kinderListe) {
+      await saveKindToDatabase(kind); // Verwendet die vorhandene Methode zum Speichern eines einzelnen Kindes
+    }
+  }
 }
-**************/
-

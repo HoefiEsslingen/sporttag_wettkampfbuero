@@ -2,6 +2,7 @@ import 'package:sporttag/src/logger.util.dart';
 import 'package:flutter/material.dart';
 import 'package:sporttag/src/kind_klasse.dart';
 import 'package:sporttag/src/kind_repository.dart';
+import 'package:sporttag/src/riegen_repository.dart';
 
 //import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 
@@ -16,13 +17,16 @@ class RiegenEinteilung extends StatefulWidget {
 
 class RiegenEinteilungState extends State<RiegenEinteilung> {
   final KindRepository kindRepository = KindRepository(); // Repository-Objekt
+  final RiegenRepository riegenRepository =
+      RiegenRepository(); // Repository-Objekt für Riegen
   List<Kind> alleKinder = [];
   int kinderGesamt = 0;
   List<Kind> gefilterteKinder = [];
   final int riegenAnzahl = 8;
   List<List<Kind>> alleRiegen = [];
   int? ausgewaehlteRiegenNummer;
-  Map<String, List<Kind>> jahrUgeschlechtMap = {}; // Geschlecht + Jahrgang als Key
+  Map<String, List<Kind>> jahrUgeschlechtMap =
+      {}; // Geschlecht + Jahrgang als Key
   List<MapEntry<String, List<Kind>>> sortierteJahrUgeschlechtListen = [];
   final int aktuellesJahr = DateTime.now().year;
 
@@ -87,7 +91,7 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
         // ... weise sie der jeweiligen Liste zu
         kinderFuenfkampf.add(jahrGeschlecht);
         // zähle wieviel Fünfkämpfer bzw. ...
-       anzKinderFuenfkampf += jahrGeschlecht.value.length;
+        anzKinderFuenfkampf += jahrGeschlecht.value.length;
       } else if (alter >= 6) {
         // ... weise sie der jeweiligen Liste zu
         kinderZehnkampf.add(jahrGeschlecht);
@@ -97,17 +101,36 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
     double anteilFuenfkampf = anzKinderFuenfkampf / kinderGesamt;
     // ... damit den Anteil an den 8 Riegen bestimmen
     int anzRiegenFuenfkampf = (riegenAnzahl * anteilFuenfkampf).round();
+    // setze die Art der Riegen in der Datenbank
+    for (int i = 0; i < riegenAnzahl; i++) {
+      if (i < anzRiegenFuenfkampf) {
+        // Fünfkampf-Riegen
+        riegenRepository.saveRiegeNachArt(
+          riegenNummer: i + 1,
+          fuenfKampf: true,
+        );
+      } else {
+        // Zehnkampf-Riegen
+        riegenRepository.saveRiegeNachArt(
+          riegenNummer: i + 1,
+          fuenfKampf: false,
+        );
+      }
+    }
 
     // Initialisiere leere Riegen
-    List<List<Kind>> fuenfkampfRiegen = List.generate(anzRiegenFuenfkampf, (index) => []);
-    List<List<Kind>> zehnkampfRiegen = List.generate((riegenAnzahl - anzRiegenFuenfkampf), (index) => []);
+    List<List<Kind>> fuenfkampfRiegen =
+        List.generate(anzRiegenFuenfkampf, (index) => []);
+    List<List<Kind>> zehnkampfRiegen =
+        List.generate((riegenAnzahl - anzRiegenFuenfkampf), (index) => []);
 
     // Kinderlisten, gruppiert nach Jahrgang und Geschlecht, den Fünfkampfriegen zuordnen
     // ... und zur Verteilung
     List<MapEntry<String, List<Kind>>> aktiveMap = kinderFuenfkampf;
-    // sortiere die aktiveMap absteigend so, 
+    // sortiere die aktiveMap absteigend so,
     // dass die größte Gruppe mit gleichem Jahrgang und Geschlecht zuerst kommt
-    aktiveMap.sort((mapEntryA, mapEntryB) => mapEntryB.value.length.compareTo(mapEntryA.value.length));
+    aktiveMap.sort((mapEntryA, mapEntryB) =>
+        mapEntryB.value.length.compareTo(mapEntryA.value.length));
     List<List<Kind>> riegen = fuenfkampfRiegen;
     List<Kind> amWenigstenGefuellteRiege;
 
@@ -125,9 +148,10 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
 
     // Kinderlisten den Zehnkampfriegen zuordnen
     aktiveMap = kinderZehnkampf;
-    // sortiere die aktiveMap absteigend so, 
+    // sortiere die aktiveMap absteigend so,
     // dass die größte Gruppe mit gleichem Jahrgang und Geschlecht zuerst kommt
-    aktiveMap.sort((mapEntryA, mapEntryB) => mapEntryB.value.length.compareTo(mapEntryA.value.length));
+    aktiveMap.sort((mapEntryA, mapEntryB) =>
+        mapEntryB.value.length.compareTo(mapEntryA.value.length));
     riegen = zehnkampfRiegen;
     for (var jahrGeschlecht in aktiveMap) {
       var jahrGeschlechtKinder = jahrGeschlecht.value;
@@ -140,10 +164,9 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
       amWenigstenGefuellteRiege.addAll(jahrGeschlechtKinder);
     }
     // die resultierenden Zehnkampfriegen an 'alleRiegen'-anhängen
-    for(int i=0; i < (riegenAnzahl-anzRiegenFuenfkampf); i++){
+    for (int i = 0; i < (riegenAnzahl - anzRiegenFuenfkampf); i++) {
       alleRiegen.add(riegen[i]);
     }
-
 
     // Ausgabe der Verteilung (optional)
     for (int i = 0; i < alleRiegen.length; i++) {
@@ -154,9 +177,10 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
       }
     }
   }
-  void _weiseKindernRiegennummerZu(){
-    int i=1;  // erste Riege aht Index 0 aber die Nummer 1
-    for(var riege in alleRiegen){
+
+  void _weiseKindernRiegennummerZu() {
+    int i = 1; // erste Riege aht Index 0 aber die Nummer 1
+    for (var riege in alleRiegen) {
       log.i('sortierte Riege Nr: $i mit ${riege.length} Kindern');
       int j = 1;
       for (var kind in riege) {

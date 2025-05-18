@@ -68,8 +68,8 @@ class UrkundenDruckState extends State<UrkundenDruck> {
   @override
   Widget build(BuildContext context) {
     // Sortiere die Liste absteigend nach erreichtePunkte
-    gefilterteKinder
-        .sort((a, b) => b.erreichtePunkte.compareTo(a.erreichtePunkte));
+//    gefilterteKinder
+//        .sort((a, b) => b.erreichtePunkte.compareTo(a.erreichtePunkte));
 
     return Scaffold(
       appBar: AppBar(

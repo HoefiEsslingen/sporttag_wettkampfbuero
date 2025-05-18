@@ -59,9 +59,9 @@ class MainApp extends StatelessWidget {
           )),
       initialRoute: 'home',
       routes: {
-        'home': (context) => const Wettkampfbuero(),
-//
-//        'home': (context) => const UrkundenDruck(titel: 'Auswerten mit Urkunden'),
+//        'home': (context) => const Wettkampfbuero(),
+
+        'home': (context) => const RiegenEinteilung(titel: 'Riegen einteilen'),
         'anmeldeSeite': (context) => const AnmeldenSporttag(titel: 'Sporttag - Anmeldung'),
         'riegenEinteilung': (context) => const RiegenEinteilung(titel: 'Riegen einteilen'),
         'riegenZuordnung': (context) => const RiegenZuordnung(titel: 'Riegen den Riegenführern zuordnen'),
