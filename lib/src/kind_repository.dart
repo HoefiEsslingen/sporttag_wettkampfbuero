@@ -1,6 +1,7 @@
 import 'package:sporttag/src/logger.util.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 import 'kind_klasse.dart';
+import 'riegen_klasse.dart';
 
 class KindRepository {
   // Erstellt ein Kind-Objekt aus der Datenbank-Daten (ParseObject)
@@ -68,6 +69,37 @@ class KindRepository {
     }
   }
 
+  Future<List<Kind>> loadAllKinder() async {
+    const int limit = 100;
+    int skip = 0;
+    final List<Kind> alleKinder = [];
+
+    while (true) {
+      final query = QueryBuilder<ParseObject>(ParseObject('Kind'))
+        ..setLimit(limit)
+        ..setAmountToSkip(skip);
+
+      final response = await query.query();
+
+      if (response.success && response.results != null) {
+        final kinderTeilListe = response.results!
+            .map((obj) => createKindFromParse(obj as ParseObject))
+            .toList();
+
+        alleKinder.addAll(kinderTeilListe);
+
+        if (kinderTeilListe.length < limit) break; // keine weiteren Daten
+        skip += limit;
+      } else {
+        break; // Abbruch bei Fehler oder leeren Ergebnissen
+      }
+    }
+
+    return alleKinder;
+  }
+
+/*********************************************************************************
+ * Ersetzt worden
   // NEU: Methode um alle Datensätze der Kind-Tabelle zu laden
   Future<List<Kind>> loadAllKinder() async {
     List<Kind> alleKinder = [];
@@ -102,11 +134,86 @@ class KindRepository {
     }
     return alleKinder;
   }
+*********************************************************************************/
+
+  Future<List<Kind>> loadKinderAusRiegen(
+      {required List<Riege> listeVonRiegen}) async {
+    final List<Kind> alleKinder = [];
+
+/*************************************************************
+ * Alte Version der Schleife, um Kinder aus mehreren Riegen zu laden
+ * Diese Version ist weniger performant, da sie für jede Riege eine separate Anfrage an die Datenbank sendet.
+ * Sie wurde durch den neuen Code ersetzt, der alle Kinder in einem Rutsch lädt.
+for (var riege in listeVonRiegen) {
+  var kinderTeilListe = await loadKinderAusRiege(mitRiegenNummer: riege.riegenNummer);
+  alleKinder.addAll(kinderTeilListe);
+}
+************************************************************/
+// Performanter ist folgender Code, der alle Kinder in einem Rutsch lädt
+    final futures = listeVonRiegen.map(
+        (riege) => loadKinderAusRiege(mitRiegenNummer: riege.riegenNummer));
+
+    final listenVonKindern = await Future.wait(futures);
+
+    for (var kinderListe in listenVonKindern) {
+      alleKinder.addAll(kinderListe);
+    }
+    return alleKinder;
+  }
+
+  Future<List<Kind>> loadKinderAusRiege({required int mitRiegenNummer}) async {
+    const int limit = 100;
+    int skip = 0;
+    final List<Kind> alleKinder = [];
+
+    while (true) {
+      // Filtert die Kinder nach der angegebenen RiegenNummer
+      final query = QueryBuilder<ParseObject>(ParseObject('Kind'))
+        ..setLimit(limit)
+        ..setAmountToSkip(skip)
+        ..whereEqualTo('RiegenNummer', mitRiegenNummer);
+
+      final response = await query.query();
+
+      if (response.success && response.results != null) {
+        final kinderTeilListe = response.results!
+            .map((obj) => createKindFromParse(obj as ParseObject))
+            .toList();
+
+        alleKinder.addAll(kinderTeilListe);
+
+        if (kinderTeilListe.length < limit) break; // keine weiteren Daten
+        skip += limit;
+      } else {
+        break; // Abbruch bei Fehler oder leeren Ergebnissen
+      }
+    }
+    return alleKinder;
+  }
 
   // NEU: Methode, um eine Liste von Kindern als Ganzes in die Datenbank zu speichern
   Future<void> saveKinderListeToDatabase(List<Kind> kinderListe) async {
     for (var kind in kinderListe) {
-      await saveKindToDatabase(kind); // Verwendet die vorhandene Methode zum Speichern eines einzelnen Kindes
+      await saveKindToDatabase(
+          kind); // Verwendet die vorhandene Methode zum Speichern eines einzelnen Kindes
     }
   }
+
+  // NEU: Methode, um alle Kinder einer 
+  Map<String, List<Kind>> gruppiereKinder({required List<Kind> ausDerListe}) {
+  final Map<String, List<Kind>> gruppierteKinder = {};
+
+  for (var kind in ausDerListe) {
+    final key = '${kind.geschlecht}_${kind.jahrgang}';
+
+    if (!gruppierteKinder.containsKey(key)) {
+      gruppierteKinder[key] = [];
+    }
+
+    gruppierteKinder[key]!.add(kind);
+  }
+
+  return gruppierteKinder;
+}
+
 }

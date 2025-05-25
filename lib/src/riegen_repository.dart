@@ -4,12 +4,13 @@ import 'riegen_klasse.dart';
 
 class RiegenRepository {
   // Erstellt ein Riegen-Objekt aus der Datenbank-Daten (ParseObject)
-  Riege holeRiegeVonDatabase(ParseObject parseObject) {
+  Riege holeRiegeVonDatabase({required ParseObject parseObject}) {
     return Riege(
       objectId: parseObject.get<String>('objectId') ?? '',
       riegenNummer: parseObject.get<int>('RiegenNr') ?? 0,
       fuenfKampf: parseObject.get<bool>('FuenfKampf') ?? false,
       anzStationen: parseObject.get<int>('AnzWettbewerbe') ?? 0,
+      ausgewertet: parseObject.get<bool>('ausgewertet') ?? false,
     );
   }
 
@@ -17,10 +18,11 @@ class RiegenRepository {
   final log = getLogger();
 
   // Speichert ein Kind-Objekt in die Back4App-Datenbank
-  Future<void> saveRiegeToDatabase(Riege riege) async {
+  Future<void> saveRiegeToDatabase({required Riege riege}) async {
     final ParseObject parseRiege = ParseObject('Riege')
       ..set('FuenfKampf', riege.fuenfKampf)
-      ..set('AnzWettbewerbe', riege.anzStationen);
+      ..set('AnzWettbewerbe', riege.anzStationen)
+      ..set('ausgewertet', riege.ausgewertet);
 
     if (riege.objectId.isNotEmpty) {
       // Wenn die objectID existiert, setze sie, um das bestehende Objekt zu aktualisieren
@@ -38,7 +40,7 @@ class RiegenRepository {
   }
 
   // Methode zum Laden einer Riege anhand deren Nummer aus der Datenbank
-  Future<Riege?> loadRiegeFromDatabase(int riegenNummer) async {
+  Future<Riege?> loadRiegeFromDatabase({required int riegenNummer}) async {
     final QueryBuilder<ParseObject> query =
         QueryBuilder<ParseObject>(ParseObject('Riege'))
           ..whereEqualTo('RiegenNr', riegenNummer);
@@ -48,7 +50,7 @@ class RiegenRepository {
     if (response.success &&
         response.results != null &&
         response.results!.isNotEmpty) {
-      return holeRiegeVonDatabase(response.results!.first);
+      return holeRiegeVonDatabase(parseObject: response.results!.first);
     } else {
       log.i('Keine Riege gefunden mit der Nummer: $riegenNummer');
       return null;
@@ -56,7 +58,7 @@ class RiegenRepository {
   }
 
   // Methode zum Laden einer Riege anhand deren Art aus der Datenbank
-  Future<Riege?> loadRiegeFromDatabaseNachArt(bool fuenfKampf) async {
+  Future<Riege?> loadRiegeFromDatabaseNachArt({required bool fuenfKampf}) async {
     final QueryBuilder<ParseObject> query =
         QueryBuilder<ParseObject>(ParseObject('Riege'))
           ..whereEqualTo('FuenfKampf', fuenfKampf);
@@ -66,7 +68,7 @@ class RiegenRepository {
     if (response.success &&
         response.results != null &&
         response.results!.isNotEmpty) {
-      return holeRiegeVonDatabase(response.results!.first);
+      return holeRiegeVonDatabase(parseObject: response.results!.first);
     } else {
       log.i('Keine FuenfKampf-Riegen gefunden');
       return null;
@@ -74,55 +76,95 @@ class RiegenRepository {
   }
 
   // NEU: Methode um alle Datensätze der Kind-Tabelle zu laden
-  Future<List<Riege>> loadAllRiegenNachArt(bool fuenfKampf) async {
-    List<Riege> alleRiegen = [];
-    bool hasMore = true;
+  Future<List<Riege>> loadAllRiegen() async {
+    final query = QueryBuilder<ParseObject>(ParseObject('Riege'));
 
-    while (hasMore) {
-      final query = QueryBuilder<ParseObject>(ParseObject('Riege'))
-        ..whereEqualTo('FuenfKampf', fuenfKampf);
+    final response = await query.query();
 
-      final response = await query.query();
-
-      if (response.success && response.results != null) {
-        alleRiegen = response.results!
-            .map((parseObject) =>
-                holeRiegeVonDatabase(parseObject as ParseObject))
-            .toList();
-      } else {
-        hasMore = false; // Bei Fehler oder keinem Ergebnis beenden
-      }
-      alleRiegen.addAll(alleRiegen);
+    if (response.success && response.results != null) {
+      return (response.results!
+          .map(
+              (parseObject) => holeRiegeVonDatabase(parseObject: parseObject as ParseObject))
+          .toList());
+    } else {
+      return []; // Bei Fehler oder keinem Ergebnis beenden
     }
-    return alleRiegen;
+  }
+
+  // NEU: Methode um alle Datensätze der Kind-Tabelle zu laden
+  Future<List<Riege>> loadAllAuszuwertendeRiegen() async {
+    // Filtert alle Fünfkampf-Riegen
+    final queryFuenfkampf = QueryBuilder<ParseObject>(ParseObject('Riege'))
+      ..whereEqualTo('FuenfKampf', true)
+      ..whereEqualTo('AnzWettbewerbe', 5);
+    // Filtert alle Zehnkampf-Riegen
+    final queryZehnkampf = QueryBuilder<ParseObject>(ParseObject('Riege'))
+      ..whereEqualTo('FuenfKampf', false)
+      ..whereEqualTo('AnzWettbewerbe', 10);
+
+    // Kombiniert die beiden Abfragen mit einem OR-Operator
+    // und filtert alle noch nicht ausgewerteten Riegen
+    final combinedQuery = QueryBuilder.or(
+      ParseObject('Riege'),
+      [queryFuenfkampf, queryZehnkampf],
+    )..whereEqualTo('ausgewertet', false);
+
+    final response = await combinedQuery.query();
+
+    if (response.success && response.results != null) {
+      return (response.results!
+          .map(
+              (parseObject) => holeRiegeVonDatabase(parseObject: parseObject as ParseObject))
+          .toList());
+    } else {
+      return []; // Bei Fehler oder keinem Ergebnis beenden
+    }
+  }
+
+  // NEU: Methode um alle Fünfkampf-Datensätze der Riegen-Tabelle zu laden
+  Future<List<Riege>> loadAllRiegenNachArt(bool istFuenfKampf) async {
+    final query = QueryBuilder<ParseObject>(ParseObject('Riege'))
+      ..whereEqualTo('FuenfKampf', istFuenfKampf);
+
+    final response = await query.query();
+
+    if (response.success && response.results != null) {
+      return (response.results!
+          .map(
+              (parseObject) => holeRiegeVonDatabase(parseObject: parseObject as ParseObject))
+          .toList());
+    } else {
+      return []; // Bei Fehler oder keinem Ergebnis beenden
+    }
   }
 
   // NEU: Methode, um eine Liste von Riegen als Ganzes in die Datenbank zu speichern
   Future<void> saveRiegenListeToDatabase(List<Riege> riegenListe) async {
     for (var riege in riegenListe) {
-      await saveRiegeToDatabase(
-          riege); // Verwendet die vorhandene Methode zum Speichern eines einzelnen Kindes
+      await saveRiegeToDatabase(riege: riege); // Verwendet die vorhandene Methode zum Speichern eines einzelnen Kindes
     }
   }
 
   // NEU: Methode, um für eine Riege die Art (Fünf- oder Zehnkampf) zu setzen und zu speichern
-  Future<void> saveRiegeNachArt({required int riegenNummer, required bool fuenfKampf}) async {
-    final riege = await loadRiegeFromDatabase(riegenNummer);
+  Future<void> saveRiegeNachArt(
+      {required int riegenNummer, required bool fuenfKampf}) async {
+    final riege = await loadRiegeFromDatabase(riegenNummer: riegenNummer);
     if (riege != null) {
       riege.fuenfKampf = fuenfKampf;
       riege.anzStationen = 0; // Setze die Anzahl der Stationen auf 0
-      await saveRiegeToDatabase(riege);
+      await saveRiegeToDatabase(riege: riege);
     } else {
       log.i('Riege mit Nummer $riegenNummer nicht gefunden.');
     }
   }
 
   // NEU: Methode, um in einer Riege die Anzahl der Stationen zu erhöhen
-  Future<void> erhoeheAnzahlStationenBeiRiege({required int riegenNummer}) async {
-    final riege = await loadRiegeFromDatabase(riegenNummer);
+  Future<void> erhoeheAnzahlStationenBeiRiege(
+      {required int riegenNummer}) async {
+    final riege = await loadRiegeFromDatabase(riegenNummer: riegenNummer);
     if (riege != null) {
       riege.anzStationen++;
-      await saveRiegeToDatabase(riege);
+      await saveRiegeToDatabase(riege: riege);
     } else {
       log.i('Riege mit Nummer $riegenNummer nicht gefunden.');
     }
