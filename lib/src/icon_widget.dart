@@ -21,27 +21,19 @@ class KartenIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-/*       Expanded(
-          child: Column(
-            // horizontal zentrieren
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [ */
-              Icon(
-                icon,
-                size: 60.0,
-                color: color,
-              ),
-              abstandHalter,
-              Text(
-                derText,
-                style: labelTextStyle,
-              ),
-            ],
- /*         ),
+        Icon(
+          icon,
+          size: 60.0,
+          color: color,
         ),
-      ],*/
+        abstandHalter,
+        Text(
+          derText,
+          style: labelTextStyle,
+        ),
+      ],
     );
   }
 }

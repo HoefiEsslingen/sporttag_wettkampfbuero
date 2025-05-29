@@ -170,7 +170,6 @@ class UrkundenDruckState extends State<UrkundenDruck> {
             const SizedBox(height: 24.0),
             jahrUgeschlechtMap.isNotEmpty
                 // Wenn keine Riegen vorhanden sind, zeige eine Schaltfläche an
-//                ? const SizedBox()
                 ? gefilterteKinder.isEmpty
                     ? const SizedBox()
                     : ElevatedButton.icon(
@@ -204,40 +203,3 @@ class UrkundenDruckState extends State<UrkundenDruck> {
     );
   }
 }
-// Rechte Spalte: QR-Code
-/*    
-                    Expanded(
-                      flex: 1,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (ausgewaehlteRiegenNummer != null){
-
-                            QrImageView(
-                              data:
-                                  _updateQrCodeUrl(), // hier muss eine Methode hin, die einen QR-Code generiert abhängig von der Riege
-                              version: QrVersions.auto,
-                              size: 200.0,
-                            ),
-
-                            //                      const SizedBox(height: 20),
-                            TextButton(
-                              onPressed: () {
-                                _entferneRiegeAusDropDownListe();
-                                if (riegenListe.isEmpty) {
-                                  Navigator.pop(context, false);
-                                }
-                              },
-                              child: Text(
-                                "Riege Nr. ${ausgewaehlteRiegenNummer ?? ''} zugeordnet",
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-*/

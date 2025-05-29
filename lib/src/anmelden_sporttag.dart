@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-//import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 import 'kind_klasse.dart'; // Import der Kind-Klasse
 import 'kind_repository.dart'; // Import der KindRepository-Klasse
 
@@ -30,10 +29,10 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
     _ladeKinder();
 
     focusJahrgang = FocusNode();
-   }
+  }
 
   @override
-  void dispose(){
+  void dispose() {
     focusJahrgang.dispose();
     super.dispose();
   }
@@ -60,7 +59,8 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
   void addNewKind() {
     setState(() {
 //     kinder.insert(0, ParseObject('Kind')
-      kinderListe.insert(0,
+      kinderListe.insert(
+          0,
           Kind(
             vorname: '',
             nachname: '',
@@ -76,9 +76,6 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
   Future<void> _speichereAenderungen() async {
     await kindRepository
         .saveKinderListeToDatabase(kinderListe); // Änderungen speichern
-/*    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Änderungen erfolgreich gespeichert!')),
-    );*/
     _ladeKinder();
   }
 
@@ -94,7 +91,8 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
         title: Text(widget.titel!),
         actions: [
           IconButton(icon: const Icon(Icons.undo), onPressed: undoChanges),
-          IconButton(icon: const Icon(Icons.save), onPressed: _speichereAenderungen),
+          IconButton(
+              icon: const Icon(Icons.save), onPressed: _speichereAenderungen),
           IconButton(icon: const Icon(Icons.add), onPressed: addNewKind),
         ],
       ),
@@ -111,12 +109,12 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                   title: isEditable
                       ? Column(
                           children: [
-                            const SizedBox(height:20),
+                            const SizedBox(height: 20),
                             TextFormField(
                               autofocus: true,
                               initialValue: kind.vorname,
-                              decoration:
-                                  const InputDecoration(hintText: 'Vorname eingeben'),
+                              decoration: const InputDecoration(
+                                  hintText: 'Vorname eingeben'),
                               onChanged: (value) {
                                 kind.vorname = value;
                               },
@@ -149,7 +147,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                             const SizedBox(height: 20),
                           ],
                         )
-                     : Text(
+                      : Text(
                           '${kind.vorname} ${kind.nachname} - ${kind.geschlecht} - ${kind.jahrgang}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -161,8 +159,6 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                             kind.bezahlt = value;
                             focusJahrgang.requestFocus();
                           });
-                        // Kind in der DB speichern
-//                          kindRepository.saveKindToDatabase(kind);
                         },
                       ),
                       IconButton(

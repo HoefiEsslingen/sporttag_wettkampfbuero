@@ -98,44 +98,6 @@ class KindRepository {
     return alleKinder;
   }
 
-/*********************************************************************************
- * Ersetzt worden
-  // NEU: Methode um alle Datensätze der Kind-Tabelle zu laden
-  Future<List<Kind>> loadAllKinder() async {
-    List<Kind> alleKinder = [];
-    List<Kind> kinderTeilListe = [];
-    int limit = 100; // Anzahl der Datensätze pro Seite
-    int skip = 0; // Anzahl der Datensätze, die übersprungen werden
-
-    bool hasMore = true;
-
-    while (hasMore) {
-      final query = QueryBuilder<ParseObject>(ParseObject('Kind'))
-        ..setLimit(limit) // Setzt das Limit auf 100
-        ..setAmountToSkip(skip); // Überspringt die ersten 'skip' Datensätze
-
-      final response = await query.query();
-
-      if (response.success && response.results != null) {
-        kinderTeilListe = response.results!
-            .map((parseObject) =>
-                createKindFromParse(parseObject as ParseObject))
-            .toList();
-        skip +=
-            limit; // Überspringt für die nächste Anfrage die bereits geladenen Datensätze
-        if (kinderTeilListe.length < limit) {
-          hasMore =
-              false; // Wenn weniger als 'limit' Datensätze zurückgegeben wurden, gibt es keine weiteren Datensätze
-        }
-      } else {
-        hasMore = false; // Bei Fehler oder keinem Ergebnis beenden
-      }
-      alleKinder.addAll(kinderTeilListe);
-    }
-    return alleKinder;
-  }
-*********************************************************************************/
-
   Future<List<Kind>> loadKinderAusRiegen(
       {required List<Riege> listeVonRiegen}) async {
     final List<Kind> alleKinder = [];
@@ -199,21 +161,20 @@ for (var riege in listeVonRiegen) {
     }
   }
 
-  // NEU: Methode, um alle Kinder einer 
+  // NEU: Methode, um alle Kinder einer
   Map<String, List<Kind>> gruppiereKinder({required List<Kind> ausDerListe}) {
-  final Map<String, List<Kind>> gruppierteKinder = {};
+    final Map<String, List<Kind>> gruppierteKinder = {};
 
-  for (var kind in ausDerListe) {
-    final key = '${kind.geschlecht}_${kind.jahrgang}';
+    for (var kind in ausDerListe) {
+      final key = '${kind.geschlecht}_${kind.jahrgang}';
 
-    if (!gruppierteKinder.containsKey(key)) {
-      gruppierteKinder[key] = [];
+      if (!gruppierteKinder.containsKey(key)) {
+        gruppierteKinder[key] = [];
+      }
+
+      gruppierteKinder[key]!.add(kind);
     }
 
-    gruppierteKinder[key]!.add(kind);
+    return gruppierteKinder;
   }
-
-  return gruppierteKinder;
-}
-
 }

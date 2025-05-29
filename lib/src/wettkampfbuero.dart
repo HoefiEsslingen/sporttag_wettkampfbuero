@@ -32,7 +32,6 @@ Map<String , Map<String, dynamic>> seitenInfo = {
 // Methode, die Status von gerufender Seite zurückgibt
 // kommt 'false' zurück, dann wird der entsprechende aufrufende Button disabled
   Future<void> navigateAndPossiblyDisableButton({required String zuSeite}) async {
-    // result: false ==> Anmeldung nicht mehr möglich
     var resultat = await Navigator.pushNamed(context, zuSeite);
 
     if (resultat == false) {
