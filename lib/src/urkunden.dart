@@ -17,19 +17,19 @@ class UrkundenDruck extends StatefulWidget {
 }
 
 class UrkundenDruckState extends State<UrkundenDruck> {
-  /***********************************
-   * In den Riegen wird geschaut, ob die notwendige Anzahl der Stationen erreicht wurde:
-   * - Riegen mit dem Status fuenfKampf = true --> 5 Stationen
-   * - Riegen mit dem Status fuenfKampf = false --> 10 Stationen
-   * 
-   * Bei ausgewerteten Riegen wird das Attribut 'ausgewertet' (in der Datenbank) auf 'true' gesetzt.
-   * 
-   * Die Kinder aus den auszuwertenden Riegen werden nach Jahrgang und Geschlecht sortiert.
-   * Die Kombination Jahrgang und Geschlecht wird in der Drop-Down-Liste angezeigt.
-   * 
-   * Die Kinder der auswählbaren Jahrgang-Geschlecht-Kombination werden in der ListView angezeigt.
-   * 
-   */
+  ///
+  /// In den Riegen wird geschaut, ob die notwendige Anzahl der Stationen erreicht wurde:
+  /// - Riegen mit dem Status fuenfKampf = true --> 5 Stationen
+  /// - Riegen mit dem Status fuenfKampf = false --> 10 Stationen
+  /// 
+  /// Bei ausgewerteten Riegen wird das Attribut 'ausgewertet' (in der Datenbank) auf 'true' gesetzt.
+  /// 
+  /// Die Kinder aus den auszuwertenden Riegen werden nach Jahrgang und Geschlecht sortiert.
+  /// Die Kombination Jahrgang und Geschlecht wird in der Drop-Down-Liste angezeigt.
+  /// 
+  /// Die Kinder der auswählbaren Jahrgang-Geschlecht-Kombination werden in der ListView angezeigt.
+  /// 
+  
 
   final KindRepository kindRepository = KindRepository(); // Repository-Objekt
   final RiegenRepository riegenRepository =
