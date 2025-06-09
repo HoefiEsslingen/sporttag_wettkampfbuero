@@ -22,7 +22,7 @@ class KindRepository {
   final log = getLogger();
 
   // Speichert ein Kind-Objekt in die Back4App-Datenbank
-  Future<void> saveKindToDatabase(Kind kind) async {
+  Future<bool> saveKindToDatabase({required Kind kind}) async {
     final ParseObject parseKind = ParseObject('Kind')
       ..set('Vorname', kind.vorname)
       ..set('Nachname', kind.nachname)
@@ -42,8 +42,10 @@ class KindRepository {
 
     if (response.success) {
       log.i('Kind erfolgreich gespeichert.');
+      return true;
     } else {
       log.i('Fehler beim Speichern des Kinds: ${response.error?.message}');
+      return false;
     }
   }
 
@@ -155,9 +157,8 @@ for (var riege in listeVonRiegen) {
 
   // NEU: Methode, um eine Liste von Kindern als Ganzes in die Datenbank zu speichern
   Future<void> saveKinderListeToDatabase(List<Kind> kinderListe) async {
-    for (var kind in kinderListe) {
-      await saveKindToDatabase(
-          kind); // Verwendet die vorhandene Methode zum Speichern eines einzelnen Kindes
+    for (var kindElement in kinderListe) {
+      await saveKindToDatabase(kind: kindElement); // Verwendet die vorhandene Methode zum Speichern eines einzelnen Kindes
     }
   }
 
