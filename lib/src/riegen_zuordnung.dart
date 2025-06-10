@@ -1,8 +1,8 @@
 import 'hilfs_widgets/meine_appbar.dart';
 import 'tools/logger.util.dart';
 import 'package:flutter/material.dart';
-import 'package:sporttag/src/kind_klasse.dart';
-import 'package:sporttag/src/kind_repository.dart';
+import 'package:sporttag/src/klassen/kind_klasse.dart';
+import 'package:sporttag/src/tools/kind_repository.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 //import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';

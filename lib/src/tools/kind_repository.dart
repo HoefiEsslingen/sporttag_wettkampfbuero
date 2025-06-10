@@ -1,9 +1,12 @@
-import 'tools/logger.util.dart';
+import 'logger.util.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
-import 'kind_klasse.dart';
-import 'riegen_klasse.dart';
+import '../klassen/kind_klasse.dart';
+import '../klassen/riegen_klasse.dart';
 
 class KindRepository {
+  // Logger einrichten
+  final log = getLogger();
+
   // Erstellt ein Kind-Objekt aus der Datenbank-Daten (ParseObject)
   Kind createKindFromParse(ParseObject parseObject) {
     return Kind(
@@ -17,9 +20,6 @@ class KindRepository {
       riegenNummer: parseObject.get<int>('RiegenNummer') ?? 0,
     );
   }
-
-  // Logger einrichten
-  final log = getLogger();
 
   // Speichert ein Kind-Objekt in die Back4App-Datenbank
   Future<bool> saveKindToDatabase({required Kind kind}) async {
@@ -162,7 +162,7 @@ for (var riege in listeVonRiegen) {
     }
   }
 
-  // NEU: Methode, um alle Kinder einer
+  // NEU: Methode, um alle Kinder einer Liste nach Geschlecht und Jahrgang zu gruppieren
   Map<String, List<Kind>> gruppiereKinder({required List<Kind> ausDerListe}) {
     final Map<String, List<Kind>> gruppierteKinder = {};
 
@@ -177,5 +177,43 @@ for (var riege in listeVonRiegen) {
     }
 
     return gruppierteKinder;
+  }
+
+    /// Sortiert eine Liste von Kindern für die Anzeige so, dass
+    ///  die noch nicht ausgewerteten Kinder zuerst erscheinen – dabei sinnvoll nach Jahrgang, Geschlecht und Nachnamen sortiert – 
+    /// während die bereits ausgewerteten Kinder unten stehen und nur nach Nachnamen sortiert sind.
+  List<Kind> zurAnzeigeSortieren({required List<Kind> alleKinder, required Set<Kind> ausgewerteteKinder}) {    
+    // Erzeugt eine neue Liste mit den gleichen Einträgen, um das Original nicht zu verändern.
+    List<Kind> kinder = List<Kind>.from(alleKinder);
+  
+  // Die kopierte Liste wird in-place sortiert, das bedeutet: kinder wird direkt verändert und zurückgegeben.
+    return kinder
+      ..sort((a, b) {
+        // Das Set ausgewerteteKinder wird verwendet, um zu prüfen, ob ein Kind bereits ausgewertet ist.
+        final istAusgewertetA = ausgewerteteKinder.contains(a);
+        final istAusgewertetB = ausgewerteteKinder.contains(b);
+
+        // Noch nicht ausgewertete Kinder sollen oben stehen
+        // 1 bedeutet, dass a (Nicht ausgewertet) nach b kommt
+        if (istAusgewertetA && !istAusgewertetB) return 1;
+        // -1 bedeutet, dass a (Nicht ausgewertet) vor b kommt
+        if (!istAusgewertetA && istAusgewertetB) return -1;
+
+        // Beide Kinder sind nicht ausgewertet
+        if (!istAusgewertetA && !istAusgewertetB) {
+          // Innerhalb der nicht ausgewerteten Kinder nach Jahrgang, Geschlecht, und Nachnamen sortieren
+          // JahrgangVergleich: Jüngere vor Älteren
+          final jahrgangVergleich = b.jahrgang.compareTo(a.jahrgang);
+          if (jahrgangVergleich != 0) return jahrgangVergleich;
+          // GeschlechtVergleich: Weiblich vor Männlich
+          final geschlechtVergleich = b.geschlecht.compareTo(a.geschlecht);
+          if (geschlechtVergleich != 0) return geschlechtVergleich;
+
+          return a.nachname.compareTo(b.nachname);
+        }
+
+        // Beide Kinder sind bereits ausgewertet ==> nur nach Nachnamen sortieren
+        return a.nachname.compareTo(b.nachname);
+      });
   }
 }

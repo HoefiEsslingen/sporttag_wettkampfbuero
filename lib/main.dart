@@ -8,7 +8,8 @@ import 'package:sporttag/src/wettkampfbuero.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 
 import 'src/anmelden_vorher.dart';
-import 'src/danke_schoen.dart';
+import 'src/danke_vorab_anmeldung.dart';
+import 'src/wettbewerb.dart';
 // import 'src/wettbewerb.dart';
 
 void main() async {
@@ -102,9 +103,12 @@ class MainApp extends StatelessWidget {
         // Wenn keine QR-Code-Route erkannt wurde, wird eine normale fixe Route geladen.
         switch (settings.name) {
           case 'home':
-            return MaterialPageRoute(builder: (_) => const Wettkampfbuero());
-// return MaterialPageRoute(
-//                builder: (_) => const Dankeschoen(titel: 'Sporttag - Vorab - Anmeldung'));
+            // return MaterialPageRoute(builder: (_) => const Wettkampfbuero());
+return MaterialPageRoute(
+               builder: (_) => const Wettbewerb(
+                riegenNummer: 4,
+                wettbewerbsTyp: "Zehnkampf",
+              ));
           case 'anmeldeSeite':
             return MaterialPageRoute(builder: (_) => const AnmeldenSporttag(titel: 'Sporttag - Anmeldung'));
           case 'riegenEinteilung':
@@ -114,10 +118,10 @@ class MainApp extends StatelessWidget {
           case 'auswertung':
             return MaterialPageRoute(builder: (_) => const UrkundenDruck(titel: 'Auswerten mit Urkunden'));
           case 'dankeschoen':
-            return MaterialPageRoute(builder: (_) => const Dankeschoen(titel: 'Sporttag - Vorab - Anmeldung'));
+            return MaterialPageRoute(builder: (_) => const DankeVorabAnmeldung(titel: 'Sporttag - Vorab - Anmeldung'));
           default:
             return MaterialPageRoute(
-              builder: (_) => const Dankeschoen(titel: 'Sporttag - Vorab - Anmeldung'));
+              builder: (_) => const DankeVorabAnmeldung(titel: 'Sporttag - Vorab - Anmeldung'));
         }
       },
     );

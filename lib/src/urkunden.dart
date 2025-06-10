@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 //import 'package:qr_flutter/qr_flutter.dart';
-import 'package:sporttag/src/kind_repository.dart';
+import 'package:sporttag/src/tools/kind_repository.dart';
 
 import 'hilfs_widgets/meine_appbar.dart';
-import 'kind_klasse.dart';
+import 'klassen/kind_klasse.dart';
 import 'tools/logger.util.dart';
-import 'riegen_klasse.dart';
-import 'riegen_repository.dart';
+import 'klassen/riegen_klasse.dart';
+import 'tools/riegen_repository.dart';
 
 class UrkundenDruck extends StatefulWidget {
   const UrkundenDruck({super.key, required this.titel});

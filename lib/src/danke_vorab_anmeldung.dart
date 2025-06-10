@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'hilfs_widgets/meine_appbar.dart';
 
-class Dankeschoen extends StatelessWidget {
-  const Dankeschoen({super.key, required this.titel});
+class DankeVorabAnmeldung extends StatelessWidget {
+  const DankeVorabAnmeldung({super.key, required this.titel});
   final String titel;
 
   @override

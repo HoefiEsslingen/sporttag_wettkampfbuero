@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 // import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 
-import 'kind_klasse.dart';
-import 'kind_repository.dart';
+import 'klassen/kind_klasse.dart';
+import 'tools/kind_repository.dart';
 
 class AnmeldenVorher extends StatefulWidget {
   const AnmeldenVorher({super.key, this.title});

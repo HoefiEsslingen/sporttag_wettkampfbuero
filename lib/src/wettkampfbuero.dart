@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
-import 'package:sporttag/src/icon_widget.dart';
+import 'package:sporttag/src/hilfs_widgets/icon_widget.dart';
 
 class Wettkampfbuero extends StatefulWidget {
   const Wettkampfbuero({super.key});

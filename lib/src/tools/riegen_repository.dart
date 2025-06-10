@@ -1,6 +1,6 @@
-import 'tools/logger.util.dart';
+import 'logger.util.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
-import 'riegen_klasse.dart';
+import '../klassen/riegen_klasse.dart';
 
 class RiegenRepository {
   // Erstellt ein Riegen-Objekt aus der Datenbank-Daten (ParseObject)
