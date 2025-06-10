@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 //import 'package:qr_flutter/qr_flutter.dart';
 import 'package:sporttag/src/kind_repository.dart';
 
+import 'hilfs_widgets/meine_appbar.dart';
 import 'kind_klasse.dart';
-import 'logger.util.dart';
+import 'tools/logger.util.dart';
 import 'riegen_klasse.dart';
 import 'riegen_repository.dart';
 
@@ -129,9 +130,7 @@ class UrkundenDruckState extends State<UrkundenDruck> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.titel ?? 'Urkunden Druck'),
-      ),
+      appBar: MeineAppBar(titel: widget.titel ?? 'Urkunden Druck'),
       body: Center(
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 32.0, horizontal: 72.0),

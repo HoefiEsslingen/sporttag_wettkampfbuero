@@ -89,6 +89,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.titel!),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(icon: const Icon(Icons.undo), onPressed: undoChanges),
           IconButton(

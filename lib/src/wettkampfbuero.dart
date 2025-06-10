@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/icon_widget.dart';
 
 class Wettkampfbuero extends StatefulWidget {
@@ -45,9 +46,7 @@ Map<String , Map<String, dynamic>> seitenInfo = {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Wettkampf-Büro'),
-      ),
+      appBar: MeineAppBar(titel: 'Wettkampf-Büro'),
       body: Center(
         child: Column(
           children: [

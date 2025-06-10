@@ -1,4 +1,4 @@
-import 'package:sporttag/src/logger.util.dart';
+import 'tools/logger.util.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 import 'kind_klasse.dart';
 import 'riegen_klasse.dart';

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'hilfs_widgets/meine_appbar.dart';
 
 class Dankeschoen extends StatelessWidget {
   const Dankeschoen({super.key, required this.titel});
@@ -7,12 +8,7 @@ class Dankeschoen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          titel,
-          textAlign: TextAlign.center,
-        ),
-      ),
+      appBar: MeineAppBar(titel: titel),
       body: Center(
         child: RichText(
           textAlign: TextAlign.center,

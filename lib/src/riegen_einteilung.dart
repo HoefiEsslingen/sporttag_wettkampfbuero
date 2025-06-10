@@ -1,4 +1,5 @@
-import 'package:sporttag/src/logger.util.dart';
+import 'hilfs_widgets/meine_appbar.dart';
+import 'tools/logger.util.dart';
 import 'package:flutter/material.dart';
 import 'package:sporttag/src/kind_klasse.dart';
 import 'package:sporttag/src/kind_repository.dart';
@@ -213,9 +214,7 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.titel!),
-      ),
+      appBar: MeineAppBar(titel: widget.titel ?? 'Riegen Einteilung'),
       body: Center(
         child: Column(
           children: [
