@@ -1,4 +1,7 @@
+import 'package:sporttag/src/tools/riegen_repository.dart';
+
 import 'hilfs_widgets/meine_appbar.dart';
+import 'klassen/riegen_klasse.dart';
 import 'tools/logger.util.dart';
 import 'package:flutter/material.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
@@ -18,6 +21,8 @@ class RiegenZuordnung extends StatefulWidget {
 
 class RiegenZuordnungState extends State<RiegenZuordnung> {
   final KindRepository kindRepository = KindRepository(); // Repository-Objekt
+  final RiegenRepository riegeRepository = RiegenRepository();
+  List<Riege> alleRiegen = []; // Liste aller Riegen
   List<Kind> alleKinder = [];
   final int riegenAnzahl = 8;
   List<int> riegenListe = [];
@@ -33,6 +38,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   void initState() {
     super.initState();
     riegenListe = List.generate(riegenAnzahl, (index) => index + 1);
+    alleRiegen = riegeRepository.loadAllRiegen() as List<Riege>;
   }
 
   // Methode für die Anzeige der einzelnen Riege
@@ -56,9 +62,15 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
 
   String _updateQrCodeUrl() {
     if (ausgewaehlteRiegenNummer != null) {
-      // && wettbewerb != null) {
+      // Wettbewerb für ausgewählte Riege bestimmen
+      for (var riege in alleRiegen) {
+        if (riege.riegenNummer == ausgewaehlteRiegenNummer) {
+          wettbewerb = riege.fuenfKampf ? 'Fünfkampf' : 'Zehnkampf';
+          break;
+        }
+      }
       qrCodeUrl =
-          'https://example.com/riege/$ausgewaehlteRiegenNummer'; //?wettbewerb=$wettbewerb';
+          'https://hoefiesslingen.github.io/#/wettkampf/$ausgewaehlteRiegenNummer/$wettbewerb'; //?wettbewerb=$wettbewerb';
     } else {
       qrCodeUrl = '';
     }
@@ -105,7 +117,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
                       });
                       if (newValue != null) {
                         _filterKinderNachRiege(newValue);
-                        /* Hier sollte irgendwie die Methode _updateQRCodeUrl() aufgerufen werden */
+                        // Aktualisiert die URL des QR-Codes
                         _updateQrCodeUrl();
                       }
                     },
@@ -144,7 +156,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
                               version: QrVersions.auto,
                               size: 200.0,
                             ),
-                            //                      const SizedBox(height: 20),
+                           const SizedBox(height: 20),
                             TextButton(
                               onPressed: () {
                                 _entferneRiegeAusDropDownListe();
