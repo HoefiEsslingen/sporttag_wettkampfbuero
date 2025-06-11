@@ -16,6 +16,7 @@ dependencies:
   qr_flutter: ^4.1.0
   shared_preferences: ^2.5.3
   syncfusion_flutter_pdfviewer: ^20.4.54
+  web: ^1.1.1
   
 dev_dependencies:
   flutter_test:
