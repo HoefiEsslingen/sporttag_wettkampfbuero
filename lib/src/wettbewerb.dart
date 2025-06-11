@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'disziplinen_widgets/bananen_kartons.dart';
-import 'disziplinen_widgets/sprint.dart';
 import 'pause.dart';
 import 'danke_ende.dart';
-// import 'disziplinen_widgets/hoch_weit_sprung.dart';
-// import 'disziplinen_widgets/bananen_kartons.dart';
-// import 'disziplinen_widgets/sprint.dart';
+import 'disziplinen_widgets/hoch_weit_sprung.dart';
 // import 'disziplinen_widgets/lauf.dart';
+import 'disziplinen_widgets/bananen_kartons.dart';
+import 'disziplinen_widgets/sprint.dart';
 import 'disziplinen_widgets/schlag_wurf.dart';
 import 'disziplinen_widgets/dreh_wurf.dart';
 //import 'disziplinen_widgets/stab_fliegen.dart';
 import 'disziplinen_widgets/druck_wurf.dart';
-// import 'disziplinen_widgets/weit_sprung.dart';
-// import 'disziplinen_widgets/stadion_runde.dart';
+import 'disziplinen_widgets/weit_sprung.dart';
+import 'disziplinen_widgets/stadion_runde.dart';
 import 'klassen/kind_klasse.dart';
 import 'tools/kind_repository.dart';
 import 'tools/logger.util.dart';
@@ -50,13 +48,13 @@ class WettbewerbState extends State<Wettbewerb> {
       'Schlagwurf': () => Schlagwurf(riegenNummer: riegenNummer),
       'Drehwurf': () => Drehwurf(riegenNummer: riegenNummer),
       'Druckwurf': () => Druckwurf(riegenNummer: riegenNummer),
-       'Sprint': () => Sprint(riegenNummer: riegenNummer),
-       '30m Banankartons': () => Bananenkartons(riegenNummer: riegenNummer),
+      'Sprint': () => Sprint(riegenNummer: riegenNummer),
+      '30m Banankartons': () => Bananenkartons(riegenNummer: riegenNummer),
       // '30 sec Lauf': () => Lauf(riegenNummer: riegenNummer),
       // 'Stabfliegen': () => Stabfliegen(riegenNummer: riegenNummer),
-      // 'Hoch-Weitsprung': () => HochWeitSprung(riegenNummer: riegenNummer),
-      // 'Zonenweitsprung': () => Zonenweitsprung(riegenNummer: riegenNummer),
-      // 'Stadionrunde': () => Stadionrunde(riegenNummer: riegenNummer),
+      'Hoch-Weitsprung': () => HochWeitSprung(riegenNummer: riegenNummer),
+      'Zonenweitsprung': () => Zonenweitsprung(riegenNummer: riegenNummer),
+      'Stadionrunde': () => Stadionrunde(riegenNummer: riegenNummer),
     };
 
     _loadState();
