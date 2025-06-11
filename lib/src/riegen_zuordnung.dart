@@ -38,7 +38,12 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   void initState() {
     super.initState();
     riegenListe = List.generate(riegenAnzahl, (index) => index + 1);
-    alleRiegen = riegeRepository.loadAllRiegen() as List<Riege>;
+    // Lädt die Riegen aus der Datenbank
+    ladeRiegen();
+  }
+
+  Future<void> ladeRiegen() async {
+    alleRiegen = await riegeRepository.loadAllRiegen();
   }
 
   // Methode für die Anzeige der einzelnen Riege
@@ -157,7 +162,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
                               version: QrVersions.auto,
                               size: 200.0,
                             ),
-                           const SizedBox(height: 20),
+                            const SizedBox(height: 20),
                             TextButton(
                               onPressed: () {
                                 _entferneRiegeAusDropDownListe();
@@ -166,7 +171,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
                                 }
                               },
                               child: Text(
-                                "Riege Nr. ${ausgewaehlteRiegenNummer ?? ''} zugeordnet",
+                                "Riege Nr. ${ausgewaehlteRiegenNummer ?? ''}\n${wettbewerb == "Fünfkampf" ? 5 : 10} Disziplinen",
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
