@@ -82,13 +82,12 @@ class MainApp extends StatelessWidget {
           final wettbewerbsTyp = Uri.decodeComponent(uri.pathSegments[2]);
 
           if (riegenNummer != null && wettbewerbsTyp.isNotEmpty) {
-            return null; // zu Testzwecken
-            // return MaterialPageRoute(
-            //   builder: (_) => Wettbewerb(
-            //     riegenNummer: riegenNummer,
-            //     wettbewerbsTyp: wettbewerbsTyp,
-            //   ),
-            // );
+            return MaterialPageRoute(
+               builder: (_) => Wettbewerb(
+                 riegenNummer: riegenNummer,
+                 wettbewerbsTyp: wettbewerbsTyp,
+               ),
+             );
           }
         } else if (uri.pathSegments.length == 1) {
           // Diese Route zeigt auf die Voranameldung für den Zehnkampf.
@@ -103,12 +102,7 @@ class MainApp extends StatelessWidget {
         // Wenn keine QR-Code-Route erkannt wurde, wird eine normale fixe Route geladen.
         switch (settings.name) {
           case 'home':
-            // return MaterialPageRoute(builder: (_) => const Wettkampfbuero());
-            return MaterialPageRoute(
-                builder: (_) => const Wettbewerb(
-                      riegenNummer: 4,
-                      wettbewerbsTyp: "Zehnkampf",
-                    ));
+            return MaterialPageRoute(builder: (_) => const Wettkampfbuero());
           case 'anmeldeSeite':
             return MaterialPageRoute(
                 builder: (_) =>
