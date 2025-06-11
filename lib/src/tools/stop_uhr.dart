@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:sporttag/src/klassen/kind_klasse.dart';
-import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
+// import 'package:sporttag/src/klassen/kind_klasse.dart';
+// import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 
 import '../hilfs_widgets/meine_appbar.dart';
 
+import '../hilfs_widgets/rueck_sprung_button.dart';
+import '../klassen/kind_klasse.dart';
 import 'logger.util.dart';
 import 'teilnehmer_liste.dart';
 import 'teilnehmerliste_verschiebbar.dart';
