@@ -9,9 +9,9 @@ import 'danke_ende.dart';
 // import 'disziplinen_widgets/sprint.dart';
 // import 'disziplinen_widgets/lauf.dart';
 import 'disziplinen_widgets/schlag_wurf.dart';
-// import 'disziplinen_widgets/dreh_wurf.dart';
-// import 'disziplinen_widgets/stab_fliegen.dart';
-// import 'disziplinen_widgets/druck_wurf.dart';
+import 'disziplinen_widgets/dreh_wurf.dart';
+//import 'disziplinen_widgets/stab_fliegen.dart';
+import 'disziplinen_widgets/druck_wurf.dart';
 // import 'disziplinen_widgets/weit_sprung.dart';
 // import 'disziplinen_widgets/stadion_runde.dart';
 import 'klassen/kind_klasse.dart';
@@ -48,8 +48,8 @@ class WettbewerbState extends State<Wettbewerb> {
 
     disziplinPages = {
       'Schlagwurf': () => Schlagwurf(riegenNummer: riegenNummer),
-      // 'Drehwurf': () => Drehwurf(riegenNummer: riegenNummer),
-      // 'Druckwurf': () => Druckwurf(riegenNummer: riegenNummer),
+      'Drehwurf': () => Drehwurf(riegenNummer: riegenNummer),
+      'Druckwurf': () => Druckwurf(riegenNummer: riegenNummer),
        'Sprint': () => Sprint(riegenNummer: riegenNummer),
        '30m Banankartons': () => Bananenkartons(riegenNummer: riegenNummer),
       // '30 sec Lauf': () => Lauf(riegenNummer: riegenNummer),
