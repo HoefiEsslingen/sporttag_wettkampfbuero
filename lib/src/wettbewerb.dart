@@ -103,7 +103,7 @@ class WettbewerbState extends State<Wettbewerb> {
 
     return Scaffold(
       appBar: MeineAppBar(
-        titel: 'Wettbewerbe Sporttag: Riege $riegenNummer',
+        titel: 'Riege $riegenNummer Sporttag-Wettbewerbe',
       ),
       body: Center(
         child: Column(
