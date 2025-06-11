@@ -89,12 +89,14 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.titel!),
+        // TODO: Rücksprung muss implementiert werden - Als Button oder Icon (Rücksprung)in der AppBar
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(icon: const Icon(Icons.undo), onPressed: undoChanges),
-          IconButton(
+          IconButton(tooltip: "Änderung rückgängig machen", icon: const Icon(Icons.undo), onPressed: undoChanges),
+          IconButton(tooltip: "Änderungen speichern", 
               icon: const Icon(Icons.save), onPressed: _speichereAenderungen),
-          IconButton(icon: const Icon(Icons.add), onPressed: addNewKind),
+          IconButton(tooltip: "Neues Kind anmelden", icon: const Icon(Icons.add), onPressed: addNewKind),
+          IconButton(tooltip: "Anmeldung beenden", icon: const Icon(Icons.cancel), onPressed: Navigator.of(context).pop),
         ],
       ),
       body: isLoading
