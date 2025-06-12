@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 // import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 
 import 'klassen/kind_klasse.dart';
@@ -56,159 +57,159 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text(textAlign: TextAlign.center, widget.title!),
-        ),
-        body: SingleChildScrollView(
-          // ein Formular erstellen
-          child: Form(
-            key: _formKey,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: <Widget>[
-                  const SizedBox(height: 32.0),
-                  RichText(
-                    textAlign: TextAlign.center,
-                    text: const TextSpan(
-                      style: TextStyle(
-                        fontSize: 16.0,
-                      ),
-                      children: <TextSpan>[
-                        TextSpan(
-                          text: 'Herzlich Willkommen\n',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 26.0,
+        appBar: MeineAppBar(titel: 'Vorab - Anmeldung Sporttag'),
+        body: Center(
+          child: SingleChildScrollView(
+            // ein Formular erstellen
+            child: Form(
+              key: _formKey,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 48.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    const SizedBox(height: 32.0),
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: const TextSpan(
+                        style: TextStyle(
+                          fontSize: 16.0,
+                        ),
+                        children: <TextSpan>[
+                          TextSpan(
+                            text: 'Herzlich Willkommen\n',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 26.0,
+                            ),
                           ),
-                        ),
-                        TextSpan(
-                          text:
-                              '''\nhier können Sie vorab Ihr Kind\n(zwischen 3 und 14 Jahren)\nfür den Sporttag anmelden.\nDie 3-5jährigen Kinder absolvieren fünf,\ndie 6jährigen und älteren zehn  Disziplinen.\n\nAm Sporttag selbst müssen Sie nur noch\ndie Startgebühr von € 2,-- bezahlen,\ndamit die Anmeldung aktiv wird.\n''',
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32.0),
-                  // Eingabefeld für den Vornamen
-                  TextFormField(
-                    controller: _vorName,
-                    focusNode: myFocusNode,
-                    autofocus: true,
-                    keyboardType: TextInputType.text,
-                    autocorrect: false,
-                    decoration: const InputDecoration(
-                      labelText: 'Vorname',
-                      border: OutlineInputBorder(),
-                      filled: true,
-                    ),
-                    validator: (value) {
-                      if (value!.isEmpty) {
-                        return 'Bitte einen Vornamen eingeben';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  // Eingabefeld für den Nachnamen
-                  TextFormField(
-                    controller: _nachName,
-                    keyboardType: TextInputType.text,
-                    autocorrect: false,
-                    decoration: const InputDecoration(
-                      labelText: 'Nachname',
-                      border: OutlineInputBorder(),
-                      filled: true,
-                    ),
-                    validator: (value) {
-                      if (value!.isEmpty) {
-                        return 'Bitte einen Nachnamen eingeben';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  // Auswahl-Menü für das Geschlecht
-                  DropdownButtonFormField<String>(
-                    value: _geschlecht,
-                    onChanged: (newValue) =>
-                        setState(() => _geschlecht = newValue!),
-                    items: [
-                      for (String i in _geschlechtListe)
-                        DropdownMenuItem(
-                          value: i,
-                          child: Text(i),
-                        )
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Geschlecht',
-                      filled: true,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Auswahl-Menü für den Jahrgang
-                  DropdownButtonFormField<int>(
-                    value: _jahrgang,
-                    onChanged: (newValue) =>
-                        setState(() => _jahrgang = newValue!),
-                    items: [
-                      for (int i in _jahrgangListe)
-                        DropdownMenuItem(
-                          value: i,
-                          child: Text('$i'),
-                        )
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Jahrgang',
-                      filled: true,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      // Button um die Eingaben rückgängig zu machen, d.h. die Felder zu leeren,
-                      // um neue, korrekte Eingaben machen zu können und den Fokus wieder auf das erste Eingabefeld zu setzen.
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                        ),
-                        onPressed: () {
-                          // reset() setzt alle Felder wieder auf den Initalwert zurück.
-                          resetFelder();
-                          myFocusNode.requestFocus();
-                        },
-                        child: const Text('Löschen'),
+                          TextSpan(
+                            text:
+                                '''\nhier können Sie vorab Ihr Kind\n(zwischen 3 und 14 Jahren)\nfür den Sporttag anmelden.\nDie 3-5jährigen Kinder absolvieren fünf,\ndie 6jährigen und älteren zehn  Disziplinen.\n\nAm Sporttag selbst müssen Sie nur noch\ndie Startgebühr von € 2,-- bezahlen,\ndamit die Anmeldung aktiv wird.\n''',
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 25),
-                      // Button um die Eingaben zu speichern.
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.green,
-                        ),
-                        onPressed: () {
-                          // Wenn alle Validatoren der Felder des Formulars gültig sind.
-                          if (_formKey.currentState!.validate()) {
-                            if (kDebugMode) {
-                              print(
-                                  "Formular ist gültig und kann verarbeitet werden");
-                            }
-                            doSaveData();
-                            // Namensfelder leeren und Fokus zurücksetzen
+                    ),
+                    const SizedBox(height: 32.0),
+                    // Eingabefeld für den Vornamen
+                    TextFormField(
+                      controller: _vorName,
+                      focusNode: myFocusNode,
+                      autofocus: true,
+                      keyboardType: TextInputType.text,
+                      autocorrect: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Vorname',
+                        border: OutlineInputBorder(),
+                        filled: true,
+                      ),
+                      validator: (value) {
+                        if (value!.isEmpty) {
+                          return 'Bitte einen Vornamen eingeben';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    // Eingabefeld für den Nachnamen
+                    TextFormField(
+                      controller: _nachName,
+                      keyboardType: TextInputType.text,
+                      autocorrect: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Nachname',
+                        border: OutlineInputBorder(),
+                        filled: true,
+                      ),
+                      validator: (value) {
+                        if (value!.isEmpty) {
+                          return 'Bitte einen Nachnamen eingeben';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    // Auswahl-Menü für das Geschlecht
+                    DropdownButtonFormField<String>(
+                      value: _geschlecht,
+                      onChanged: (newValue) =>
+                          setState(() => _geschlecht = newValue!),
+                      items: [
+                        for (String i in _geschlechtListe)
+                          DropdownMenuItem(
+                            value: i,
+                            child: Text(i),
+                          )
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Geschlecht',
+                        filled: true,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Auswahl-Menü für den Jahrgang
+                    DropdownButtonFormField<int>(
+                      value: _jahrgang,
+                      onChanged: (newValue) =>
+                          setState(() => _jahrgang = newValue!),
+                      items: [
+                        for (int i in _jahrgangListe)
+                          DropdownMenuItem(
+                            value: i,
+                            child: Text('$i'),
+                          )
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Jahrgang',
+                        filled: true,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        // Button um die Eingaben rückgängig zu machen, d.h. die Felder zu leeren,
+                        // um neue, korrekte Eingaben machen zu können und den Fokus wieder auf das erste Eingabefeld zu setzen.
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          onPressed: () {
+                            // reset() setzt alle Felder wieder auf den Initalwert zurück.
                             resetFelder();
                             myFocusNode.requestFocus();
-                          } else {
-                            if (kDebugMode) {
-                              print("Formular ist nicht gültig");
+                          },
+                          child: const Text('Löschen'),
+                        ),
+                        const SizedBox(width: 25),
+                        // Button um die Eingaben zu speichern.
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.green,
+                          ),
+                          onPressed: () {
+                            // Wenn alle Validatoren der Felder des Formulars gültig sind.
+                            if (_formKey.currentState!.validate()) {
+                              if (kDebugMode) {
+                                print(
+                                    "Formular ist gültig und kann verarbeitet werden");
+                              }
+                              doSaveData();
+                              // Namensfelder leeren und Fokus zurücksetzen
+                              resetFelder();
+                              myFocusNode.requestFocus();
+                            } else {
+                              if (kDebugMode) {
+                                print("Formular ist nicht gültig");
+                              }
                             }
-                          }
-                        },
-                        child: const Text('Speichern'),
-                      )
-                    ],
-                  )
-                ],
+                          },
+                          child: const Text('Speichern'),
+                        )
+                      ],
+                    )
+                  ],
+                ),
               ),
             ),
           ),

@@ -35,18 +35,25 @@ class _MehrfacheEingabeDialogWidgetState extends State<StationenInDurchgaengen> 
   int selectedValue = 1;
 
   final log = getLogger();
+  
+  late int anzahlDurchgaenge;
+  late Widget iconWidget;
+  late Function(Map<Kind, List<int>>) onErgebnisseAbschliessen;
 
   @override
   void initState() {
     super.initState();
+    anzahlDurchgaenge = widget.anzahlDurchgaenge;
+    iconWidget = widget.iconWidget;
+    onErgebnisseAbschliessen = widget.onErgebnisseAbschliessen;
     teilnehmerReihenfolge = List.from(widget.teilnehmer);
-    for (final kind in widget.teilnehmer) {
-      ergebnisse[kind] = List<int>.filled(widget.anzahlDurchgaenge, 0);
+    for (final kind in teilnehmerReihenfolge) {
+      ergebnisse[kind] = List<int>.filled(anzahlDurchgaenge, 0);
       aktuellerWert[kind] = 0;
     }
   }
 
-  bool alleBearbeitet() => bearbeitet.length == widget.teilnehmer.length;
+  bool alleBearbeitet() => bearbeitet.length == teilnehmerReihenfolge.length;
 
   void _bestaetigeWert() {
     if (aktivBearbeitetesKind == null) return;
@@ -60,7 +67,7 @@ class _MehrfacheEingabeDialogWidgetState extends State<StationenInDurchgaengen> 
       aktivBearbeitetesKind = null;
 
       if (alleBearbeitet()) {
-        if (aktuellerDurchgang < widget.anzahlDurchgaenge) {
+        if (aktuellerDurchgang < anzahlDurchgaenge) {
           aktuellerDurchgang++;
           log.i(
               'aktueller Durchgang: $aktuellerDurchgang und alleBearbeitet() ${alleBearbeitet()} ');
@@ -77,7 +84,7 @@ class _MehrfacheEingabeDialogWidgetState extends State<StationenInDurchgaengen> 
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MeineAppBar(
-        titel: 'Durchgang $aktuellerDurchgang von ${widget.anzahlDurchgaenge}',
+        titel: 'Durchgang $aktuellerDurchgang von $anzahlDurchgaenge',
       ),
       body: Column(
         children: [
@@ -130,16 +137,14 @@ class _MehrfacheEingabeDialogWidgetState extends State<StationenInDurchgaengen> 
                   trailing: bearbeitet.contains(kind)
                       ? const Icon(Icons.check, color: Colors.green, size: 40)
                       : IconButton(
-                          icon: widget
-                              .iconWidget, // <-- Bild-Icon nutzen  //auskommentiert:  const Icon(Icons.sports_handball),
+                          icon: iconWidget, // <-- Bild-Icon nutzen  //auskommentiert:  const Icon(Icons.sports_handball),
                           tooltip:
                               'Nachdem die erzielten Punkte erfasst und bestätigt wurden, wird der Teilnehmer an das Ende der Liste verschoben.',
                           iconSize: 40,
                           onPressed: () {
                             setState(() {
                               aktivBearbeitetesKind = kind;
-                              selectedValue =
-                                  1 /* auskommentiert: aktuellerWert[kind] ?? 1*/;
+                              selectedValue = 1 /* auskommentiert: aktuellerWert[kind] ?? 1*/;
                             });
                           },
                         ),
@@ -147,12 +152,11 @@ class _MehrfacheEingabeDialogWidgetState extends State<StationenInDurchgaengen> 
               },
             ),
           ),
-          if (aktuellerDurchgang == widget.anzahlDurchgaenge &&
+          if (aktuellerDurchgang == anzahlDurchgaenge &&
               alleBearbeitet())
             ZurueckButton(
               label: 'Ergebnisse auswerten und zurück',
-              auswertenDerErgebnisse: () =>
-                  widget.onErgebnisseAbschliessen(ergebnisse),
+              auswertenDerErgebnisse: () => onErgebnisseAbschliessen(ergebnisse),
             ),
           const SizedBox(height: 20),
         ],

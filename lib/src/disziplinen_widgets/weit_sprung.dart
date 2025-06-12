@@ -39,7 +39,7 @@ class ZonenweitsprungState extends State<Zonenweitsprung> {
   void initState() {
     super.initState();
     // widget.toString() der Variable zuweisen
-    stationsName = widget.toString();
+    stationsName = 'Zonenweitsprung';
     riegenNummer = widget.riegenNummer;
     _loadData();
   }

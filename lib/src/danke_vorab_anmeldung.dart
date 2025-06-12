@@ -26,11 +26,11 @@ class DankeVorabAnmeldung extends StatelessWidget {
               ),
               TextSpan(
                 text:
-                    '''\nAm Sporttag selbst müssen Sie nur noch\ndie Startgebühr von € 2,-- bezahlen,\ndamit die Anmeldung aktiv wird.\n\nBitte finden Sie sich \nam 22.09.2024\num 10:30 Uhr\nim Waldheimstadion (Zollberg) ein.\n''',
+                    '''\nAm Sporttag selbst müssen Sie nur noch\ndie Startgebühr von € 2,-- bezahlen,\ndamit die Anmeldung aktiv wird.\n\nBitte finden Sie sich \nam 28.09.2025\num 10:30 Uhr\nim Waldheimstadion (Zollberg) ein.\n''',
               ),
             TextSpan(
                 text:
-                    '''\nIhrem Kind wünschen wir bereits heute viel Spass.\nWir sehen uns am\n22. September!\n\nGerne können Sie nun das Browserfenster schließen.'''),
+                    '''\nIhrem Kind wünschen wir bereits heute viel Spass.\nWir sehen uns am\n28. September!\n\nGerne können Sie nun das Browserfenster schließen.'''),
             ],
           ),
         ),

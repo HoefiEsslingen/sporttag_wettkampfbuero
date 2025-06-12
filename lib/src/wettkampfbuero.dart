@@ -68,83 +68,85 @@ class WettkampfbueroState extends State<Wettkampfbuero> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MeineAppBar(titel: 'Wettkampf-Büro'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: RichText(
-                textAlign: TextAlign.center,
-                text: const TextSpan(
-                  style: TextStyle(
-                    fontSize: 16.0,
-                  ),
-                  children: <TextSpan>[
-                    TextSpan(
-                      text:
-                          'Hier erfolgen die Anmeldungen und\nBezahlung der Vorab-Anmeldungen.\n',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 26.0,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: RichText(
+                  textAlign: TextAlign.center,
+                  text: const TextSpan(
+                    style: TextStyle(
+                      fontSize: 16.0,
+                    ),
+                    children: <TextSpan>[
+                      TextSpan(
+                        text:
+                            'Hier erfolgen die Anmeldungen und\nBezahlung der Vorab-Anmeldungen.\n',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 26.0,
+                        ),
                       ),
-                    ),
-                    TextSpan(
-                      text:
-                          '''\nFür die vorabangemeldeten Kinder müssen noch\ndie Startgebühr von € 2,-- bezahlt werden.\nNach Abschluss der Anmeldung werden die Riegen automaiisch eingeteilt.\nHier erscheint dann eine Kontrollausgabe.\nAm Ende des Tages erfolgt die Auswertung und der Urkundendruck.\n''',
-                    ),
-                  ],
+                      TextSpan(
+                        text:
+                            '''\nFür die vorabangemeldeten Kinder müssen noch\ndie Startgebühr von € 2,-- bezahlt werden.\nNach Abschluss der Anmeldung werden die Riegen automaiisch eingeteilt.\nHier erscheint dann eine Kontrollausgabe.\nAm Ende des Tages erfolgt die Auswertung und der Urkundendruck.\n''',
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            IconButton(
-              onPressed: () {
-                seitenInfo['anmeldeSeite']!['aktiv']
-                    ? navigateAndPossiblyDisableButton(zuSeite: 'anmeldeSeite')
-                    : null;
-              },
-              icon: KartenIcon(
-                key: UniqueKey(),
-                icon: Icons.edit_note,
-                color: seitenInfo['anmeldeSeite']!['iconColor'],
-                derText: 'Anmeldung',
+              IconButton(
+                onPressed: () {
+                  seitenInfo['anmeldeSeite']!['aktiv']
+                      ? navigateAndPossiblyDisableButton(zuSeite: 'anmeldeSeite')
+                      : null;
+                },
+                icon: KartenIcon(
+                  key: UniqueKey(),
+                  icon: Icons.edit_note,
+                  color: seitenInfo['anmeldeSeite']!['iconColor'],
+                  derText: 'Anmeldung',
+                ),
               ),
-            ),
-            IconButton(
-              onPressed: () => seitenInfo['riegenEinteilung']!['aktiv']
-                  ? navigateAndPossiblyDisableButton(
-                      zuSeite: 'riegenEinteilung')
-                  : null,
-              icon: KartenIcon(
-                key: UniqueKey(),
-                icon: Icons.format_list_numbered,
-                color: seitenInfo['riegenEinteilung']!['iconColor'],
-                derText: 'Riegen einteilen',
+              IconButton(
+                onPressed: () => seitenInfo['riegenEinteilung']!['aktiv']
+                    ? navigateAndPossiblyDisableButton(
+                        zuSeite: 'riegenEinteilung')
+                    : null,
+                icon: KartenIcon(
+                  key: UniqueKey(),
+                  icon: Icons.format_list_numbered,
+                  color: seitenInfo['riegenEinteilung']!['iconColor'],
+                  derText: 'Riegen einteilen',
+                ),
               ),
-            ),
-            IconButton(
-              onPressed: () => seitenInfo['riegenZuordnung']!['aktiv']
-                  ? navigateAndPossiblyDisableButton(zuSeite: 'riegenZuordnung')
-                  : null,
-              icon: KartenIcon(
-                key: UniqueKey(),
-                icon: Icons.arrow_circle_right,
-                color: seitenInfo['riegenZuordnung']!['iconColor'],
-                derText: 'Riegen den Riegenführern zuordnen',
+              IconButton(
+                onPressed: () => seitenInfo['riegenZuordnung']!['aktiv']
+                    ? navigateAndPossiblyDisableButton(zuSeite: 'riegenZuordnung')
+                    : null,
+                icon: KartenIcon(
+                  key: UniqueKey(),
+                  icon: Icons.arrow_circle_right,
+                  color: seitenInfo['riegenZuordnung']!['iconColor'],
+                  derText: 'Riegen den Riegenführern zuordnen',
+                ),
               ),
-            ),
-            IconButton(
-              onPressed: () => seitenInfo['auswertung']!['aktiv']
-                  ? navigateAndPossiblyDisableButton(zuSeite: 'auswertung')
-                  : null,
-              icon: KartenIcon(
-                key: UniqueKey(),
-                icon: Icons.list_alt,
-                color: seitenInfo['auswertung']!['iconColor'],
-                derText: 'Auswertung',
+              IconButton(
+                onPressed: () => seitenInfo['auswertung']!['aktiv']
+                    ? navigateAndPossiblyDisableButton(zuSeite: 'auswertung')
+                    : null,
+                icon: KartenIcon(
+                  key: UniqueKey(),
+                  icon: Icons.list_alt,
+                  color: seitenInfo['auswertung']!['iconColor'],
+                  derText: 'Auswertung',
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
