@@ -11,43 +11,65 @@ class Wettkampfbuero extends StatefulWidget {
 }
 
 class WettkampfbueroState extends State<Wettkampfbuero> {
-
-Map<String , Map<String, dynamic>> seitenInfo = {
-  'anmeldeSeite': {
-    'iconColor': Colors.white,
-    'aktiv': true,
-  },
-  'riegenEinteilung': {
-    'iconColor': Colors.white,
-    'aktiv': true,
-  },
+  Map<String, Map<String, dynamic>> seitenInfo = {
+    'anmeldeSeite': {
+      'iconColor': Colors.white,
+      'aktiv': true,
+    },
+    'riegenEinteilung': {
+      'iconColor': Colors.white,
+      'aktiv': true,
+    },
     'riegenZuordnung': {
-    'iconColor': Colors.white,
-    'aktiv': true,
-  },
-  'auswertung': {
-    'iconColor': Colors.white,
-    'aktiv': true,
-  },
-};
+      'iconColor': Colors.grey,
+      'aktiv': false,
+    },
+    'auswertung': {
+      'iconColor': Colors.grey,
+      'aktiv': false,
+    },
+  };
 // Methode, die Status von gerufender Seite zurückgibt
 // kommt 'false' zurück, dann wird der entsprechende aufrufende Button disabled
-  Future<void> navigateAndPossiblyDisableButton({required String zuSeite}) async {
+  Future<void> navigateAndPossiblyDisableButton(
+      {required String zuSeite}) async {
     var resultat = await Navigator.pushNamed(context, zuSeite);
 
-    if (resultat == false) {
-      setState(() {
+    setState(() {
+      if (resultat == false) {
+        // aktuelle Seite inaktiv setzen
         seitenInfo[zuSeite]!['iconColor'] = Colors.grey;
-        seitenInfo[zuSeite]!['aktiv'] = resultat;
-      });
-    }
+        seitenInfo[zuSeite]!['aktiv'] = false;
+      }
+
+      // Lineare Fortschaltung
+      switch (zuSeite) {
+        case 'riegenEinteilung':
+          // Anmeldung abschalten, Riegenzuordnung aktivieren
+          seitenInfo['anmeldeSeite']!
+            ..['iconColor'] = Colors.grey
+            ..['aktiv'] = false;
+          seitenInfo['riegenZuordnung']!
+            ..['iconColor'] = Colors.white
+            ..['aktiv'] = true;
+          break;
+
+        case 'riegenZuordnung':
+          // Auswertung freischalten
+          seitenInfo['auswertung']!
+            ..['iconColor'] = Colors.white
+            ..['aktiv'] = true;
+          break;
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MeineAppBar(titel: 'Wettkampf-Büro'),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
         child: Column(
           children: [
             Padding(
@@ -77,8 +99,9 @@ Map<String , Map<String, dynamic>> seitenInfo = {
             ),
             IconButton(
               onPressed: () {
-                seitenInfo['anmeldeSeite']!['aktiv'] ? 
-                  navigateAndPossiblyDisableButton(zuSeite: 'anmeldeSeite') : null;
+                seitenInfo['anmeldeSeite']!['aktiv']
+                    ? navigateAndPossiblyDisableButton(zuSeite: 'anmeldeSeite')
+                    : null;
               },
               icon: KartenIcon(
                 key: UniqueKey(),
@@ -87,9 +110,12 @@ Map<String , Map<String, dynamic>> seitenInfo = {
                 derText: 'Anmeldung',
               ),
             ),
+            // TODO: Amelde-Button inaktiv setzen, wenn mit der Riegeneinteilung begonnen wird
             IconButton(
-              onPressed: () => seitenInfo['riegenEinteilung']!['aktiv'] ? 
-                  navigateAndPossiblyDisableButton(zuSeite:'riegenEinteilung') : null,
+              onPressed: () => seitenInfo['riegenEinteilung']!['aktiv']
+                  ? navigateAndPossiblyDisableButton(
+                      zuSeite: 'riegenEinteilung')
+                  : null,
               icon: KartenIcon(
                 key: UniqueKey(),
                 icon: Icons.format_list_numbered,
@@ -98,8 +124,9 @@ Map<String , Map<String, dynamic>> seitenInfo = {
               ),
             ),
             IconButton(
-              onPressed: () => seitenInfo['riegenZuordnung']!['aktiv'] ? 
-                  navigateAndPossiblyDisableButton(zuSeite:'riegenZuordnung') : null,
+              onPressed: () => seitenInfo['riegenZuordnung']!['aktiv']
+                  ? navigateAndPossiblyDisableButton(zuSeite: 'riegenZuordnung')
+                  : null,
               icon: KartenIcon(
                 key: UniqueKey(),
                 icon: Icons.arrow_circle_right,
@@ -108,8 +135,9 @@ Map<String , Map<String, dynamic>> seitenInfo = {
               ),
             ),
             IconButton(
-              onPressed: () => seitenInfo['auswertung']!['aktiv'] ? 
-                  navigateAndPossiblyDisableButton(zuSeite:'auswertung') : null,
+              onPressed: () => seitenInfo['auswertung']!['aktiv']
+                  ? navigateAndPossiblyDisableButton(zuSeite: 'auswertung')
+                  : null,
               icon: KartenIcon(
                 key: UniqueKey(),
                 icon: Icons.list_alt,
