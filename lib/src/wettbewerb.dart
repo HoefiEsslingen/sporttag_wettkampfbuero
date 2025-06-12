@@ -201,7 +201,6 @@ class WettbewerbState extends State<Wettbewerb> {
       // body: Center(
       //   child: Column(
       //     mainAxisAlignment: MainAxisAlignment.center,
-      //     // TODO: Liste der Disziplinen muss scrollbar gemacht werden
       //     children: [
       //       ...disziplinNamen.map((disziplin) {
       //         // Überprüft, ob die Disziplin bereits besucht wurde

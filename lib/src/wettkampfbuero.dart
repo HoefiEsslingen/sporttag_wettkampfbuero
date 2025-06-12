@@ -110,7 +110,6 @@ class WettkampfbueroState extends State<Wettkampfbuero> {
                 derText: 'Anmeldung',
               ),
             ),
-            // TODO: Amelde-Button inaktiv setzen, wenn mit der Riegeneinteilung begonnen wird
             IconButton(
               onPressed: () => seitenInfo['riegenEinteilung']!['aktiv']
                   ? navigateAndPossiblyDisableButton(
