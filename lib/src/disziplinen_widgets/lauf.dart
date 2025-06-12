@@ -38,7 +38,7 @@ class LaufState extends State<Lauf> {
   @override
   void initState() {
     super.initState();
-    stationsName = '30sec-${widget.toString()}';
+    stationsName = '30sec-Lauf';
     riegenNummer = widget.riegenNummer;
     _loadData();
   }

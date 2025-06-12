@@ -39,7 +39,7 @@ class BananenkartonsState extends State<Bananenkartons> {
   initState() {
     super.initState();
     // widget.toString() der Variable zuweisen
-    stationsName = widget.toString();
+    stationsName = "30m-Bananenkartons";
     riegenNummer = widget.riegenNummer;
     _loadData();
   }
@@ -121,8 +121,8 @@ log.i('in auswerten $zeit für ${kind.nachname}');
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MeineAppBar(
-        titel: '30 m $stationsName',
-        stationsName: '30m-$stationsName',
+        titel: stationsName,
+        stationsName: stationsName,
       ),
       body: Center(
         child: Column(

@@ -39,7 +39,7 @@ class StadionrundeState extends State<Stadionrunde> {
   void initState() {
     super.initState();
     // widget.toString() der Variable zuweisen
-    stationsName = widget.toString();
+    stationsName = "Stadionrunde";
     riegenNummer = widget.riegenNummer;
     _loadData();
   }

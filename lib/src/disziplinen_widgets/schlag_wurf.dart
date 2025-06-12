@@ -38,7 +38,7 @@ class SchlagwurfState extends State<Schlagwurf> {
   void initState() {
     super.initState();
     // widget.toString() der Variable zuweisen
-    stationsName = widget.toString();
+    stationsName = "Schlagwurf";
     riegenNummer = widget.riegenNummer;
     _loadData();
   }
@@ -119,6 +119,7 @@ class SchlagwurfState extends State<Schlagwurf> {
             if (!istAusgewertet)
               ElevatedButton(
                   onPressed: () {
+                    // TODO: Beim Klicken des Icon erscheint grauer Hintergrund auf dem Handy (Safari auch Chrome)
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -134,6 +135,7 @@ class SchlagwurfState extends State<Schlagwurf> {
                           ),
                         ));
                   },
+                  // Rücksprung auf 
                   child: const Text(
                     'In den ersten Durchgang starten',
                     textAlign: TextAlign.center,

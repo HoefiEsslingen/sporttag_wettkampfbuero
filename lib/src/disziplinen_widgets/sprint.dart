@@ -40,7 +40,7 @@ class SprintState extends State<Sprint> {
   initState() {
     super.initState();
     // widget.toString() der Variable zuweisen
-    stationsName = widget.toString();
+    stationsName = "Sprint";
     riegenNummer = widget.riegenNummer;
     _loadData();
   }

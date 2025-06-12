@@ -50,7 +50,7 @@ class _MyStopUhrState extends State<MyStopUhr> {
   bool isBlinking = false;
   double opacity = 1.0;
   int modus = -1;
-
+  // TODO: Zähler bei 30sec-Lauf (modus 2) wird nicht aufgerufen bzw. angezeigt in der Web-App
   @override
   void initState() {
     super.initState();

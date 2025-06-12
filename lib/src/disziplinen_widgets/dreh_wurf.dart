@@ -39,7 +39,7 @@ class DrehwurfState extends State<Drehwurf> {
   void initState() {
     super.initState();
     // widget.toString() der Variable zuweisen
-    stationsName = widget.toString();
+    stationsName = "Drehwurf";
     riegenNummer = widget.riegenNummer;
     _loadData();
   }

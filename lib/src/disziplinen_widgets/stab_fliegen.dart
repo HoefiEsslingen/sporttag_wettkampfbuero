@@ -39,8 +39,9 @@ class StabfliegenState extends State<Stabfliegen> {
   void initState() {
     super.initState();
     // widget.toString() der Variable zuweisen
-    stationsName = widget.toString();
+    stationsName = "Stabfliegen";
     riegenNummer = widget.riegenNummer;
+    // TODO: wie bei Wurf-Disziplinen: nach Klick auf Icon kommt grauer Bildschirm
     _loadData();
   }
 
