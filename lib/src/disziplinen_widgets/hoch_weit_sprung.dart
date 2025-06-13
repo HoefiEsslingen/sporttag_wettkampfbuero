@@ -127,7 +127,7 @@ class HochWeitSprungState extends State<HochWeitSprung> {
                   ),
                 ),
                 if (istAusgewertet)
-                  const ZurueckButton(label: 'Nächste Disziplin steht an'),
+                  ZurueckButton(label: 'Nächste Disziplin steht an', riegenNummer: riegenNummer,),
               ],
             ),
     );

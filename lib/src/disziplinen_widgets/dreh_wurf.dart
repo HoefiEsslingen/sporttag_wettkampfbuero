@@ -175,7 +175,7 @@ class DrehwurfState extends State<Drehwurf> {
             ),
             if (riegenKinder.length == ausgewerteteKinder.length) // Beenden-Button anzeigen
             // TODO: ZurückButton --> wo ist der und zählt er die Disziplinen innerhalb der Riege hoch?
-              const ZurueckButton(label: 'Nächste Disziplin steht an'),
+              ZurueckButton(label: 'Nächste Disziplin steht an', riegenNummer: riegenNummer),
           ],
         ),
       ),

@@ -157,7 +157,7 @@ class LaufState extends State<Lauf> {
               ),
             ),
             if (riegenKinder.length == ausgewerteteKinder.length) // Beenden-Button anzeigen
-              const ZurueckButton(label: 'Nächste Disziplin steht an'),
+              ZurueckButton(label: 'Nächste Disziplin steht an', riegenNummer: riegenNummer,),
           ],
         ),
       ),

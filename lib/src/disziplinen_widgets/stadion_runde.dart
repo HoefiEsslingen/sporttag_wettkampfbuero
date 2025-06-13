@@ -209,7 +209,7 @@ class StadionrundeState extends State<Stadionrunde> {
             ),
           ),
           if (riegenKinder.length == ausgewerteteKinder.length) // Beenden-Button anzeigen
-            const ZurueckButton(label: 'Ende des Kinder-Sporttages'),
+            ZurueckButton(label: 'Ende des Kinder-Sporttages',riegenNummer: riegenNummer,),
         ],
       )),
     );
