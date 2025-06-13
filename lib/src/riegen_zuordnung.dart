@@ -70,7 +70,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
       // Wettbewerb für ausgewählte Riege bestimmen
       for (var riege in alleRiegen) {
         if (riege.riegenNummer == ausgewaehlteRiegenNummer) {
-          wettbewerb = riege.fuenfKampf ? 'Fünfkampf' : 'Zehnkampf';
+          wettbewerb = riege.fuenfKampf ? 'Fuenfkampf' : 'Zehnkampf';
           break;
         }
       }

@@ -73,7 +73,7 @@ class MainApp extends StatelessWidget {
         // Dynamische QR-Code-Route
         // Prüft, ob die Route drei Segmente hat und das erste Segment 'wettkampf' ist.
         // Das zweite Segment sollte eine Zahl (Riegen-Nummer) sein und das dritte Segment sollte ein String (Wettbewerbs-Typ) sein.
-        // Beispiel: /wettkampf/3/Zehnkampf
+        // Beispiel: /wettkampf/3/Zehnkampf bzw. /wettkampf/5/Fuenfkampf
         // Wenn die Route korrekt ist, wird eine MaterialPageRoute zurückgegeben, die zur Wettbewerb-Seite führt.
         if (uri.pathSegments.length == 3 &&
             uri.pathSegments[0] == 'wettkampf') {
