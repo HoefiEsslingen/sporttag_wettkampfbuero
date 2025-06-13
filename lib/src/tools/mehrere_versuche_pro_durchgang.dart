@@ -89,9 +89,7 @@ bool alleKinderHabenGleichvieleVersucheUndMindestensEinen(Map<Kind, List<String>
       // SONST das aktiv bearbeitete Kind wird, im aktuellenDurchgang, für den nächsten Versuch ans Ende der Liste verschoben
       } else {
         // das Kind hat gerissen; Status im aktuellen Versuch auf "gerissen" setzen
-//        versucheImDurchgang[aktivBearbeitetesKind!]!.add('gerissen');
         aktuellerDurchgang.remove(aktivBearbeitetesKind);
-//        aktuellerDurchgang.add(aktivBearbeitetesKind!);
         weitererVersuch.add(aktivBearbeitetesKind!);
       }
       aktivBearbeitetesKind = null;

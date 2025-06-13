@@ -105,7 +105,7 @@ class _MehrfacheEingabeDialogWidgetState
                     value: selectedValue.toDouble(),
                     min: 1,
                     max: 6,
-                    divisions: 6,
+                    divisions: 5,  // divisions = max-min
                     label: 'Zone $selectedValue',
                     onChanged: (double value) {
                       setState(() {
