@@ -98,8 +98,8 @@ class WettbewerbState extends State<Wettbewerb> {
             : disziplinPages;
     // Hier wird die letzte Station ermittelt, diese sollte am Ende auswählbaren Disziplinen stehen
     // und ist erst dann auswählbar, wenn alle anderen Disziplinen besucht wurden
-    final String dieLetzeStation =
-        angeboteneDisziplinen.keys.last; // hier: Stadionrunde
+    const String dieLetzeStation = 'Stadionrunde'; // für Zehnkampf immer Stadionrunde
+//        angeboteneDisziplinen.keys.last; // hier: Stadionrunde
     final List<String> disziplinNamen = angeboteneDisziplinen.keys.toList();
 
     return Scaffold(
@@ -195,97 +195,6 @@ class WettbewerbState extends State<Wettbewerb> {
           ),
         ),
       ),
-
-      //********
-      // Nicht scrollbare Version
-      // body: Center(
-      //   child: Column(
-      //     mainAxisAlignment: MainAxisAlignment.center,
-      //     children: [
-      //       ...disziplinNamen.map((disziplin) {
-      //         // Überprüft, ob die Disziplin bereits besucht wurde
-      //         final istBesucht = besuchteDisziplinen.contains(disziplin);
-      //         // Überprüft, ob es sich bei der 'disziplin' um 'dieLetzteStation' handelt. Diese soll erst ganz am Ende auswählbar sein.
-      //         final istLetzteStation = disziplin == dieLetzeStation;
-      //         // Stellt sicher, dass alle anderen Disziplinen außer dieLetzeStation bereits abgeschlossen sind.
-      //         final alleAnderenBesucht = besuchteDisziplinen.length ==
-      //             angeboteneDisziplinen.length - 1;
-
-      //         // Logik zur Aktivierung des Buttons: Der Button darf nur aktiv sein, wenn die Disziplin noch nicht besucht wurde
-      //         // Und: Falls es sich um dieLetzeStation handelt, darf er nur aktiv sein,
-      //         // wenn alle anderen Disziplinen bereits besucht wurden
-      //         final istAktiv = !istBesucht &&
-      //             (!istLetzteStation || alleAnderenBesucht);
-
-      //         return Padding(
-      //           padding: const EdgeInsets.symmetric(vertical: 8.0),
-      //           child: ElevatedButton(
-      //             onPressed: istAktiv
-      //                 ? () async {
-      //                     await Navigator.push(
-      //                       context,
-      //                       MaterialPageRoute(
-      //                         builder: (context) =>
-      //                             angeboteneDisziplinen[disziplin]?.call() ??
-      //                             const Center(
-      //                                 child: Text('Disziplin nicht gefunden')),
-      //                       ),
-      //                     );
-      //                     setState(() {
-      //                       besuchteDisziplinen.add(disziplin);
-      //                     });
-      //                   }
-      //                 : null,
-      //             style: ElevatedButton.styleFrom(
-      //               backgroundColor:
-      //                   istBesucht ? Colors.grey : Colors.red,
-      //             ),
-      //             child: Text(
-      //               istBesucht
-      //                   ? '$disziplin (besucht)'
-      //                   : disziplin,
-      //               style: TextStyle(
-      //                 color: istBesucht ? Colors.black45 : Colors.white,
-      //               ),
-      //             ),
-      //           ),
-      //         );
-      //       }),
-      //       const SizedBox(height: 20),
-      //       if (besuchteDisziplinen.length == angeboteneDisziplinen.length)
-      //         ElevatedButton(
-      //           onPressed: () {
-      //             _clearState();
-      //             Navigator.push(
-      //               context,
-      //               MaterialPageRoute(
-      //                 builder: (context) => const DankeEnde(),
-      //               ),
-      //             );
-      //           },
-      //           child: const Text('Ende Sporttag'),
-      //         )
-      //         else if (!pauseGemacht &&
-      //           wettbewerbsTyp == 'Zehnkampf' &&
-      //           besuchteDisziplinen.length >= 4)
-      //         ElevatedButton(
-      //           onPressed: () {
-      //             setState(() {
-      //               pauseGemacht = true;
-      //             });
-      //             _saveState();
-      //             Navigator.push(
-      //               context,
-      //               MaterialPageRoute(
-      //                 builder: (context) => const Pause(),
-      //               ),
-      //             );
-      //           },
-      //           child: const Text('Pause'),
-      //         ),
-      //     ],
-      //   ),
-      // ),
     );
   }
 }
