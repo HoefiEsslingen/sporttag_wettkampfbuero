@@ -152,6 +152,7 @@ class RiegenRepository {
     if (riege != null) {
       riege.fuenfKampf = fuenfKampf;
       riege.anzStationen = 0; // Setze die Anzahl der Stationen auf 0
+      riege.ausgewertet = false; // Setze ausgewertet auf false
       await saveRiegeToDatabase(riege: riege);
     } else {
       log.i('Riege mit Nummer $riegenNummer nicht gefunden.');
