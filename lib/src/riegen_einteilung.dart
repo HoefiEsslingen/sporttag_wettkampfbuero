@@ -44,7 +44,7 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
   }
 
   Future<void> _kinderRiegenZuordnen() async {
-    alleKinder = await kindRepository.loadAllKinder();
+    alleKinder = await kindRepository.loadAngemeldeteKinder();
     kinderGesamt = alleKinder.length;
     setState(() {
       _generiereSortierteJahrgangsListen();

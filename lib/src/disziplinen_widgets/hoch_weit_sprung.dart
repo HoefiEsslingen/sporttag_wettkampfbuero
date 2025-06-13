@@ -6,7 +6,6 @@ import '../klassen/kind_klasse.dart';
 import '../tools/kind_repository.dart';
 import '../tools/logger.util.dart';
 import '../tools/mehrere_versuche_pro_durchgang.dart';
-import '../tools/stationen_repository.dart';
 
 class HochWeitSprung extends StatefulWidget {
   final int riegenNummer;
@@ -21,7 +20,6 @@ class HochWeitSprungState extends State<HochWeitSprung> {
   late String stationsName; // Variable für die zugewiesene Ausgabe
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
-  final StationenRepository stationenRepository = StationenRepository();
 
   late int riegenNummer;
   List<Kind> riegenKinder = [];

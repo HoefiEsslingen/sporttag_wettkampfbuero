@@ -5,7 +5,6 @@ import '../hilfs_widgets/rueck_sprung_button.dart';
 import '../klassen/kind_klasse.dart';
 import '../tools/kind_repository.dart';
 import '../tools/logger.util.dart';
-import '../tools/stationen_repository.dart';
 import '../tools/stop_uhr.dart';
 
 class Sprint extends StatefulWidget {
@@ -23,7 +22,6 @@ class SprintState extends State<Sprint> {
 
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
-  final StationenRepository stationenRepository = StationenRepository();
   bool testLauf = true; // Kinder dürfen zuerst ihre Entscheidung testen
 
   late int riegenNummer;

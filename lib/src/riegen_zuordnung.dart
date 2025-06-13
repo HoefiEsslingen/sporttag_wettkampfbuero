@@ -99,7 +99,6 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MeineAppBar(titel: widget.titel ?? 'Riegen Zuordnung'),
-      // TODO: Riegen-ZUordnung wird nicht angezeigt - Das Widget bleibt grau
       body: Center(
         child: Column(
           children: [

@@ -6,7 +6,6 @@ import '../klassen/kind_klasse.dart';
 import '../tools/stationen_in_durchgaengen.dart';
 import '../tools/kind_repository.dart';
 import '../tools/logger.util.dart';
-import '../tools/stationen_repository.dart';
 
 class Drehwurf extends StatefulWidget {
   final int riegenNummer;
@@ -22,7 +21,6 @@ class DrehwurfState extends State<Drehwurf> {
   late String stationsName; // Variable für die zugewiesene Ausgabe
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
-  final StationenRepository stationenRepository = StationenRepository();
 
   late int riegenNummer;
   List<Kind> riegenKinder = [];
@@ -176,6 +174,7 @@ class DrehwurfState extends State<Drehwurf> {
               ),
             ),
             if (riegenKinder.length == ausgewerteteKinder.length) // Beenden-Button anzeigen
+            // TODO: ZurückButton --> wo ist der und zählt er die Disziplinen innerhalb der Riege hoch?
               const ZurueckButton(label: 'Nächste Disziplin steht an'),
           ],
         ),

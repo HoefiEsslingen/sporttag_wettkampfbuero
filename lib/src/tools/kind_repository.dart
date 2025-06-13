@@ -100,6 +100,36 @@ class KindRepository {
     return alleKinder;
   }
 
+  Future<List<Kind>> loadAngemeldeteKinder() async {
+    const int limit = 100;
+    int skip = 0;
+    final List<Kind> alleKinder = [];
+
+    while (true) {
+      final query = QueryBuilder<ParseObject>(ParseObject('Kind'))
+        ..setLimit(limit)
+        ..setAmountToSkip(skip)
+        ..whereEqualTo('bezahlt', true); // nur nagemeldete Kinder, welche also bezahlt haben
+
+      final response = await query.query();
+
+      if (response.success && response.results != null) {
+        final kinderTeilListe = response.results!
+            .map((obj) => createKindFromParse(obj as ParseObject))
+            .toList();
+
+        alleKinder.addAll(kinderTeilListe);
+
+        if (kinderTeilListe.length < limit) break; // keine weiteren Daten
+        skip += limit;
+      } else {
+        break; // Abbruch bei Fehler oder leeren Ergebnissen
+      }
+    }
+
+    return alleKinder;
+  }
+
   Future<List<Kind>> loadKinderAusRiegen(
       {required List<Riege> listeVonRiegen}) async {
     final List<Kind> alleKinder = [];

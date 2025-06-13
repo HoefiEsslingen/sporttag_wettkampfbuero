@@ -6,7 +6,6 @@ import '../hilfs_widgets/meine_appbar.dart';
 import '../klassen/kind_klasse.dart';
 import '../tools/kind_repository.dart';
 import '../tools/logger.util.dart';
-import '../tools/stationen_repository.dart';
 import '../tools/stop_uhr.dart';
 
 class Stadionrunde extends StatefulWidget {
@@ -24,7 +23,6 @@ class StadionrundeState extends State<Stadionrunde> {
 
 // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
-  final StationenRepository stationenRepository = StationenRepository();
 
   late int riegenNummer;
   List<Kind> riegenKinder = [];

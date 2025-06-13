@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
-import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
-
+import '../hilfs_widgets/meine_appbar.dart';
+import '../hilfs_widgets/rueck_sprung_button.dart';
 import '../hilfs_widgets/mein_listen_eintrag.dart';
 import '../klassen/kind_klasse.dart';
 import '../tools/kind_repository.dart';
 import '../tools/logger.util.dart';
-import '../tools/stationen_repository.dart';
 import '../tools/stop_uhr.dart';
 
 class Lauf extends StatefulWidget {
@@ -25,7 +23,6 @@ class LaufState extends State<Lauf> {
 
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
-  final StationenRepository stationenRepository = StationenRepository();
 
   List<Kind> riegenKinder = [];
   List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer

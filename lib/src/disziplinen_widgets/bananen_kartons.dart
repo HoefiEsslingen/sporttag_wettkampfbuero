@@ -1,6 +1,5 @@
 import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/tools/kind_repository.dart';
-import 'package:sporttag/src/tools/stationen_repository.dart';
 import 'package:sporttag/src/tools/logger.util.dart';
 import 'package:flutter/material.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
@@ -24,7 +23,6 @@ class BananenkartonsState extends State<Bananenkartons> {
 
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
-  final StationenRepository stationenRepository = StationenRepository();
 
   late int riegenNummer;
   List<Kind> riegenKinder = [];

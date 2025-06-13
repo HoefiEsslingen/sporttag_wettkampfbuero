@@ -6,7 +6,6 @@ import '../klassen/kind_klasse.dart';
 import '../tools/stationen_in_durchgaengen.dart';
 import '../tools/kind_repository.dart';
 import '../tools/logger.util.dart';
-import '../tools/stationen_repository.dart';
 
 class Druckwurf extends StatefulWidget {
   final int riegenNummer;
@@ -22,7 +21,6 @@ class DruckwurfState extends State<Druckwurf> {
   late String stationsName; // Variable für die zugewiesene Ausgabe
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
-  final StationenRepository stationenRepository = StationenRepository();
 
   late int riegenNummer;
   List<Kind> riegenKinder = [];
