@@ -22,13 +22,34 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
   final TextEditingController geschlechtController = TextEditingController();
   final TextEditingController jahrgangController = TextEditingController();
   late FocusNode focusJahrgang;
+  static const List<String> _geschlechtListe = ['w', 'm'];
+  String _geschlecht = _geschlechtListe.first;
+  late List<int> _jahrgangListe;
+  late int _jahrgang;
 
   @override
   void initState() {
     super.initState();
     _ladeKinder();
 
+    _jahrgang = _zulaessigeJahrgaenge().first;
     focusJahrgang = FocusNode();
+  }
+
+  _zulaessigeJahrgaenge() {
+    // Die Logik um die zulässigen Jahrgänge zu bestimmen:
+    // basierend auf dem aktuellen Datum und dem festegelegten minAlter bzw. maxAlter
+    // wird die Liste der zulässigen Jahrgänge erstellt.
+    int currentYear = DateTime.now().year;
+    int maxAlter = 14; // Maximales Alter für die Anmeldung
+    int minAlter = 3; // Minimales Alter für die Anmeldung
+    _jahrgangListe = [];
+    for (int i = minAlter; i <= maxAlter; i++) {
+      _jahrgangListe.add(currentYear - i);
+    }
+    _jahrgangListe
+        .sort((a, b) => b.compareTo(a)); // Jahrgänge absteigend sortieren
+    return _jahrgangListe;
   }
 
   @override
@@ -58,7 +79,6 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
 
   void addNewKind() {
     setState(() {
-//     kinder.insert(0, ParseObject('Kind')
       kinderListe.insert(
           0,
           Kind(
@@ -66,6 +86,8 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
             nachname: '',
             jahrgang: '',
             geschlecht: '',
+            erreichtePunkte: 0,
+            riegenNummer: 0,
             bezahlt: true,
           ));
       editStates.insert(0, true); // Set new entry to be editable
@@ -91,11 +113,22 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
         title: Text(widget.titel!),
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(tooltip: "Änderung rückgängig machen", icon: const Icon(Icons.undo), onPressed: undoChanges),
-          IconButton(tooltip: "Änderungen speichern", 
-              icon: const Icon(Icons.save), onPressed: _speichereAenderungen),
-          IconButton(tooltip: "Neues Kind anmelden", icon: const Icon(Icons.add), onPressed: addNewKind),
-          IconButton(tooltip: "Anmeldung beenden", icon: const Icon(Icons.cancel), onPressed: Navigator.of(context).pop),
+          IconButton(
+              tooltip: "Neues Kind anmelden",
+              icon: const Icon(Icons.add),
+              onPressed: addNewKind),
+          IconButton(
+              tooltip: "Änderung rückgängig machen",
+              icon: const Icon(Icons.undo),
+              onPressed: undoChanges),
+          IconButton(
+              tooltip: "Änderungen speichern",
+              icon: const Icon(Icons.save),
+              onPressed: _speichereAenderungen),
+          IconButton(
+              tooltip: "Anmeldung beenden",
+              icon: const Icon(Icons.cancel),
+              onPressed: Navigator.of(context).pop),
         ],
       ),
       body: isLoading
@@ -129,22 +162,38 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                                 kind.nachname = value;
                               },
                             ),
-                            TextFormField(
-                              initialValue: kind.geschlecht,
+                            DropdownButtonFormField<String>(
+                              value: _geschlecht,
+                              onChanged: (newValue) =>
+                                  setState(() => _geschlecht = newValue!),
+                              items: [
+                                for (String i in _geschlechtListe)
+                                  DropdownMenuItem(
+                                    value: i,
+                                    child: Text(i),
+                                  )
+                              ],
                               decoration: const InputDecoration(
-                                  hintText: 'Geschlecht eingeben'),
-                              onChanged: (value) {
-                                kind.geschlecht = value;
-                              },
+                                labelText: 'Geschlecht',
+                                filled: true,
+                              ),
                             ),
-                            TextFormField(
-                              focusNode: focusJahrgang,
-                              initialValue: kind.jahrgang,
+                            // Auswahl-Menü für den Jahrgang
+                            DropdownButtonFormField<int>(
+                              value: _jahrgang,
+                              onChanged: (newValue) =>
+                                  setState(() => _jahrgang = newValue!),
+                              items: [
+                                for (int i in _jahrgangListe)
+                                  DropdownMenuItem(
+                                    value: i,
+                                    child: Text('$i'),
+                                  )
+                              ],
                               decoration: const InputDecoration(
-                                  hintText: 'Jahrgang eingeben'),
-                              onChanged: (value) {
-                                kind.jahrgang = value;
-                              },
+                                labelText: 'Jahrgang',
+                                filled: true,
+                              ),
                             ),
                             const SizedBox(height: 20),
                           ],

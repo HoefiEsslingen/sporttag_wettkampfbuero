@@ -21,6 +21,13 @@ class KindRepository {
     );
   }
 
+  // NEU: Methode, um eine Liste von Kindern als Ganzes in die Datenbank zu speichern
+  Future<void> saveKinderListeToDatabase(List<Kind> kinderListe) async {
+    for (var kindElement in kinderListe) {
+      await saveKindToDatabase(kind: kindElement); // Verwendet die vorhandene Methode zum Speichern eines einzelnen Kindes
+    }
+  }
+
   // Speichert ein Kind-Objekt in die Back4App-Datenbank
   Future<bool> saveKindToDatabase({required Kind kind}) async {
     final ParseObject parseKind = ParseObject('Kind')
@@ -28,9 +35,9 @@ class KindRepository {
       ..set('Nachname', kind.nachname)
       ..set('Jahrgang', kind.jahrgang)
       ..set('Geschlecht', kind.geschlecht)
-      ..set('Punkte', kind.erreichtePunkte)
-      ..set('bezahlt', kind.bezahlt)
-      ..set('RiegenNummer', kind.riegenNummer);
+      ..set('Punkte', kind.erreichtePunkte) // Punkte können null sein, daher ?? 0
+      ..set('bezahlt', kind.bezahlt) // bezahlt kann null sein, daher ?? false
+      ..set('RiegenNummer', kind.riegenNummer); // RiegenNummer kann null sein, daher ?? 0
 
     if (kind.objectId.isNotEmpty) {
       // Wenn die objectID existiert, setze sie, um das bestehende Objekt zu aktualisieren
@@ -183,13 +190,6 @@ for (var riege in listeVonRiegen) {
       }
     }
     return alleKinder;
-  }
-
-  // NEU: Methode, um eine Liste von Kindern als Ganzes in die Datenbank zu speichern
-  Future<void> saveKinderListeToDatabase(List<Kind> kinderListe) async {
-    for (var kindElement in kinderListe) {
-      await saveKindToDatabase(kind: kindElement); // Verwendet die vorhandene Methode zum Speichern eines einzelnen Kindes
-    }
   }
 
   // NEU: Methode, um alle Kinder einer Liste nach Geschlecht und Jahrgang zu gruppieren
