@@ -23,7 +23,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
   final TextEditingController jahrgangController = TextEditingController();
   late FocusNode focusJahrgang;
   static const List<String> _geschlechtListe = ['w', 'm'];
-  String _geschlecht = _geschlechtListe.first;
+  late String _geschlecht;
   late List<int> _jahrgangListe;
   late int _jahrgang;
 
@@ -32,6 +32,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
     super.initState();
     _ladeKinder();
 
+    _geschlecht = _geschlechtListe.first;
     _jahrgang = _zulaessigeJahrgaenge().first;
     focusJahrgang = FocusNode();
   }
@@ -128,7 +129,11 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
           IconButton(
               tooltip: "Anmeldung beenden",
               icon: const Icon(Icons.cancel),
-              onPressed: Navigator.of(context).pop),
+              onPressed: () {
+                _speichereAenderungen();
+                Navigator.of(context).pop();
+              },
+            ),
         ],
       ),
       body: isLoading
@@ -139,7 +144,6 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                 final kind = kinderListe[index];
                 bool isEditable =
                     editStates[index]; // Check if the entry is editable
-
                 return ListTile(
                   title: isEditable
                       ? Column(
@@ -165,7 +169,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                             DropdownButtonFormField<String>(
                               value: _geschlecht,
                               onChanged: (newValue) =>
-                                  setState(() => _geschlecht = newValue!),
+                                  setState(() => kind.geschlecht = newValue!),
                               items: [
                                 for (String i in _geschlechtListe)
                                   DropdownMenuItem(
@@ -182,7 +186,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                             DropdownButtonFormField<int>(
                               value: _jahrgang,
                               onChanged: (newValue) =>
-                                  setState(() => _jahrgang = newValue!),
+                                  setState(() => kind.jahrgang = '${newValue!}'),
                               items: [
                                 for (int i in _jahrgangListe)
                                   DropdownMenuItem(
