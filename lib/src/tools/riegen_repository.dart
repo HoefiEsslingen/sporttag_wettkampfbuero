@@ -93,7 +93,7 @@ class RiegenRepository {
 
   // NEU: Methode um alle Datensätze der Kind-Tabelle zu laden
   Future<List<Riege>> loadAllAuszuwertendeRiegen() async {
-    // Filtert alle Fünfkampf-Riegen
+    // Filtert alle Fuenfkampf-Riegen
     final queryFuenfkampf = QueryBuilder<ParseObject>(ParseObject('Riege'))
       ..whereEqualTo('FuenfKampf', true)
       ..whereEqualTo('AnzWettbewerbe', 5);
@@ -121,7 +121,7 @@ class RiegenRepository {
     }
   }
 
-  // NEU: Methode um alle Fünfkampf-Datensätze der Riegen-Tabelle zu laden
+  // NEU: Methode um alle Fuenfkampf-Datensätze der Riegen-Tabelle zu laden
   Future<List<Riege>> loadAllRiegenNachArt(bool istFuenfKampf) async {
     final query = QueryBuilder<ParseObject>(ParseObject('Riege'))
       ..whereEqualTo('FuenfKampf', istFuenfKampf);

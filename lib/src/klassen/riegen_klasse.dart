@@ -33,10 +33,4 @@ class Riege {
   set fuenfKampf(bool value) => _fuenfKampf = value;
   set anzStationen(int value) => _anzStationen = value;
   set ausgewertet(bool value) => _ausgewertet = value;
-
-  // Methode zur Ausgabe von Riegen-Details
-/* void printDetails() {
-    print('RiegeNnummer: $_riegenNummer, Wettkampf-Art: $_fuenfKampf ? FünfKampf : ZehnKampf, Anzahl bereits absolvierter Stationen: $_anzStationen');
-  }
-  */
 }
