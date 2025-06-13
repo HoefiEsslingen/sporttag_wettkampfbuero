@@ -53,10 +53,11 @@ class StadionrundeState extends State<Stadionrunde> {
   }
 
   Future<void> _loadData() async {
-    riegenKinder = await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
+    riegenKinder =
+        await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    kinderZurAnzeige =
-        kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+        alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
     // Kinder in die selektiert-Liste übernehmen
     for (var kind in riegenKinder) {
       selectedKinder.add(kind);
@@ -90,8 +91,8 @@ class StadionrundeState extends State<Stadionrunde> {
       selectedKinder.clear();
 
       // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-      kinderZurAnzeige =
-          kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+      kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+          alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
     });
 
     // Speichern der ausgewerteten Kinder in der Datenbank
@@ -145,7 +146,7 @@ class StadionrundeState extends State<Stadionrunde> {
             style:
                 Theme.of(context).textTheme.bodySmall, // Verwenden des Themes
           ),
-           // Abstandshalter
+          // Abstandshalter
           const SizedBox(height: 10),
           Text(
             'Je nach Verlauf des Rundenlaufs können Sie die Kinder in ihrer Reihenfolge verschieben.',
@@ -153,7 +154,7 @@ class StadionrundeState extends State<Stadionrunde> {
             style:
                 Theme.of(context).textTheme.bodySmall, // Verwenden des Themes
           ),
-           // Abstandshalter
+          // Abstandshalter
           const SizedBox(height: 10),
           // Liste der Kinder in der ausgewählten Riege
           ElevatedButton(
@@ -200,7 +201,8 @@ class StadionrundeState extends State<Stadionrunde> {
                       if (istSelektiert) {
                         selectedKinder.add(kind); // Hinzufügen, wenn ausgewählt
                       } else {
-                        selectedKinder.remove(kind); // Entfernen, wenn abgewählt
+                        selectedKinder
+                            .remove(kind); // Entfernen, wenn abgewählt
                       }
                     });
                   },
@@ -208,8 +210,15 @@ class StadionrundeState extends State<Stadionrunde> {
               },
             ),
           ),
-          if (riegenKinder.length == ausgewerteteKinder.length) // Beenden-Button anzeigen
-            ZurueckButton(label: 'Ende des Kinder-Sporttages',riegenNummer: riegenNummer,),
+          if (riegenKinder.length ==
+              ausgewerteteKinder.length) // Beenden-Button anzeigen
+            // wenn alle Kinder ausgewertet sind wird
+            // zur Disziplinen-Übersicht weitergeleitet und zuvor
+            // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
+            ZurueckButton(
+              label: 'Ende des Kinder-Sporttages',
+              riegenNummer: riegenNummer,
+            ),
         ],
       )),
     );

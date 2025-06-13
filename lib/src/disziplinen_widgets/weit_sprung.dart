@@ -167,6 +167,9 @@ class ZonenweitsprungState extends State<Zonenweitsprung> {
             ),
             if (riegenKinder.length ==
                 ausgewerteteKinder.length) // Beenden-Button anzeigen
+            // wenn alle Kinder ausgewertet sind wird 
+            // zur Disziplinen-Übersicht weitergeleitet und zuvor
+            // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
               ZurueckButton(label: 'Nächste Disziplin steht an', riegenNummer: riegenNummer),
           ],
         ),

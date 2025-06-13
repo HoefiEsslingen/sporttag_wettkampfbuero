@@ -41,10 +41,11 @@ class LaufState extends State<Lauf> {
   }
 
   Future<void> _loadData() async {
-    riegenKinder = await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
+    riegenKinder =
+        await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    kinderZurAnzeige =
-        kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+        alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
     setState(() {}); // UI aktualisieren
   }
 
@@ -58,7 +59,8 @@ class LaufState extends State<Lauf> {
         final kind = entry.key;
         final runden = entry.value;
 
-        kinderMitZeiten[kind] = runden; // erreichte Punkte (halbe Runden) speichern
+        kinderMitZeiten[kind] =
+            runden; // erreichte Punkte (halbe Runden) speichern
         log.i('in auswerten $runden für ${kind.nachname}');
         kind.erreichtePunkte += runden; // Punkte zuweisen
       }
@@ -70,8 +72,8 @@ class LaufState extends State<Lauf> {
       selectedKinder.clear();
 
       // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-      kinderZurAnzeige =
-          kindRepository.zurAnzeigeSortieren(alleKinder:  riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+      kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+          alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
     });
 
     // Speichern der ausgewerteten Kinder in der Datenbank
@@ -126,7 +128,8 @@ class LaufState extends State<Lauf> {
                 itemCount: riegenKinder.length,
                 itemBuilder: (context, index) {
                   final kind = kinderZurAnzeige[index];
-                  final erreichtePunkte = kinderMitZeiten[kind]; // Gestoppte Zeit abrufen
+                  final erreichtePunkte =
+                      kinderMitZeiten[kind]; // Gestoppte Zeit abrufen
                   final istAusgewertet = ausgewerteteKinder.contains(kind);
                   final istSelektiert = selectedKinder.contains(kind);
                   return Row(
@@ -136,28 +139,35 @@ class LaufState extends State<Lauf> {
                       Expanded(
                         flex: 3, // 3 Teile für den Listeneintrag
                         child: MeinListenEintrag(
-                          kind: kind,
-                          istAusgewertet: istAusgewertet,
-                          istSelektiert: istSelektiert,
-                          erreichtePunkte: erreichtePunkte,
-                          onSelectionChanged: (Kind kind, bool istSelektiert) {
-                            setState(() {
-                              if (istSelektiert) {
-                                selectedKinder.add(kind);
-                              } else {
-                                selectedKinder.remove(kind);
-                              }
-                            });
-                          }
-                          ),
-                        ),
+                            kind: kind,
+                            istAusgewertet: istAusgewertet,
+                            istSelektiert: istSelektiert,
+                            erreichtePunkte: erreichtePunkte,
+                            onSelectionChanged:
+                                (Kind kind, bool istSelektiert) {
+                              setState(() {
+                                if (istSelektiert) {
+                                  selectedKinder.add(kind);
+                                } else {
+                                  selectedKinder.remove(kind);
+                                }
+                              });
+                            }),
+                      ),
                     ],
                   );
                 },
               ),
             ),
-            if (riegenKinder.length == ausgewerteteKinder.length) // Beenden-Button anzeigen
-              ZurueckButton(label: 'Nächste Disziplin steht an', riegenNummer: riegenNummer,),
+            if (riegenKinder.length ==
+                ausgewerteteKinder.length) // Beenden-Button anzeigen
+              // wenn alle Kinder ausgewertet sind wird
+              // zur Disziplinen-Übersicht weitergeleitet und zuvor
+              // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
+              ZurueckButton(
+                label: 'Nächste Disziplin steht an',
+                riegenNummer: riegenNummer,
+              ),
           ],
         ),
       ),

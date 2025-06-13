@@ -28,7 +28,8 @@ class SchlagwurfState extends State<Schlagwurf> {
   List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
   Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
   var istAusgewertet = false;
-  Map<Kind, int> kinderMitErreichtenPunkten = {}; // Speichert die Summe der beiden besten Würfe
+  Map<Kind, int> kinderMitErreichtenPunkten =
+      {}; // Speichert die Summe der beiden besten Würfe
 
   final log = getLogger();
 
@@ -63,8 +64,8 @@ class SchlagwurfState extends State<Schlagwurf> {
       selectedKinder.clear();
 
       // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-      kinderZurAnzeige =
-          kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+      kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+          alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
 
       // globale Variable 'istAusgewertet' setzen
       // damit die AppBar den Button "Nächste Disziplin steht an" anzeigen kann
@@ -89,9 +90,11 @@ class SchlagwurfState extends State<Schlagwurf> {
   }
 
   Future<void> _loadData() async {
-    riegenKinder = await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
+    riegenKinder =
+        await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+        alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
     setState(() {}); // UI aktualisieren
   }
 
@@ -132,7 +135,7 @@ class SchlagwurfState extends State<Schlagwurf> {
                           ),
                         ));
                   },
-                  // Rücksprung auf 
+                  // Rücksprung auf
                   child: const Text(
                     'In den ersten Durchgang starten',
                     textAlign: TextAlign.center,
@@ -166,7 +169,13 @@ class SchlagwurfState extends State<Schlagwurf> {
             ),
             if (riegenKinder.length ==
                 ausgewerteteKinder.length) // Beenden-Button anzeigen
-              ZurueckButton(label: 'Nächste Disziplin steht an',riegenNummer: riegenNummer,),
+              // wenn alle Kinder ausgewertet sind wird
+              // zur Disziplinen-Übersicht weitergeleitet und zuvor
+              // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
+              ZurueckButton(
+                label: 'Nächste Disziplin steht an',
+                riegenNummer: riegenNummer,
+              ),
           ],
         ),
       ),

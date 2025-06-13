@@ -49,8 +49,10 @@ class DruckwurfState extends State<Druckwurf> {
       // aus dieser Liste sollen die besten zwei Werte ermittelt und addiert werden
       // --> die Liste wird absteigend sortiert
       resultate.forEach((kind, listeDerErreichtenZonen) {
-        listeDerErreichtenZonen.sort((a, b) => b.compareTo(a)); // Absteigend sortieren
-        final besteZwei = listeDerErreichtenZonen.take(2).toList(); // Besten zwei Werte
+        listeDerErreichtenZonen
+            .sort((a, b) => b.compareTo(a)); // Absteigend sortieren
+        final besteZwei =
+            listeDerErreichtenZonen.take(2).toList(); // Besten zwei Werte
         final summe = besteZwei.reduce((a, b) => a + b); // Addieren
         kinderMitErreichtenPunkten[kind] = summe; // Zeit speichern
         kind.erreichtePunkte += summe; // Punkte zuweisen
@@ -62,7 +64,8 @@ class DruckwurfState extends State<Druckwurf> {
       selectedKinder.clear();
 
       // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-      kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+      kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+          alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
 
       // globale Variable 'istAusgewertet' setzen
       // damit die AppBar den Button "Nächste Disziplin steht an" anzeigen kann
@@ -87,10 +90,11 @@ class DruckwurfState extends State<Druckwurf> {
   }
 
   Future<void> _loadData() async {
-    riegenKinder = await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
+    riegenKinder =
+        await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    kinderZurAnzeige =
-        kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+        alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
     setState(() {}); // UI aktualisieren
   }
 
@@ -164,7 +168,13 @@ class DruckwurfState extends State<Druckwurf> {
             ),
             if (riegenKinder.length ==
                 ausgewerteteKinder.length) // Beenden-Button anzeigen
-              ZurueckButton(label: 'Nächste Disziplin steht an', riegenNummer: riegenNummer,),
+              // wenn alle Kinder ausgewertet sind wird
+              // zur Disziplinen-Übersicht weitergeleitet und zuvor
+              // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
+              ZurueckButton(
+                label: 'Nächste Disziplin steht an',
+                riegenNummer: riegenNummer,
+              ),
           ],
         ),
       ),

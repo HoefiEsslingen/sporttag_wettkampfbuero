@@ -53,10 +53,11 @@ class BananenkartonsState extends State<Bananenkartons> {
   }
 
   Future<void> _loadData() async {
-    riegenKinder = await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
+    riegenKinder =
+        await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    kinderZurAnzeige =
-        kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+        alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
     setState(() {}); // UI aktualisieren
   }
 
@@ -71,7 +72,7 @@ class BananenkartonsState extends State<Bananenkartons> {
         final zeit = entry.value;
 
         kinderMitZeiten[kind] = zeit; // Zeit speichern
-log.i('in auswerten $zeit für ${kind.nachname}');
+        log.i('in auswerten $zeit für ${kind.nachname}');
         // Punkte werden aufrund der erreichten Zeit berechnet
         final punkte = _werteZeitenAus(zeit); // Punkte berechnen
         // die an dieser Station erreichten Punkte werden gespeichert
@@ -86,8 +87,8 @@ log.i('in auswerten $zeit für ${kind.nachname}');
       selectedKinder.clear();
 
       // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-      kinderZurAnzeige =
-          kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+      kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+          alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
     });
 
     // Speichern der ausgewerteten Kinder in der Datenbank
@@ -163,7 +164,8 @@ log.i('in auswerten $zeit für ${kind.nachname}');
                   final kind = kinderZurAnzeige[index];
                   final zeit = kinderMitZeiten[kind]; // Gestoppte Zeit abrufen
                   final istAusgewertet = ausgewerteteKinder.contains(kind);
-                  log.i('in ListViewBuilder ${kind.nachname} ist selektiert? -> ${selectedKinder.contains(kind).toString()}');
+                  log.i(
+                      'in ListViewBuilder ${kind.nachname} ist selektiert? -> ${selectedKinder.contains(kind).toString()}');
                   final istSelektiert = selectedKinder.contains(kind);
                   return MeinListenEintrag(
                     kind: kind,
@@ -187,7 +189,12 @@ log.i('in auswerten $zeit für ${kind.nachname}');
             ),
             if (riegenKinder.length ==
                 ausgewerteteKinder.length) // Beenden-Button anzeigen
-              ZurueckButton(label: 'Nächste Disziplin steht an', riegenNummer: riegenNummer),
+              // wenn alle Kinder ausgewertet sind wird
+              // zur Disziplinen-Übersicht weitergeleitet und zuvor
+              // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
+              ZurueckButton(
+                  label: 'Nächste Disziplin steht an',
+                  riegenNummer: riegenNummer),
           ],
         ),
       ),

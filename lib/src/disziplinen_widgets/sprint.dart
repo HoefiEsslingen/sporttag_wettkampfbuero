@@ -30,7 +30,8 @@ class SprintState extends State<Sprint> {
   List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
   Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
   Map<Kind, int> kinderMitZeiten = {}; // Speichert gestoppte Zeiten
-  Map<Kind, int> gewaehlteHuetchen = {}; // Speichert die gewählte Hütchen-Nummer
+  Map<Kind, int> gewaehlteHuetchen =
+      {}; // Speichert die gewählte Hütchen-Nummer
 
   final log = getLogger();
 
@@ -44,10 +45,11 @@ class SprintState extends State<Sprint> {
   }
 
   Future<void> _loadData() async {
-    riegenKinder = await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
+    riegenKinder =
+        await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    kinderZurAnzeige =
-        kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+        alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
     setState(() {}); // UI aktualisieren
   }
 
@@ -79,7 +81,8 @@ class SprintState extends State<Sprint> {
         selectedKinder.clear();
 
         // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-        kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+        kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+            alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
       });
 
       // Speichern der ausgewerteten Kinder in der Datenbank
@@ -94,7 +97,8 @@ class SprintState extends State<Sprint> {
     int punkte;
     zeitInMillis > 0
         ? punkte = gewaehlteHuetchen[kind] ?? 0
-        : punkte = 0; // Wenn 'kind' nicht in der Map enthalten ist, dann 0 zurückgeben
+        : punkte =
+            0; // Wenn 'kind' nicht in der Map enthalten ist, dann 0 zurückgeben
     // Punkte werden aufrund der erreichten Zeit berechnet
     return punkte;
   }
@@ -163,7 +167,8 @@ class SprintState extends State<Sprint> {
                   final istSelektiert = selectedKinder.contains(kind);
                   // der Listeneintrag wird erstellt
                   return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween, // Platzierung der Widgets
+                    mainAxisAlignment: MainAxisAlignment
+                        .spaceBetween, // Platzierung der Widgets
                     children: [
                       // erster Eintrag in der Zeile: Kind mit Zusatzangaben
                       Expanded(
@@ -221,7 +226,13 @@ class SprintState extends State<Sprint> {
             // wenn alle Kinder in der Liste die Station absolviert haben
             if (riegenKinder.length ==
                 ausgewerteteKinder.length) // Beenden-Button anzeigen
-              ZurueckButton(label: 'Nächste Disziplin steht an', riegenNummer: riegenNummer,),
+              // wenn alle Kinder ausgewertet sind wird
+              // zur Disziplinen-Übersicht weitergeleitet und zuvor
+              // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
+              ZurueckButton(
+                label: 'Nächste Disziplin steht an',
+                riegenNummer: riegenNummer,
+              ),
           ],
         ),
       ),

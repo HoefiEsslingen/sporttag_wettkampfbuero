@@ -27,7 +27,8 @@ class HochWeitSprungState extends State<HochWeitSprung> {
   List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
   Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
   var istAusgewertet = false;
-  Map<Kind, int> kinderMitErreichtenPunkten = {}; // Speichert die Summe der beiden besten Würfe
+  Map<Kind, int> kinderMitErreichtenPunkten =
+      {}; // Speichert die Summe der beiden besten Würfe
 
   final log = getLogger();
 
@@ -40,10 +41,11 @@ class HochWeitSprungState extends State<HochWeitSprung> {
   }
 
   Future<void> _loadData() async {
-    riegenKinder = await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
+    riegenKinder =
+        await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    kinderZurAnzeige =
-        kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+        alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
     setState(() {});
   }
 
@@ -109,7 +111,8 @@ class HochWeitSprungState extends State<HochWeitSprung> {
                     itemCount: riegenKinder.length,
                     itemBuilder: (context, index) {
                       final kind = kinderZurAnzeige[index];
-                      final zeit = kinderMitErreichtenPunkten[kind]; // Gestoppte Zeit abrufen
+                      final zeit = kinderMitErreichtenPunkten[
+                          kind]; // Gestoppte Zeit abrufen
                       final istAusgewertet = ausgewerteteKinder.contains(kind);
                       final istSelektiert = selectedKinder.contains(kind);
                       return MeinListenEintrag(
@@ -127,7 +130,13 @@ class HochWeitSprungState extends State<HochWeitSprung> {
                   ),
                 ),
                 if (istAusgewertet)
-                  ZurueckButton(label: 'Nächste Disziplin steht an', riegenNummer: riegenNummer,),
+                  // wenn alle Kinder ausgewertet sind wird
+                  // zur Disziplinen-Übersicht weitergeleitet und zuvor
+                  // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
+                  ZurueckButton(
+                    label: 'Nächste Disziplin steht an',
+                    riegenNummer: riegenNummer,
+                  ),
               ],
             ),
     );
