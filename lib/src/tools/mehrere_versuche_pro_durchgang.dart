@@ -125,37 +125,6 @@ bool alleKinderHabenGleichvieleVersucheUndMindestensEinen(Map<Kind, List<String>
     });
   }
 
-  // Alle Kinder sind in die Liste weitererDurchgang verschoben worden
-  // bzw die Liste aktuellerDurchgang ist leer
-/*
-  void _naechsterVersuch(Kind kind, bool ueberquert) {
-    final versuche = versucheImDurchgang[kind] ?? 0;
-
-    if (ueberquert) {
-      punktestand[kind] = (punktestand[kind] ?? 0) + 1;
-      weitererDurchgang.add(kind);
-    } else {
-      if (versuche == 1) {
-        durchgaengeBeendet.add(kind);
-      } else {
-        versucheImDurchgang[kind] = versuche + 1;
-        aktuellerDurchgang.add(kind);
-        return;
-      }
-    }
-
-//    versucheImDurchgang[kind] = 0;
-    aktuellerDurchgang.remove(kind);
-    setState(() {
-      aktivBearbeitetesKind = null;
-//      versuchStatus = null;
-    });
-
-    if (aktuellerDurchgang.isEmpty && !_stationBeendetAbgeschlossen     aktuellerDurchgang.addAll(weitererDurchgang);
-      weitererDurchgang.clear();
-    }
-  }
-*/
   // die Station ist abgeschlossen, wenn alle Kinder der Riege in durchgangBeendet verschoben wurden,
   // d.h. alle Kinder haben in einem Durchgang in jedem Versuch den Status "gerissen" erreicht
   bool _stationAbgeschlossen() => stationBeendet.length == widget.teilnehmer.length;
