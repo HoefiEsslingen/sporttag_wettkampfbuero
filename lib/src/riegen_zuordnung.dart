@@ -170,7 +170,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
                                 }
                               },
                               child: Text(
-                                "Riege Nr. ${ausgewaehlteRiegenNummer ?? ''}\n${wettbewerb == "Fünfkampf" ? 5 : 10} Disziplinen",
+                                "Riege Nr. ${ausgewaehlteRiegenNummer ?? ''}\n${wettbewerb == "Fuenfkampf" ? 5 : 10} Disziplinen",
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
