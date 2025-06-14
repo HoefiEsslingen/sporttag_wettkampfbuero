@@ -89,9 +89,11 @@ Hier können Sie Kinder für den Sporttag anmelden:
       case HilfeThema.auswertung:
         dialogTitel = 'Hilfe zur Auswertung';
         inhalt = '''
-– Gruppe wählen (Jahrgang & Geschlecht).
-– Kinder werden nach Punktzahl sortiert.
-– Urkunden können gedruckt werden.
+– Riegen, welche alle Disziplinen abgeschlossen haben, können ausgewertet werden.
+– Die Kinder werden nach Gruppen (Jahrgang & Geschlecht) sortiert und angezeigt.
+– Innerhalb der Gruppen werden die Kinder absteigend nach Punktzahl sortiert.
+– Urkunden können geschreiben werden.
+– Die entsprechenden Riegen werden als 'ausgewertet' markiert.
 ''';
         break;
 

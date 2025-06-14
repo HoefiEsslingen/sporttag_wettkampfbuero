@@ -20,7 +20,7 @@ HilfeThema hilfeThemaVonString(String? name) {
       return HilfeThema.riegeneinteilung;
     case 'Riegen Zuordnung':
       return HilfeThema.riegenzuordnung;
-    case 'Auswerten mit Urkunden':
+    case 'Urkunden':
       return HilfeThema.auswertung;
     default:
       return HilfeThema.unbekannt;

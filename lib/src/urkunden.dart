@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-//import 'package:qr_flutter/qr_flutter.dart';
 import 'package:sporttag/src/tools/kind_repository.dart';
 
 import 'hilfs_widgets/meine_appbar.dart';
@@ -38,7 +37,6 @@ class UrkundenDruckState extends State<UrkundenDruck> {
   List<Riege> auszuwertendeRiegenListe = [];
   List<Kind> alleAuszuwertendenKinder = [];
   final int riegenAnzahl = 8;
-//  List<int> riegenListe = [];
   int? ausgewaehlteRiegenNummer;
   List<Kind> gefilterteKinder = [];
   Map<String, List<Kind>> jahrUgeschlechtMap =
@@ -67,24 +65,18 @@ class UrkundenDruckState extends State<UrkundenDruck> {
   Future<void> _ladeAuszuwertendeRiegen() async {
     auszuwertendeRiegenListe =
         await riegenRepository.loadAllAuszuwertendeRiegen();
-    log.i(
-        'Anzahl der auszuwertenden Riegen: ${auszuwertendeRiegenListe.length} z.B. ${auszuwertendeRiegenListe.map((r) => r.riegenNummer).join(', ')}');
   }
 
   // Methode in der die Kimnder aus den ausgewählten Riegen gelden,
   // nach dem selben Geschlecht und dem selben Jahrgang gruppiert werden
   // sowie im Anschluss nach erreichter Punktzahl absteigend sortiert werden
   Future<void> _ladeKinderAusAuszuwertendenRiegen() async {
-    log.i(
-        'Lade Kinder aus den auszuwertenden Riegen: ${auszuwertendeRiegenListe.length} Riegen');
     alleAuszuwertendenKinder = await kindRepository.loadKinderAusRiegen(
         listeVonRiegen: auszuwertendeRiegenListe);
   }
 
   // Methode, die die Kinder nach Jahrgang und Geschlecht gruppiert und sortiert
   void _sortiereKinderAusAuszuwertendenRiegen() {
-    log.i(
-        'Anzahl der auszuwertenden Kinder aus allen fertigen Riegen: ${alleAuszuwertendenKinder.length} z.B. ${alleAuszuwertendenKinder.join(', ')}');
     setState(() {
       jahrUgeschlechtMap =
           kindRepository.gruppiereKinder(ausDerListe: alleAuszuwertendenKinder);
@@ -124,13 +116,12 @@ class UrkundenDruckState extends State<UrkundenDruck> {
       riegenRepository.saveRiegeToDatabase(riege: riege);
     }
     Navigator.of(context).pop();
-    log.i('Alle Riegen wurden als ausgewertet markiert.');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MeineAppBar(titel: widget.titel ?? 'Urkunden Druck'),
+      appBar: MeineAppBar(titel: widget.titel ?? 'Urkunden Druck', thema: 'Urkunden'),
       body: Center(
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 32.0, horizontal: 72.0),
