@@ -7,9 +7,25 @@ import 'hilfe_button.dart';
 class MeineAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String titel;
   final String? stationsName;
+  final String? thema;
 
-  MeineAppBar({super.key, required this.titel, this.stationsName});
+  MeineAppBar({super.key, required this.titel, this.stationsName, this.thema});
   TextStyle style = const TextStyle(fontWeight: FontWeight.bold);
+
+HilfeThema hilfeThemaVonString(String? name) {
+  switch (name) {
+    case 'Sporttag - Anmeldung':
+      return HilfeThema.anmeldung;
+    case 'Riegen einteilen':
+      return HilfeThema.riegeneinteilung;
+    case 'Riegen Zuordnung':
+      return HilfeThema.riegenzuordnung;
+    case 'Auswerten mit Urkunden':
+      return HilfeThema.auswertung;
+    default:
+      return HilfeThema.unbekannt;
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -25,9 +41,13 @@ class MeineAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       actions: stationsName != null
           ? [
-              HelpIconButton(stationsName: stationsName!), // Action nur, wenn stationsName != null
+              HelpIconButton(typ: HilfeTyp.pdf, titel: stationsName!), // Action nur, wenn stationsName != null
             ]
-          : null, // Keine Actions, wenn stationsName null ist
+          : thema != null
+              ? [
+                  HelpIconButton(typ: HilfeTyp.text, thema: hilfeThemaVonString(thema)),
+                ]
+              : null, // Keine Actions, wenn stationsName null ist
     );
   }
 

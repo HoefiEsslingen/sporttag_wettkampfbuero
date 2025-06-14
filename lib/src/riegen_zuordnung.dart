@@ -98,7 +98,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MeineAppBar(titel: widget.titel ?? 'Riegen Zuordnung'),
+      appBar: MeineAppBar(titel: widget.titel ?? 'Riegen Zuordnung', thema: 'Riegen Zuordnung'),
       body: Center(
         child: Column(
           children: [

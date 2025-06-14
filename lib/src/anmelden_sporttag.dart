@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+//import 'package:sporttag/src/hilfs_widgets/beschreibung_button.dart';
+import 'hilfs_widgets/hilfe_button.dart';
 import 'klassen/kind_klasse.dart'; // Import der Kind-Klasse
 import 'tools/kind_repository.dart'; // Import der KindRepository-Klasse
 
@@ -127,108 +129,118 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
               icon: const Icon(Icons.save),
               onPressed: _speichereAenderungen),
           IconButton(
-              tooltip: "Anmeldung beenden",
-              icon: const Icon(Icons.cancel),
-              onPressed: () {
-                _speichereAenderungen();
-                Navigator.of(context).pop();
-              },
-            ),
+            tooltip: "Anmeldung beenden",
+            icon: const Icon(Icons.cancel),
+            onPressed: () {
+              _speichereAenderungen();
+              Navigator.of(context).pop();
+            },
+          ),
+          const HelpIconButton(
+              typ: HilfeTyp.text,
+              thema: HilfeThema.anmeldung),
         ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: kinderListe.length,
-              itemBuilder: (context, index) {
-                final kind = kinderListe[index];
-                bool isEditable =
-                    editStates[index]; // Check if the entry is editable
-                return ListTile(
-                  title: isEditable
-                      ? Column(
-                          children: [
-                            const SizedBox(height: 20),
-                            TextFormField(
-                              autofocus: true,
-                              initialValue: kind.vorname,
-                              decoration: const InputDecoration(
-                                  hintText: 'Vorname eingeben'),
-                              onChanged: (value) {
-                                kind.vorname = value;
-                              },
-                            ),
-                            TextFormField(
-                              initialValue: kind.nachname,
-                              decoration: const InputDecoration(
-                                  hintText: 'Nachname eingeben'),
-                              onChanged: (value) {
-                                kind.nachname = value;
-                              },
-                            ),
-                            DropdownButtonFormField<String>(
-                              value: _geschlecht,
-                              onChanged: (newValue) =>
-                                  setState(() => kind.geschlecht = newValue!),
-                              items: [
-                                for (String i in _geschlechtListe)
-                                  DropdownMenuItem(
-                                    value: i,
-                                    child: Text(i),
-                                  )
-                              ],
-                              decoration: const InputDecoration(
-                                labelText: 'Geschlecht',
-                                filled: true,
+          : Expanded(
+              child: ListView.builder(
+                itemCount: kinderListe.length,
+                itemBuilder: (context, index) {
+                  final kind = kinderListe[index];
+                  bool isEditable =
+                      editStates[index]; // Check if the entry is editable
+                  return ListTile(
+                    title: isEditable
+                        ? Column(
+                            children: [
+                              const SizedBox(height: 20),
+                              TextFormField(
+                                autofocus: true,
+                                initialValue: kind.vorname,
+                                decoration: const InputDecoration(
+                                    hintText: 'Vorname eingeben'),
+                                onChanged: (value) {
+                                  kind.vorname = value;
+                                },
                               ),
-                            ),
-                            // Auswahl-Menü für den Jahrgang
-                            DropdownButtonFormField<int>(
-                              value: _jahrgang,
-                              onChanged: (newValue) =>
-                                  setState(() => kind.jahrgang = '${newValue!}'),
-                              items: [
-                                for (int i in _jahrgangListe)
-                                  DropdownMenuItem(
-                                    value: i,
-                                    child: Text('$i'),
-                                  )
-                              ],
-                              decoration: const InputDecoration(
-                                labelText: 'Jahrgang',
-                                filled: true,
+                              TextFormField(
+                                initialValue: kind.nachname,
+                                decoration: const InputDecoration(
+                                    hintText: 'Nachname eingeben'),
+                                onChanged: (value) {
+                                  kind.nachname = value;
+                                },
                               ),
-                            ),
-                            const SizedBox(height: 20),
-                          ],
-                        )
-                      : Text(
-                          '${kind.vorname} ${kind.nachname} - ${kind.geschlecht} - ${kind.jahrgang}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Switch(
-                        value: kind.bezahlt,
-                        onChanged: (value) {
-                          setState(() {
-                            kind.bezahlt = value;
-                            focusJahrgang.requestFocus();
-                          });
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(isEditable ? Icons.check : Icons.edit),
-                        onPressed: () {
-                          setState(() {
-                            editStates[index] =
-                                !editStates[index]; // Toggle edit mode
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
+                              DropdownButtonFormField<String>(
+                                value: _geschlecht,
+                                onChanged: (newValue) =>
+                                    setState(() => kind.geschlecht = newValue!),
+                                items: [
+                                  for (String i in _geschlechtListe)
+                                    DropdownMenuItem(
+                                      value: i,
+                                      child: Text(i),
+                                    )
+                                ],
+                                decoration: const InputDecoration(
+                                  labelText: 'Geschlecht',
+                                  filled: true,
+                                ),
+                              ),
+                              // Auswahl-Menü für den Jahrgang
+                              DropdownButtonFormField<int>(
+                                value: _jahrgang,
+                                onChanged: (newValue) => setState(
+                                    () => kind.jahrgang = '${newValue!}'),
+                                items: [
+                                  for (int i in _jahrgangListe)
+                                    DropdownMenuItem(
+                                      value: i,
+                                      child: Text('$i'),
+                                    )
+                                ],
+                                decoration: const InputDecoration(
+                                  labelText: 'Jahrgang',
+                                  filled: true,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+                          )
+                        : Text(
+                            '${kind.vorname} ${kind.nachname} - ${kind.geschlecht} - ${kind.jahrgang}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Tooltip(
+                          message: 'Wurde Startgebühr bezahlt',
+                          child: Switch(
+                            value: kind.bezahlt,
+                            activeColor: Colors.green,
+                            inactiveThumbColor: Colors.red,
+                            onChanged: (value) {
+                              setState(() {
+                                kind.bezahlt = value;
+                                focusJahrgang.requestFocus();
+                              });
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(isEditable ? Icons.check : Icons.edit),
+                          onPressed: () {
+                            setState(() {
+                              editStates[index] =
+                                  !editStates[index]; // Toggle edit mode
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
     );
   }
