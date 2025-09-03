@@ -240,7 +240,7 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
         return AlertDialog(
           title: const Text("Anmeldung erfolgreich!"),
           content: const Text(
-              "Ihr Kind ist hiermit für den Sporttag registriert!\nGültig wird die Anmeldung erst, wenn Sie am Sporttag die Startgebühr von € 2,-- bezahlt haben."),
+              "Ihr Kind ist hiermit für den Sporttag registriert!\nGültig wird die Anmeldung erst, wenn Sie am Sporttag die Startgebühr von € 2,50 bezahlt haben."),
           actions: <Widget>[
             Row(children: [
               Expanded(
