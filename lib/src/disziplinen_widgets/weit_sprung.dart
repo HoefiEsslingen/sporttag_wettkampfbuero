@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import '../hilfs_widgets/mein_listen_eintrag.dart';
-import '../hilfs_widgets/meine_appbar.dart';
-import '../hilfs_widgets/rueck_sprung_button.dart';
-import '../klassen/kind_klasse.dart';
-import '../tools/stationen_in_durchgaengen.dart';
-import '../tools/kind_repository.dart';
-import '../tools/logger.util.dart';
+import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
+import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
+import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
+import 'package:sporttag/src/klassen/kind_klasse.dart';
+import 'package:sporttag/src/klassen/station_klasse.dart';
+import 'package:sporttag/src/klassen/riegen_klasse.dart';
+import 'package:sporttag/src/tools/station_repository.dart';
+import 'package:sporttag/src/tools/stationen_in_durchgaengen.dart';
+import 'package:sporttag/src/tools/kind_repository.dart';
+import 'package:sporttag/src/tools/logger.util.dart';
 
 class Zonenweitsprung extends StatefulWidget {
-  final int riegenNummer;
+  final Riege riegenPointer;
 
-  const Zonenweitsprung({super.key, required this.riegenNummer});
+  const Zonenweitsprung({super.key, required this.riegenPointer});
 
   /// Aktivität vorbereiten
   @override
@@ -21,8 +24,9 @@ class ZonenweitsprungState extends State<Zonenweitsprung> {
   late String stationsName; // Variable für die zugewiesene Ausgabe
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
-
-  late int riegenNummer;
+  final StationRepository stationRepository = StationRepository();
+  
+  late Riege riegenPointer;
   List<Kind> riegenKinder = [];
   List<Kind> selectedKinder = [];
   List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
@@ -30,7 +34,8 @@ class ZonenweitsprungState extends State<Zonenweitsprung> {
   var istAusgewertet = false;
   Map<Kind, int> kinderMitErreichtenPunkten =
       {}; // Speichert die Summe der beiden besten Würfe
-
+  Station? station; // Speichert die Station
+  
   final log = getLogger();
 
   @override
@@ -38,7 +43,7 @@ class ZonenweitsprungState extends State<Zonenweitsprung> {
     super.initState();
     // widget.toString() der Variable zuweisen
     stationsName = 'Zonenweitsprung';
-    riegenNummer = widget.riegenNummer;
+    riegenPointer = widget.riegenPointer;
     _loadData();
   }
 
@@ -48,14 +53,15 @@ class ZonenweitsprungState extends State<Zonenweitsprung> {
       // resultate ist eine Liste von int-Werten
       // aus dieser Liste sollen die besten zwei Werte ermittelt und addiert werden
       // --> die Liste wird absteigend sortiert
-      resultate.forEach((kind, listeDerErreichtenZonen) {
+      resultate.forEach((kind, listeDerErreichtenZonen) async {
         listeDerErreichtenZonen
             .sort((a, b) => b.compareTo(a)); // Absteigend sortieren
         final besteZwei =
             listeDerErreichtenZonen.take(2).toList(); // Besten zwei Werte
         final summe = besteZwei.reduce((a, b) => a + b); // Addieren
         kinderMitErreichtenPunkten[kind] = summe; // Zeit speichern
-        kind.erreichtePunkte += summe; // Punkte zuweisen
+        //kind.erreichtePunkte += summe; // Punkte zuweisen
+        await kindRepository.speichereResultat(kind: kind, station: station!, punkte: summe);
       });
 
       // alle Teilnehmer als ausgewertet markieren --> resultate.keys sind die Kinder, die ausgewertet wurden
@@ -75,7 +81,7 @@ class ZonenweitsprungState extends State<Zonenweitsprung> {
     // Speichern der ausgewerteten Kinder (hier: alle) in der Datenbank
     final zuSpeicherndeKinder = resultate.keys.toList();
     for (var dasKind in zuSpeicherndeKinder) {
-      await kindRepository.saveKindToDatabase(kind:dasKind);
+      await kindRepository.saveKind(kind:dasKind);
     }
   }
 
@@ -90,7 +96,8 @@ class ZonenweitsprungState extends State<Zonenweitsprung> {
   }
 
   Future<void> _loadData() async {
-    riegenKinder = await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
+    riegenKinder = await kindRepository.ladeKinderDerRiege(riege: riegenPointer);
+    station = await stationRepository.ladeStationNachName(stationsName: stationsName);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
     kinderZurAnzeige =
         kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
@@ -170,7 +177,9 @@ class ZonenweitsprungState extends State<Zonenweitsprung> {
             // wenn alle Kinder ausgewertet sind wird 
             // zur Disziplinen-Übersicht weitergeleitet und zuvor
             // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
-              ZurueckButton(label: 'Nächste Disziplin steht an', riegenNummer: riegenNummer),
+              ZurueckButton(label: 'Nächste Disziplin steht an', 
+                            riegenPointer: riegenPointer,
+                            stationsPointer: station),  
           ],
         ),
       ),

@@ -64,14 +64,14 @@ class UrkundenDruckState extends State<UrkundenDruck> {
 
   Future<void> _ladeAuszuwertendeRiegen() async {
     auszuwertendeRiegenListe =
-        await riegenRepository.loadAllAuszuwertendeRiegen();
+        await riegenRepository.ladeAuszuwertendeRiegen();
   }
 
   // Methode in der die Kimnder aus den ausgewählten Riegen gelden,
   // nach dem selben Geschlecht und dem selben Jahrgang gruppiert werden
   // sowie im Anschluss nach erreichter Punktzahl absteigend sortiert werden
   Future<void> _ladeKinderAusAuszuwertendenRiegen() async {
-    alleAuszuwertendenKinder = await kindRepository.loadKinderAusRiegen(
+    alleAuszuwertendenKinder = await kindRepository.ladeKinderAusRiegen(
         listeVonRiegen: auszuwertendeRiegenListe);
   }
 
@@ -111,9 +111,9 @@ class UrkundenDruckState extends State<UrkundenDruck> {
 
   void _riegenAlsAusgewertetSetzen() {
     // Setze alle Riegen in der auszuwertenden Liste auf ausgewertet
-    for (var riege in auszuwertendeRiegenListe) {
-      riege.ausgewertet = true; // Setze das Attribut 'ausgewertet' auf true
-      riegenRepository.saveRiegeToDatabase(riege: riege);
+    for (var riegenPointer in auszuwertendeRiegenListe) {
+      riegenPointer.ausgewertet = true; // Setze das Attribut 'ausgewertet' auf true
+      riegenRepository.saveRiege(riege: riegenPointer);
     }
     Navigator.of(context).pop();
   }

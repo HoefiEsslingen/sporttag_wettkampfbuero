@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../klassen/kind_klasse.dart';
+import 'package:sporttag/src/klassen/kind_klasse.dart';
 
 //class MeinListenEintrag extends StatefulWidget {
 class MeinListenEintrag extends StatelessWidget {

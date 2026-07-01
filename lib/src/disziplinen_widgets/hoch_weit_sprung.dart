@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import '../hilfs_widgets/mein_listen_eintrag.dart';
-import '../hilfs_widgets/meine_appbar.dart';
-import '../hilfs_widgets/rueck_sprung_button.dart';
-import '../klassen/kind_klasse.dart';
-import '../tools/kind_repository.dart';
-import '../tools/logger.util.dart';
-import '../tools/mehrere_versuche_pro_durchgang.dart';
+import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
+import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
+import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
+import 'package:sporttag/src/klassen/kind_klasse.dart';
+import 'package:sporttag/src/klassen/station_klasse.dart';
+import 'package:sporttag/src/klassen/riegen_klasse.dart';
+import 'package:sporttag/src/tools/kind_repository.dart';
+import 'package:sporttag/src/tools/logger.util.dart';
+import 'package:sporttag/src/tools/mehrere_versuche_pro_durchgang.dart';
+import 'package:sporttag/src/tools/station_repository.dart';
 
 class HochWeitSprung extends StatefulWidget {
-  final int riegenNummer;
+  final Riege riegenPointer;
 
-  const HochWeitSprung({super.key, required this.riegenNummer});
+  const HochWeitSprung({super.key, required this.riegenPointer});
 
   @override
   HochWeitSprungState createState() => HochWeitSprungState();
@@ -20,8 +23,9 @@ class HochWeitSprungState extends State<HochWeitSprung> {
   late String stationsName; // Variable für die zugewiesene Ausgabe
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
-
-  late int riegenNummer;
+  final StationRepository stationRepository = StationRepository();
+  
+  late Riege riegenPointer;
   List<Kind> riegenKinder = [];
   List<Kind> selectedKinder = [];
   List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
@@ -29,6 +33,7 @@ class HochWeitSprungState extends State<HochWeitSprung> {
   var istAusgewertet = false;
   Map<Kind, int> kinderMitErreichtenPunkten =
       {}; // Speichert die Summe der beiden besten Würfe
+  Station? station; // Speichert die Station
 
   final log = getLogger();
 
@@ -36,13 +41,14 @@ class HochWeitSprungState extends State<HochWeitSprung> {
   void initState() {
     super.initState();
     stationsName = 'Hoch-Weitsprung';
-    riegenNummer = widget.riegenNummer;
+    riegenPointer = widget.riegenPointer;
     _loadData();
   }
 
   Future<void> _loadData() async {
     riegenKinder =
-        await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
+        await kindRepository.ladeKinderDerRiege(riege: riegenPointer);
+    station = await stationRepository.ladeStationNachName(stationsName: stationsName);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
     kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
         alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
@@ -53,8 +59,10 @@ class HochWeitSprungState extends State<HochWeitSprung> {
     for (var dasKind in riegenKinder) {
       final punkte = ergebnisse[dasKind];
       kinderMitErreichtenPunkten[dasKind] = punkte! * 2;
-      dasKind.erreichtePunkte += punkte * 2;
-      await kindRepository.saveKindToDatabase(kind: dasKind);
+      // dasKind.erreichtePunkte += punkte * 2;
+      // await kindRepository.saveKind(kind: dasKind);
+      await kindRepository.speichereResultat(
+          kind: dasKind, station: station!, punkte: punkte * 2);
     }
     setState(() {
       istAusgewertet = true;
@@ -135,7 +143,8 @@ class HochWeitSprungState extends State<HochWeitSprung> {
                   // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
                   ZurueckButton(
                     label: 'Nächste Disziplin steht an',
-                    riegenNummer: riegenNummer,
+                    riegenPointer: riegenPointer,
+                    stationsPointer: station,
                   ),
               ],
             ),

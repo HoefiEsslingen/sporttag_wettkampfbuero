@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'klassen/riegen_klasse.dart';
 import 'pause.dart';
 import 'danke_ende.dart';
 import 'disziplinen_widgets/hoch_weit_sprung.dart';
@@ -16,6 +17,7 @@ import 'klassen/kind_klasse.dart';
 import 'tools/kind_repository.dart';
 import 'tools/logger.util.dart';
 import 'hilfs_widgets/meine_appbar.dart';
+import 'tools/riegen_repository.dart';
 
 class Wettbewerb extends StatefulWidget {
   final int riegenNummer;
@@ -30,34 +32,71 @@ class Wettbewerb extends StatefulWidget {
 
 class WettbewerbState extends State<Wettbewerb> {
   final KindRepository kindRepository = KindRepository();
+  final RiegenRepository riegenRepository = RiegenRepository();
   List<Kind> riegenKinder = [];
+
   final log = getLogger();
+
   final bool isDevelopment = true;
   late Map<String, Widget Function()> disziplinPages;
   final Set<String> besuchteDisziplinen = {};
   bool pauseGemacht = false;
 
-  int get riegenNummer => widget.riegenNummer;
+  // State-Variable in der Methode _ladeRiege() gesetzt abhängig von der
+  // beim Aufruf übergebenen riegneNummer. Wird an die Disziplinen-Widgets übergeben,
+  //amit diese auf die Riege zugreifen können.
+  Riege? riegenPointer;
   String get wettbewerbsTyp => widget.wettbewerbsTyp;
 
   @override
   void initState() {
     super.initState();
+    _ladeRiege();
 
     disziplinPages = {
-      'Schlagwurf': () => Schlagwurf(riegenNummer: riegenNummer),
-      'Drehwurf': () => Drehwurf(riegenNummer: riegenNummer),
-      'Druckwurf': () => Druckwurf(riegenNummer: riegenNummer),
-      'Sprint': () => Sprint(riegenNummer: riegenNummer),
-      '30m Banankartons': () => Bananenkartons(riegenNummer: riegenNummer),
-      '30 sec Lauf': () => Lauf(riegenNummer: riegenNummer),
-      'Stabfliegen': () => Stabfliegen(riegenNummer: riegenNummer),
-      'Hoch-Weitsprung': () => HochWeitSprung(riegenNummer: riegenNummer),
-      'Zonenweitsprung': () => Zonenweitsprung(riegenNummer: riegenNummer),
-      'Stadionrunde': () => Stadionrunde(riegenNummer: riegenNummer),
+      'Schlagwurf': () => (riegenPointer == null)
+          ? const Center(child: CircularProgressIndicator())
+          : Schlagwurf(riegenPointer: riegenPointer!),
+      'Drehwurf': () => (riegenPointer == null)
+          ? const Center(child: CircularProgressIndicator())
+          : Drehwurf(riegenPointer: riegenPointer!),
+      'Druckwurf': () => (riegenPointer == null)
+          ? const Center(child: CircularProgressIndicator())
+          : Druckwurf(riegenPointer: riegenPointer!),
+      'Sprint': () => (riegenPointer == null)
+          ? const Center(child: CircularProgressIndicator())
+          : Sprint(riegenPointer: riegenPointer!),
+      '30m Banankartons': () => (riegenPointer == null)
+          ? const Center(child: CircularProgressIndicator())
+          : Bananenkartons(riegenPointer: riegenPointer!),
+      '30 sec Lauf': () => (riegenPointer == null)
+          ? const Center(child: CircularProgressIndicator())
+          : Lauf(riegenPointer: riegenPointer!),
+      'Stabfliegen': () => (riegenPointer == null)
+          ? const Center(child: CircularProgressIndicator())
+          : Stabfliegen(riegenPointer: riegenPointer!),
+      'Hoch-Weitsprung': () => (riegenPointer == null)
+          ? const Center(child: CircularProgressIndicator())
+          : HochWeitSprung(riegenPointer: riegenPointer!),
+      'Zonenweitsprung': () => (riegenPointer == null)
+          ? const Center(child: CircularProgressIndicator())
+          : Zonenweitsprung(riegenPointer: riegenPointer!),
+      'Stadionrunde': () => (riegenPointer == null)
+          ? const Center(child: CircularProgressIndicator())
+          : Stadionrunde(riegenPointer: riegenPointer!),
     };
 
     _loadState();
+  }
+
+  Future<void> _ladeRiege() async {
+    // Lade die Riege aus dem Repository basierend auf der Riegennummer
+    final geladen = await riegenRepository.ladeRiegeNachNummer(
+      riegenNummer: widget.riegenNummer,
+    );
+    setState(() {
+      riegenPointer = geladen;
+    });
   }
 
   Future<void> _loadState() async {
@@ -98,13 +137,14 @@ class WettbewerbState extends State<Wettbewerb> {
             : disziplinPages;
     // Hier wird die letzte Station ermittelt, diese sollte am Ende auswählbaren Disziplinen stehen
     // und ist erst dann auswählbar, wenn alle anderen Disziplinen besucht wurden
-    const String dieLetzeStation = 'Stadionrunde'; // für Zehnkampf immer Stadionrunde
+    const String dieLetzeStation =
+        'Stadionrunde'; // für Zehnkampf immer Stadionrunde
 //        angeboteneDisziplinen.keys.last; // hier: Stadionrunde
     final List<String> disziplinNamen = angeboteneDisziplinen.keys.toList();
 
     return Scaffold(
       appBar: MeineAppBar(
-        titel: 'Riege $riegenNummer Sporttag-Wettbewerbe',
+        titel: 'Riege ${riegenPointer?.riegenNummer} Sporttag-Wettbewerbe',
       ),
       body: Center(
         child: Padding(
@@ -115,13 +155,14 @@ class WettbewerbState extends State<Wettbewerb> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: disziplinNamen.map((disziplin) {
-                      final istBesucht = besuchteDisziplinen.contains(disziplin);
+                      final istBesucht =
+                          besuchteDisziplinen.contains(disziplin);
                       final istLetzteStation = disziplin == dieLetzeStation;
                       final alleAnderenBesucht = besuchteDisziplinen.length ==
                           angeboteneDisziplinen.length - 1;
                       final istAktiv = !istBesucht &&
                           (!istLetzteStation || alleAnderenBesucht);
-        
+
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: ElevatedButton(

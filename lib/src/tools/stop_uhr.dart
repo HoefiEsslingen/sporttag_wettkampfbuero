@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 // import 'package:sporttag/src/klassen/kind_klasse.dart';
 // import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 
-import '../hilfs_widgets/meine_appbar.dart';
+import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 
-import '../hilfs_widgets/rueck_sprung_button.dart';
-import '../klassen/kind_klasse.dart';
-import 'logger.util.dart';
-import 'teilnehmer_liste.dart';
+import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
+import 'package:sporttag/src/klassen/kind_klasse.dart';
+import 'package:sporttag/src/tools/logger.util.dart';
+import 'package:sporttag/src/tools/teilnehmer_liste.dart';
 import 'teilnehmerliste_verschiebbar.dart';
 
 class MyStopUhr extends StatefulWidget {
@@ -33,10 +33,10 @@ class _MyStopUhrState extends State<MyStopUhr> {
   final log = getLogger();
 
   // Initialisiere die Übergabeparameter
-  get teilNehmer => widget.teilNehmer;
-  get rufendeStation =>
+  List<Kind> get teilNehmer => widget.teilNehmer;
+  String get rufendeStation =>
       widget.rufendeStation; // Name der Station, die die Uhr aufruft
-  get auswertenDerWerte => widget.auswertenDerWerte;
+  dynamic Function(Map<Kind, int>) get auswertenDerWerte => widget.auswertenDerWerte;
 
   late Stopwatch stopwatch;
   late Timer t;

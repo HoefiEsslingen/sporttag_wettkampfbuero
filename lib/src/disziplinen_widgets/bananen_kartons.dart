@@ -1,17 +1,20 @@
 import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/tools/kind_repository.dart';
+import 'package:sporttag/src/tools/station_repository.dart';
 import 'package:sporttag/src/tools/logger.util.dart';
 import 'package:flutter/material.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
 import 'package:sporttag/src/tools/stop_uhr.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 
-import '../hilfs_widgets/meine_appbar.dart';
+import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
+import 'package:sporttag/src/klassen/station_klasse.dart';
+import 'package:sporttag/src/klassen/riegen_klasse.dart';
 
 class Bananenkartons extends StatefulWidget {
-  final int riegenNummer;
+  final Riege riegenPointer;
 
-  const Bananenkartons({super.key, required this.riegenNummer});
+  const Bananenkartons({super.key, required this.riegenPointer});
 
   /// Aktivität vorbereiten
   @override
@@ -23,14 +26,16 @@ class BananenkartonsState extends State<Bananenkartons> {
 
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
+  final StationRepository stationRepository = StationRepository();
 
-  late int riegenNummer;
+  late Riege riegenPointer;
   List<Kind> riegenKinder = [];
   List<Kind> selectedKinder = [];
   List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
   Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
   Map<Kind, int> kinderMitZeiten = {}; // Speichert gestoppte Zeiten
-
+  Station? station; // Speichert die Station
+  
   final log = getLogger();
 
   @override
@@ -38,7 +43,7 @@ class BananenkartonsState extends State<Bananenkartons> {
     super.initState();
     // widget.toString() der Variable zuweisen
     stationsName = "30m-Bananenkartons";
-    riegenNummer = widget.riegenNummer;
+    riegenPointer = widget.riegenPointer;
     _loadData();
   }
 
@@ -54,7 +59,8 @@ class BananenkartonsState extends State<Bananenkartons> {
 
   Future<void> _loadData() async {
     riegenKinder =
-        await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
+        await kindRepository.ladeKinderDerRiege(riege: riegenPointer);
+    station = await stationRepository.ladeStationNachName(stationsName: stationsName);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
     kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
         alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
@@ -64,7 +70,7 @@ class BananenkartonsState extends State<Bananenkartons> {
   Future<void> auswerten(Map<Kind, int> resultate) async {
     log.i(
         'in auswerten -> Ergebniss erstes Kind: ${resultate.values.first.toString()}');
-    setState(() {
+    setState(() async {
       kinderMitZeiten.addAll(resultate); // Gestoppte Zeiten hinzufügen
       // Gestoppte Zeiten hinzufügen und Punkte berechnen
       for (var entry in resultate.entries) {
@@ -77,7 +83,8 @@ class BananenkartonsState extends State<Bananenkartons> {
         final punkte = _werteZeitenAus(zeit); // Punkte berechnen
         // die an dieser Station erreichten Punkte werden gespeichert
         kinderMitZeiten[kind] = punkte;
-        kind.erreichtePunkte += punkte; // Punkte zuweisen
+        //kind.erreichtePunkte += punkte; // Punkte zuweisen
+        await kindRepository.speichereResultat(kind: kind, station: station!, punkte: punkte);
       }
 
       // Teilnehmer als ausgewertet markieren
@@ -94,7 +101,7 @@ class BananenkartonsState extends State<Bananenkartons> {
     // Speichern der ausgewerteten Kinder in der Datenbank
     final zuSpeicherndeKinder = resultate.keys.toList();
     for (var dasKind in zuSpeicherndeKinder) {
-      await kindRepository.saveKindToDatabase(kind: dasKind);
+      await kindRepository.saveKind(kind: dasKind);
     }
   }
 
@@ -194,7 +201,8 @@ class BananenkartonsState extends State<Bananenkartons> {
               // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
               ZurueckButton(
                   label: 'Nächste Disziplin steht an',
-                  riegenNummer: riegenNummer),
+                  riegenPointer: riegenPointer,
+                  stationsPointer: station),
           ],
         ),
       ),

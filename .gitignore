@@ -1,3 +1,6 @@
+# Parse Credentials
+lib/src/tools/parse_config.dart
+
 # Miscellaneous
 *.class
 *.log

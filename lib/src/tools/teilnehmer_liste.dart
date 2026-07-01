@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../klassen/kind_klasse.dart';
+import 'package:sporttag/src/klassen/kind_klasse.dart';
 
 class TeilnehmerListe extends StatefulWidget {
   final List<Kind> teilNehmer;
@@ -26,12 +26,12 @@ class TeilnehmerListe extends StatefulWidget {
 class _TeilnehmerListeState extends State<TeilnehmerListe> {
   final Map<Kind, int> _rundenMap = {}; // Lokale Speicherung der Rundenzähler
   // Initialisiere die Übergabeparameter
-  get teilNehmer => widget.teilNehmer;
-  get isRunning => widget.isRunning;
-  get modus => widget.modus;
-  get kindMitWerten => widget.kindMitWerten;
+  List<Kind> get teilNehmer => widget.teilNehmer;
+  bool get isRunning => widget.isRunning;
+  int get modus => widget.modus;
+  Map<Kind, int> get kindMitWerten => widget.kindMitWerten;
   // Callback-Funktion zur Übergabe des Werts
-  get onValueChanged => widget.onValueChanged;
+  void Function(Kind kind, int value) get onValueChanged => widget.onValueChanged;
 
   @override
   void initState() {

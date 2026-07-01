@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import '../hilfs_widgets/meine_appbar.dart';
-import '../hilfs_widgets/rueck_sprung_button.dart';
-import '../hilfs_widgets/mein_listen_eintrag.dart';
-import '../klassen/kind_klasse.dart';
-import '../tools/kind_repository.dart';
-import '../tools/logger.util.dart';
-import '../tools/stop_uhr.dart';
+import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
+import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
+import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
+import 'package:sporttag/src/klassen/kind_klasse.dart';
+import 'package:sporttag/src/klassen/station_klasse.dart';
+import 'package:sporttag/src/klassen/riegen_klasse.dart';
+import 'package:sporttag/src/tools/kind_repository.dart';
+import 'package:sporttag/src/tools/logger.util.dart';
+import 'package:sporttag/src/tools/station_repository.dart';
+import 'package:sporttag/src/tools/stop_uhr.dart';
 
 class Lauf extends StatefulWidget {
-  final int riegenNummer;
+  final Riege riegenPointer;
 
-  const Lauf({super.key, required this.riegenNummer});
+  const Lauf({super.key, required this.riegenPointer});
 
   /// Aktivität vorbereiten
   @override
@@ -18,17 +21,19 @@ class Lauf extends StatefulWidget {
 }
 
 class LaufState extends State<Lauf> {
-  late int riegenNummer;
+  late Riege riegenPointer;
   late String stationsName;
 
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
-
+  final StationRepository stationRepository = StationRepository();
+  
   List<Kind> riegenKinder = [];
   List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
   Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
   List<Kind> selectedKinder = [];
   Map<Kind, int> kinderMitZeiten = {}; // Speichert gestoppte Zeiten
+  Station? station; // Speichert die Station
 
   final log = getLogger();
 
@@ -36,13 +41,14 @@ class LaufState extends State<Lauf> {
   void initState() {
     super.initState();
     stationsName = '30sec-Lauf';
-    riegenNummer = widget.riegenNummer;
+    riegenPointer = widget.riegenPointer;
     _loadData();
   }
 
   Future<void> _loadData() async {
     riegenKinder =
-        await kindRepository.loadKinderAusRiege(mitRiegenNummer: riegenNummer);
+        await kindRepository.ladeKinderDerRiege(riege: riegenPointer);
+    station = await stationRepository.ladeStationNachName(stationsName: stationsName);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
     kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
         alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
@@ -52,7 +58,7 @@ class LaufState extends State<Lauf> {
   Future<void> auswerten(Map<Kind, int> resultate) async {
     log.i(
         'in auswerten -> Ergebniss erstes Kind: ${resultate.values.first.toString()}');
-    setState(() {
+    setState(() async {
       kinderMitZeiten.addAll(resultate); // Gestoppte Zeiten hinzufügen
       // Gestoppte Zeiten hinzufügen und Punkte berechnen
       for (var entry in resultate.entries) {
@@ -62,7 +68,8 @@ class LaufState extends State<Lauf> {
         kinderMitZeiten[kind] =
             runden; // erreichte Punkte (halbe Runden) speichern
         log.i('in auswerten $runden für ${kind.nachname}');
-        kind.erreichtePunkte += runden; // Punkte zuweisen
+        //kind.erreichtePunkte += punkte; // Punkte zuweisen
+        await kindRepository.speichereResultat(kind: kind, station: station!, punkte: runden);
       }
 
       // Teilnehmer als ausgewertet markieren
@@ -79,7 +86,7 @@ class LaufState extends State<Lauf> {
     // Speichern der ausgewerteten Kinder in der Datenbank
     final zuSpeicherndeKinder = resultate.keys.toList();
     for (var dasKind in zuSpeicherndeKinder) {
-      await kindRepository.saveKindToDatabase(kind: dasKind);
+      await kindRepository.saveKind(kind: dasKind);
     }
   }
 
@@ -166,7 +173,8 @@ class LaufState extends State<Lauf> {
               // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
               ZurueckButton(
                 label: 'Nächste Disziplin steht an',
-                riegenNummer: riegenNummer,
+                riegenPointer: riegenPointer,
+                stationsPointer: station,
               ),
           ],
         ),

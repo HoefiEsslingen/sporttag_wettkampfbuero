@@ -38,7 +38,7 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
     _jahrgang = _zulaessigeJahrgaenge().first;
   }
 
-  _zulaessigeJahrgaenge() {
+  List<int> _zulaessigeJahrgaenge() {
     // Die Logik um die zulässigen Jahrgänge zu bestimmen:
     // basierend auf dem aktuellen Datum und dem festegelegten minAlter bzw. maxAlter
     // wird die Liste der zulässigen Jahrgänge erstellt.
@@ -131,7 +131,7 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
                     const SizedBox(height: 20),
                     // Auswahl-Menü für das Geschlecht
                     DropdownButtonFormField<String>(
-                      value: _geschlecht,
+                      initialValue: _geschlecht,
                       onChanged: (newValue) =>
                           setState(() => _geschlecht = newValue!),
                       items: [
@@ -149,7 +149,7 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
                     const SizedBox(height: 20),
                     // Auswahl-Menü für den Jahrgang
                     DropdownButtonFormField<int>(
-                      value: _jahrgang,
+                      initialValue: _jahrgang,
                       onChanged: (newValue) =>
                           setState(() => _jahrgang = newValue!),
                       items: [
@@ -220,13 +220,11 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
     Kind neuAngemeldet = Kind(
       vorname: _vorName.text.trim(),
       nachname: _nachName.text.trim(),
-      jahrgang: '$_jahrgang',
+      jahrgang: _jahrgang,
       geschlecht: _geschlecht,
-      erreichtePunkte: 0,
       bezahlt: false,
-      riegenNummer: 0, // Riegen-Nummer wird später gesetzt
     );
-    if(await kindRepository.saveKindToDatabase(kind: neuAngemeldet)) {
+    if(await kindRepository.saveKind(kind: neuAngemeldet)) {
       showSuccess();
     } else {
       showError("Die Anmeldung Ihres Kindes war nicht erfolgreich. Bitte versuchen Sie es später erneut.");

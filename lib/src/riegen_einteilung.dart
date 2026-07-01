@@ -1,212 +1,217 @@
+import 'package:flutter/material.dart';
+
 import 'hilfs_widgets/meine_appbar.dart';
 import 'tools/logger.util.dart';
-import 'package:flutter/material.dart';
-import 'package:sporttag/src/klassen/kind_klasse.dart';
-import 'package:sporttag/src/tools/kind_repository.dart';
-import 'package:sporttag/src/tools/riegen_repository.dart';
-
-//import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
+import 'klassen/kind_klasse.dart';
+import 'klassen/riegen_klasse.dart';
+import 'tools/kind_repository.dart';
+import 'tools/riegen_repository.dart';
 
 class RiegenEinteilung extends StatefulWidget {
   const RiegenEinteilung({super.key, required this.titel});
   final String? titel;
 
-  /// Aktivität vorbereiten
   @override
   RiegenEinteilungState createState() => RiegenEinteilungState();
 }
 
 class RiegenEinteilungState extends State<RiegenEinteilung> {
-  final KindRepository kindRepository = KindRepository(); // Repository-Objekt
-  final RiegenRepository riegenRepository =
-      RiegenRepository(); // Repository-Objekt für Riegen
-  List<Kind> alleKinder = [];
-  int kinderGesamt = 0;
-  List<Kind> gefilterteKinder = [];
-  final int riegenAnzahl = 8;
-  List<List<Kind>> alleRiegen = [];
-  int? ausgewaehlteRiegenNummer;
-  Map<String, List<Kind>> jahrUgeschlechtMap =
-      {}; // Geschlecht + Jahrgang als Key
-  List<MapEntry<String, List<Kind>>> sortierteJahrUgeschlechtListen = [];
-  final int aktuellesJahr = DateTime.now().year;
+  final KindRepository   kindRepository   = KindRepository();
+  final RiegenRepository riegenRepository = RiegenRepository();
 
-  // Logger einrichten
-  final log = getLogger();
+  List<Kind>         alleKinder   = [];
+  List<Riege>        alleRiegen   = [];
+  List<List<Kind>>   riegenListen = [];  // Index 0 = Riege 1, etc.
+  List<Kind>         gefilterteKinder = [];
+  int?               ausgewaehlteRiegenNummer;
+  bool               isLoading = true;
+  String?            fehlerMeldung;
+
+  final int  riegenAnzahl   = 8;
+  final int  aktuellesJahr  = DateTime.now().year;
+  final _log = getLogger();
 
   @override
-  initState() {
+  void initState() {
     super.initState();
-
-    // Riegenlisten generieren
-    alleRiegen = List.generate(riegenAnzahl, (index) => []);
-    _kinderRiegenZuordnen();
+    riegenListen = List.generate(riegenAnzahl, (_) => []);
+    _riegenEinteilenUndSpeichern();
   }
 
-  Future<void> _kinderRiegenZuordnen() async {
-    alleKinder = await kindRepository.loadAngemeldeteKinder();
-    kinderGesamt = alleKinder.length;
-    setState(() {
-      _generiereSortierteJahrgangsListen();
-      _verteileKinderAufRiegen();
-      _weiseKindernRiegennummerZu();
-    });
-    // Kinderliste mit aktualiserter Riegennummer speichern
-    await kindRepository.saveKinderListeToDatabase(alleKinder);
-  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // SCHRITT 1: Daten laden
+  // ─────────────────────────────────────────────────────────────────────────
+  Future<void> _riegenEinteilenUndSpeichern() async {
+    setState(() { isLoading = true; fehlerMeldung = null; });
 
-  void _generiereSortierteJahrgangsListen() {
-    String key = "";
-    // Gruppiere Kinder nach Jahrgang und Geschlecht
-    for (var kind in alleKinder) {
-      key = '${kind.jahrgang}_${kind.geschlecht}';
-      if (!jahrUgeschlechtMap.containsKey(key)) {
-        jahrUgeschlechtMap[key] = [];
+    try {
+      // Angemeldete Kinder laden
+      alleKinder  = await kindRepository.ladeAngemeldeteKinder();
+      // Riegen-Objekte laden (die objectIDs werden für Pointer benötigt)
+      alleRiegen  = await riegenRepository.ladeAlleRiegen();
+
+      if (alleRiegen.length < riegenAnzahl) {
+        throw Exception(
+          'Zu wenige Riegen in der Datenbank (${alleRiegen.length}/$riegenAnzahl). '
+          'Bitte zuerst die 8 Riegen-Datensätze anlegen.',
+        );
       }
-      jahrUgeschlechtMap[key]!.add(kind);
+
+      // SCHRITT 2: Verteilung lokal berechnen (kein DB-Zugriff)
+      _berechneRiegenEinteilung();
+
+      // SCHRITT 3: Ergebnisse in DB speichern (mit Fehlerbehandlung)
+      await _speichereEinteilungInDatenbank();
+
+    } catch (e) {
+      _log.e('Riegeneinteilung fehlgeschlagen: $e');
+      setState(() { fehlerMeldung = e.toString(); });
+    } finally {
+      setState(() { isLoading = false; });
     }
-    // Sortiere die Gruppen nach Jahrgängen und Geschlecht absteigend
-    // in eine Liste von Map von Key und Kinderliste
-    sortierteJahrUgeschlechtListen = (jahrUgeschlechtMap.entries.toList()
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SCHRITT 2: Einteilung lokal berechnen (reine Logik, kein DB-Zugriff)
+  // ─────────────────────────────────────────────────────────────────────────
+  void _berechneRiegenEinteilung() {
+    // Kinder nach Jahrgang + Geschlecht gruppieren
+    final Map<String, List<Kind>> gruppenMap = {};
+    for (final kind in alleKinder) {
+      final key = '${kind.jahrgang}_${kind.geschlecht}';
+      (gruppenMap[key] ??= []).add(kind);
+    }
+
+    // Gruppen absteigend nach Schlüssel sortieren
+    final sortiertGruppen = (gruppenMap.entries.toList()
       ..sort((a, b) => b.key.compareTo(a.key)));
-  } // Ende _generierejahrUgeschlechtListen()
 
-  void _verteileKinderAufRiegen() {
-    // Maps für die zwei Gruppen ...
-    List<MapEntry<String, List<Kind>>> kinderFuenfkampf = [];
-    List<MapEntry<String, List<Kind>>> kinderZehnkampf = [];
-    int anzKinderFuenfkampf = 0;
+    // In Fünf- und Zehnkampf aufteilen
+    final fuenfkampfGruppen = <MapEntry<String, List<Kind>>>[];
+    final zehnkampfGruppen  = <MapEntry<String, List<Kind>>>[];
+    int anzFuenfkampfKinder = 0;
 
-    // trenne die Kinderlisten in je eine Map von Fünf- bzw. Zehnkampf-Kinderliste
-    // - die Kinder bis fünf Jahre --> Fünfkampf
-    // - sechsjährige und älter --> Zehnkampf
-    for (var jahrGeschlecht in sortierteJahrUgeschlechtListen) {
-      // Der Jahrgang ist im ersten Teil des Schlüssels, z.B. '2021_M' -> '2021'
-      String jahrgangStr = jahrGeschlecht.key.split('_')[0];
-      int jahrgang = int.parse(jahrgangStr);
-      // bestimme das Alter, welches das Kind in aktuellen Jahr erreicht
-      int alter = aktuellesJahr - jahrgang;
+    for (final entry in sortiertGruppen) {
+      final jahrgang = int.parse(entry.key.split('_')[0]);
+      final alter    = aktuellesJahr - jahrgang;
 
-      // Unterscheide die Altersgruppen und ...
       if (alter >= 3 && alter <= 5) {
-        // ... weise sie der jeweiligen Liste zu
-        kinderFuenfkampf.add(jahrGeschlecht);
-        // zähle wieviel Fünfkämpfer bzw. ...
-        anzKinderFuenfkampf += jahrGeschlecht.value.length;
+        fuenfkampfGruppen.add(entry);
+        anzFuenfkampfKinder += entry.value.length;
       } else if (alter >= 6) {
-        // ... weise sie der jeweiligen Liste zu
-        kinderZehnkampf.add(jahrGeschlecht);
+        zehnkampfGruppen.add(entry);
       }
     }
-    // Anteil der Kinder für den Fünfkampf bestimmen und ...
-    double anteilFuenfkampf = anzKinderFuenfkampf / kinderGesamt;
-    // ... damit den Anteil an den 8 Riegen bestimmen
-    int anzRiegenFuenfkampf = (riegenAnzahl * anteilFuenfkampf).round();
-    // setze die Art der Riegen in der Datenbank
+
+    // Riegenanzahl für Fünfkampf berechnen
+    final anteil             = anzFuenfkampfKinder / alleKinder.length;
+    final anzRiegenFuenfkampf = (riegenAnzahl * anteil).round();
+
+    // Riegen-Typ im lokalen Riegen-Objekt setzen
     for (int i = 0; i < riegenAnzahl; i++) {
-      if (i < anzRiegenFuenfkampf) {
-        // Fünfkampf-Riegen
-        riegenRepository.saveRiegeNachArt(
-          riegenNummer: i + 1,
-          fuenfKampf: true,
-        );
-      } else {
-        // Zehnkampf-Riegen
-        riegenRepository.saveRiegeNachArt(
-          riegenNummer: i + 1,
-          fuenfKampf: false,
-        );
-      }
+      alleRiegen[i].fuenfKampf = (i < anzRiegenFuenfkampf);
     }
 
-    // Initialisiere leere Riegen
-    List<List<Kind>> fuenfkampfRiegen =
-        List.generate(anzRiegenFuenfkampf, (index) => []);
-    List<List<Kind>> zehnkampfRiegen =
-        List.generate((riegenAnzahl - anzRiegenFuenfkampf), (index) => []);
+    // Kinder auf Riegen verteilen
+    riegenListen = List.generate(riegenAnzahl, (_) => []);
+    _verteileGruppenAufRiegen(fuenfkampfGruppen, riegenListen.sublist(0, anzRiegenFuenfkampf));
+    _verteileGruppenAufRiegen(zehnkampfGruppen,  riegenListen.sublist(anzRiegenFuenfkampf));
 
-    // Kinderlisten, gruppiert nach Jahrgang und Geschlecht, den Fünfkampfriegen zuordnen
-    // ... und zur Verteilung
-    List<MapEntry<String, List<Kind>>> aktiveMap = kinderFuenfkampf;
-    // sortiere die aktiveMap absteigend so,
-    // dass die größte Gruppe mit gleichem Jahrgang und Geschlecht zuerst kommt
-    aktiveMap.sort((mapEntryA, mapEntryB) =>
-        mapEntryB.value.length.compareTo(mapEntryA.value.length));
-    List<List<Kind>> riegen = fuenfkampfRiegen;
-    List<Kind> amWenigstenGefuellteRiege;
-
-    for (var jahrGeschlecht in aktiveMap) {
-      var jahrGeschlechtKinder = jahrGeschlecht.value;
-      // Finde die Riege mit den aktuell wenigsten Kindern (bei gleicher Anzahl eine davon)
-      amWenigstenGefuellteRiege = riegen.reduce(
-          (riege1, riege2) => riege1.length <= riege2.length ? riege1 : riege2);
-
-      // Füge die gesamte Gruppe zu dieser Riege hinzu
-      amWenigstenGefuellteRiege.addAll(jahrGeschlechtKinder);
-    }
-    // die Fünkampfriegen der Liste für alle Riegen hinzufügen
-    alleRiegen = riegen;
-
-    // Kinderlisten den Zehnkampfriegen zuordnen
-    aktiveMap = kinderZehnkampf;
-    // sortiere die aktiveMap absteigend so,
-    // dass die größte Gruppe mit gleichem Jahrgang und Geschlecht zuerst kommt
-    aktiveMap.sort((mapEntryA, mapEntryB) =>
-        mapEntryB.value.length.compareTo(mapEntryA.value.length));
-    riegen = zehnkampfRiegen;
-    for (var jahrGeschlecht in aktiveMap) {
-      var jahrGeschlechtKinder = jahrGeschlecht.value;
-
-      // Finde die Riege mit den wenigsten Kindern
-      amWenigstenGefuellteRiege = riegen.reduce(
-          (riege1, riege2) => riege1.length <= riege2.length ? riege1 : riege2);
-
-      // Füge die gesamte Gruppe zu dieser Riege hinzu
-      amWenigstenGefuellteRiege.addAll(jahrGeschlechtKinder);
-    }
-    // die resultierenden Zehnkampfriegen an 'alleRiegen'-anhängen
-    for (int i = 0; i < (riegenAnzahl - anzRiegenFuenfkampf); i++) {
-      alleRiegen.add(riegen[i]);
-    }
-
-    // Ausgabe der Verteilung (optional)
-    for (int i = 0; i < alleRiegen.length; i++) {
-      log.i('sortierte Riege ${i + 1}: ${alleRiegen[i].length} Kinder');
-      for (var kind in alleRiegen[i]) {
-        log.i(
-            'sortierte Riege:  ${kind.vorname} ${kind.nachname}, Jahrgang ${kind.jahrgang}, Geschlecht ${kind.geschlecht}');
+    // Riegennummer an Kind-Objekte weitergeben (transienter Wert)
+    for (int i = 0; i < riegenListen.length; i++) {
+      for (final kind in riegenListen[i]) {
+        kind.riegenNummer = alleRiegen[i].riegenNummer;
       }
     }
   }
 
-  void _weiseKindernRiegennummerZu() {
-    int i = 1; // erste Riege aht Index 0 aber die Nummer 1
-    for (var riege in alleRiegen) {
-      log.i('sortierte Riege Nr: $i mit ${riege.length} Kindern');
-      int j = 1;
-      for (var kind in riege) {
-        kind.riegenNummer = i;
-        log.i('sortiertes Kind ${kind.jahrgang} Nr. $j in Riege $i');
-        j++;
-      }
-      i++;
+  void _verteileGruppenAufRiegen(
+    List<MapEntry<String, List<Kind>>> gruppen,
+    List<List<Kind>> zielRiegen,
+  ) {
+    if (zielRiegen.isEmpty) return;
+    // Größte Gruppe zuerst (Greedy-Algorithmus)
+    gruppen.sort((a, b) => b.value.length.compareTo(a.value.length));
+    for (final entry in gruppen) {
+      // Riege mit wenigsten Kindern wählen
+      final riege = zielRiegen.reduce(
+        (r1, r2) => r1.length <= r2.length ? r1 : r2,
+      );
+      riege.addAll(entry.value);
     }
   }
 
-  // Methode für die Anzeige der einzelnen Riege
+  // ─────────────────────────────────────────────────────────────────────────
+  // SCHRITT 3: Datenbank schreiben
+  //
+  // ACID – Atomicity:
+  //   Erst werden alle Riegen-Typen gesetzt (Phase A), dann erst die
+  //   Kinderzuordnungen (Phase B). Beide Phasen werden mit await abgewartet.
+  //   Fehler in Phase A verhindern, dass Phase B gestartet wird.
+  // ─────────────────────────────────────────────────────────────────────────
+  Future<void> _speichereEinteilungInDatenbank() async {
+    // Phase A: Riegen-Art setzen
+    _log.i('Phase A: Riegen-Arten speichern…');
+    int fehlerPhaseA = 0;
+    for (int i = 0; i < riegenAnzahl; i++) {
+      final ok = await riegenRepository.setzeRiegenArt(
+        riegenObjectId: alleRiegen[i].objectId,
+        fuenfKampf:     alleRiegen[i].fuenfKampf,
+      );
+      if (!ok) fehlerPhaseA++;
+    }
+
+    if (fehlerPhaseA > 0) {
+      throw Exception(
+        'Phase A: $fehlerPhaseA Riegen konnten nicht gesetzt werden. '
+        'Bitte Verbindung prüfen und erneut versuchen.',
+      );
+    }
+
+    // Phase B: Kinderzuordnungen schreiben
+    _log.i('Phase B: Kinderzuordnungen speichern…');
+    int fehlerPhaseB = 0;
+    for (int riegenIdx = 0; riegenIdx < riegenListen.length; riegenIdx++) {
+      final riege  = alleRiegen[riegenIdx];
+      final kinder = riegenListen[riegenIdx];
+
+      for (int pos = 0; pos < kinder.length; pos++) {
+        final ok = await kindRepository.weiseKindRiegeZu(
+          kind:     kinder[pos],
+          riege:    riege,
+          position: pos + 1,
+        );
+        if (!ok) fehlerPhaseB++;
+      }
+    }
+
+    if (fehlerPhaseB > 0) {
+      // UI-Warnung, aber kein harter Fehler – Phase A war erfolgreich
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$fehlerPhaseB Kinderzuordnungen fehlgeschlagen. Bitte nochmals speichern.'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    } else {
+      _log.i('Riegeneinteilung vollständig gespeichert.');
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // UI
+  // ─────────────────────────────────────────────────────────────────────────
   void _filterKinderNachRiege(int riegenNummer) {
     setState(() {
       gefilterteKinder = alleKinder
-          .where((kind) => kind.riegenNummer == riegenNummer)
+          .where((k) => k.riegenNummer == riegenNummer)
           .toList()
-        // sortiert die Kinder nach Geschlecht unnerhalb des gleichen Jahrgangs
         ..sort((a, b) {
-          int jahrgangsVergleich = b.jahrgang.compareTo(a.jahrgang);
-          if (jahrgangsVergleich != 0) {
-            // gleicher Jahrgang
-            return jahrgangsVergleich;
-          }
-          return b.geschlecht.compareTo(a.geschlecht);
+          final jv = b.jahrgang.compareTo(a.jahrgang);
+          return jv != 0 ? jv : b.geschlecht.compareTo(a.geschlecht);
         });
     });
   }
@@ -214,60 +219,73 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MeineAppBar(titel: widget.titel ?? 'Riegen Einteilung', thema: widget.titel ?? 'Riegen Einteilung'),
-      body: Center(
-        child: Column(
-          children: [
-            // Dropdown zur Auswahl der Riegennummer
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: DropdownButton<int>(
-                hint: const Text('Wähle eine Riege'),
-                value: ausgewaehlteRiegenNummer,
-                items: List.generate(riegenAnzahl, (index) => index + 1)
-                    .map((int value) {
-                  return DropdownMenuItem<int>(
-                    value: value,
-                    child: Text('Riege $value'),
-                  );
-                }).toList(),
-                onChanged: (newValue) {
-                  setState(() {
-                    ausgewaehlteRiegenNummer = newValue;
-                  });
-                  if (newValue != null) {
-                    _filterKinderNachRiege(newValue);
-                  }
-                },
-              ),
-            ),
-            // Liste der Kinder in der ausgewählten Riege
-            Expanded(
-              child: ListView.builder(
-                itemCount: gefilterteKinder.length,
-                itemBuilder: (context, index) {
-                  final kind = gefilterteKinder[index];
-                  return ListTile(
-                    title: Text(
-                        '${kind.vorname} ${kind.nachname} ${kind.jahrgang} ${kind.geschlecht}'),
-                    //subtitle: Text('Geschlecht: ${kind.geschlecht}'),
-                  );
-                },
-              ),
-            ),
-
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context, false);
-              },
-              child: const Text(
-                "Riegeneinteilung abschließen",
-                style: TextStyle(fontSize: 50, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
+      appBar: MeineAppBar(
+        titel: widget.titel ?? 'Riegen Einteilung',
+        thema: 'Riegen Einteilung',
       ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : fehlerMeldung != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        const SizedBox(height: 12),
+                        Text(fehlerMeldung!, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _riegenEinteilenUndSpeichern,
+                          child: const Text('Erneut versuchen'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: DropdownButton<int>(
+                        hint: const Text('Wähle eine Riege'),
+                        value: ausgewaehlteRiegenNummer,
+                        items: List.generate(riegenAnzahl, (i) => i + 1)
+                            .map((n) => DropdownMenuItem(
+                                  value: n,
+                                  child: Text(
+                                    'Riege $n  (${alleRiegen.length > n - 1 && alleRiegen[n - 1].fuenfKampf ? "Fünfkampf" : "Zehnkampf"})',
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (v) {
+                          setState(() => ausgewaehlteRiegenNummer = v);
+                          if (v != null) _filterKinderNachRiege(v);
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: gefilterteKinder.length,
+                        itemBuilder: (_, i) {
+                          final kind = gefilterteKinder[i];
+                          return ListTile(
+                            title: Text('${kind.vorname} ${kind.nachname} '
+                                '${kind.jahrgang} ${kind.geschlecht}'),
+                          );
+                        },
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text(
+                        'Riegeneinteilung abschließen',
+                        style: TextStyle(fontSize: 50, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
     );
   }
 }

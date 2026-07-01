@@ -39,7 +39,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
     focusJahrgang = FocusNode();
   }
 
-  _zulaessigeJahrgaenge() {
+  List<int> _zulaessigeJahrgaenge() {
     // Die Logik um die zulässigen Jahrgänge zu bestimmen:
     // basierend auf dem aktuellen Datum und dem festegelegten minAlter bzw. maxAlter
     // wird die Liste der zulässigen Jahrgänge erstellt.
@@ -68,7 +68,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
     });
 
     kinderListe = await kindRepository
-        .loadAllKinder(); // Alle Kinder aus der Datenbank laden
+        .ladeAlleKinder(); // Alle Kinder aus der Datenbank laden
 
     // Kinderliste aufsteigend nach Nachnamen
     kinderListe.sort((a, b) => a.nachname.compareTo(b.nachname));
@@ -87,7 +87,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
           Kind(
             vorname: '',
             nachname: '',
-            jahrgang: '',
+            jahrgang: 0,
             geschlecht: '',
             erreichtePunkte: 0,
             riegenNummer: 0,
@@ -100,7 +100,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
   // Methode, um Änderungen an den Kindern zu speichern
   Future<void> _speichereAenderungen() async {
     await kindRepository
-        .saveKinderListeToDatabase(kinderListe); // Änderungen speichern
+        .saveKinderListe(kinder: kinderListe); // Änderungen speichern
     _ladeKinder();
   }
 
@@ -170,7 +170,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                               },
                             ),
                             DropdownButtonFormField<String>(
-                              value: _geschlecht,
+                              initialValue: _geschlecht,
                               onChanged: (newValue) =>
                                   setState(() => kind.geschlecht = newValue!),
                               items: [
@@ -187,9 +187,9 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                             ),
                             // Auswahl-Menü für den Jahrgang
                             DropdownButtonFormField<int>(
-                              value: _jahrgang,
+                              initialValue: _jahrgang,
                               onChanged: (newValue) => setState(
-                                  () => kind.jahrgang = '${newValue!}'),
+                                  () => kind.jahrgang = newValue!),
                               items: [
                                 for (int i in _jahrgangListe)
                                   DropdownMenuItem(
@@ -214,7 +214,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                         message: 'Wurde Startgebühr bezahlt',
                         child: Switch(
                           value: kind.bezahlt,
-                          activeColor: Colors.green,
+                          activeThumbColor: Colors.green,
                           inactiveThumbColor: Colors.red,
                           onChanged: (value) {
                             setState(() {

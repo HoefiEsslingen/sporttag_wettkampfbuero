@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../tools/pdf_modal.dart';
+import 'package:sporttag/src/tools/pdf_modal.dart';
 
 enum HilfeTyp {
   pdf,
@@ -118,29 +118,3 @@ Hier können Sie Kinder für den Sporttag anmelden:
   }
 }
 
-/* Bisherige Löung erweitert um textuelle Hilfe
-import 'package:flutter/material.dart';
-import '../tools/pdf_modal.dart';
-
-class HelpIconButton extends StatelessWidget {
-  final String stationsName;
-
-  const HelpIconButton({super.key, required this.stationsName});
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.help_outline), // ?-Icon
-      tooltip: 'Zeige Informationen',
-      onPressed: () {
-        // Öffnet das modale Fenster
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          builder: (_) => PdfModal(stationsName: stationsName),
-        );
-      },
-    );
-  }
-}
-* Ende bisherige Lösung */

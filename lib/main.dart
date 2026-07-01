@@ -10,14 +10,10 @@ import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 import 'src/anmelden_vorher.dart';
 import 'src/danke_vorab_anmeldung.dart';
 import 'src/wettbewerb.dart';
-// import 'src/wettbewerb.dart';
+import 'package:sporttag/src/tools/parse_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  const keyApplicationId = 'WLgenML3TwDSZ80DBWggNnJaNePhJ3RQgzdCvvv0';
-  const keyClientKey = 'LgXHwuUZDe5Dd1kuCEsz9Ui6gm30iyhgNvOVL0IM';
-  const keyParseServerUrl = 'https://parseapi.back4app.com';
 
   await Parse().initialize(keyApplicationId, keyParseServerUrl,
       clientKey: keyClientKey, debug: true);
@@ -80,8 +76,7 @@ class MainApp extends StatelessWidget {
           // Extrahiert die Riegennummer (als int) und Wettbewerbstyp (z. B. "Zehnkampf")
           final riegenNummer = int.tryParse(uri.pathSegments[1]);
           final wettbewerbsTyp = Uri.decodeComponent(uri.pathSegments[2]);
-
-          if (riegenNummer != null && wettbewerbsTyp.isNotEmpty) {
+            if (riegenNummer != null && wettbewerbsTyp.isNotEmpty) {
             return MaterialPageRoute(
                builder: (_) => Wettbewerb(
                  riegenNummer: riegenNummer,

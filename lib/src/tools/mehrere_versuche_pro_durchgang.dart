@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../hilfs_widgets/rueck_sprung_button.dart';
-import '../hilfs_widgets/meine_appbar.dart';
-import '../klassen/kind_klasse.dart';
-import 'logger.util.dart';
+import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
+import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
+import 'package:sporttag/src/klassen/kind_klasse.dart';
+import 'package:sporttag/src/tools/logger.util.dart';
 
 class VersucheInDurchgaengen extends StatefulWidget {
   final List<Kind> teilnehmer;

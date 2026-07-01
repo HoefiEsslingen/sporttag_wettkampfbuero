@@ -43,12 +43,12 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   }
 
   Future<void> ladeRiegen() async {
-    alleRiegen = await riegeRepository.loadAllRiegen();
+    alleRiegen = await riegeRepository.ladeAlleRiegen();
   }
 
   // Methode für die Anzeige der einzelnen Riege
   Future<void> _filterKinderNachRiege(int riegenNummer) async {
-    alleKinder = await kindRepository.loadAllKinder();
+    alleKinder = await kindRepository.ladeAlleKinder();
     setState(() {
       gefilterteKinder = alleKinder
           .where((kind) => kind.riegenNummer == riegenNummer)
