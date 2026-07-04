@@ -35,6 +35,8 @@ class WettkampfbueroState extends State<Wettkampfbuero> {
       {required String zuSeite}) async {
     var resultat = await Navigator.pushNamed(context, zuSeite);
 
+    if (!mounted) return; // Widget bereits disposed → abbrechen
+
     setState(() {
       if (resultat == false) {
         // aktuelle Seite inaktiv setzen
@@ -101,7 +103,8 @@ class WettkampfbueroState extends State<Wettkampfbuero> {
               IconButton(
                 onPressed: () {
                   seitenInfo['anmeldeSeite']!['aktiv']
-                      ? navigateAndPossiblyDisableButton(zuSeite: 'anmeldeSeite')
+                      ? navigateAndPossiblyDisableButton(
+                          zuSeite: 'anmeldeSeite')
                       : null;
                 },
                 icon: KartenIcon(
@@ -125,7 +128,8 @@ class WettkampfbueroState extends State<Wettkampfbuero> {
               ),
               IconButton(
                 onPressed: () => seitenInfo['riegenZuordnung']!['aktiv']
-                    ? navigateAndPossiblyDisableButton(zuSeite: 'riegenZuordnung')
+                    ? navigateAndPossiblyDisableButton(
+                        zuSeite: 'riegenZuordnung')
                     : null,
                 icon: KartenIcon(
                   key: UniqueKey(),

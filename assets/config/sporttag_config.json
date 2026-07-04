@@ -1,0 +1,16 @@
+{
+    "kinderAlter": {
+        "min": 4,
+        "max": 13
+    },
+    "veranstaltung": {
+        "name": "Sporttag 2026",
+        "datum": "2026-07-14",
+        "uhrzeit": "09:00",
+        "ort": "Waldheim Stadion, Zollberg"
+    },
+    "anmeldung": {
+        "gebuehr": 2.50,
+        "anmeldung_bis": "2025-06-07"
+    }
+}

@@ -24,7 +24,7 @@ class HochWeitSprungState extends State<HochWeitSprung> {
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
   final StationRepository stationRepository = StationRepository();
-  
+
   late Riege riegenPointer;
   List<Kind> riegenKinder = [];
   List<Kind> selectedKinder = [];
@@ -48,7 +48,8 @@ class HochWeitSprungState extends State<HochWeitSprung> {
   Future<void> _loadData() async {
     riegenKinder =
         await kindRepository.ladeKinderDerRiege(riege: riegenPointer);
-    station = await stationRepository.ladeStationNachName(stationsName: stationsName);
+    station =
+        await stationRepository.ladeStationNachName(stationsName: stationsName);
     // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
     kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
         alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
@@ -64,6 +65,7 @@ class HochWeitSprungState extends State<HochWeitSprung> {
       await kindRepository.speichereResultat(
           kind: dasKind, station: station!, punkte: punkte * 2);
     }
+    if (!mounted) return; // Widget bereits disposed → abbrechen
     setState(() {
       istAusgewertet = true;
     });

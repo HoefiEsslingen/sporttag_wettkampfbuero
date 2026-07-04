@@ -59,6 +59,7 @@ class UrkundenDruckState extends State<UrkundenDruck> {
     await _ladeAuszuwertendeRiegen();
     await _ladeKinderAusAuszuwertendenRiegen();
     _sortiereKinderAusAuszuwertendenRiegen();
+  if (!mounted) return; // Widget bereits disposed → abbrechen
     setState(() {}); // UI neu rendern, wenn alle Daten bereit
   }
 

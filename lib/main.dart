@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:sporttag/src/riegen_zuordnung.dart';
+import 'package:sporttag/src/tools/sporttag_config.dart';
 import 'package:sporttag/src/urkunden.dart';
 import 'package:sporttag/src/anmelden_sporttag.dart';
 import 'package:sporttag/src/riegen_einteilung.dart';
@@ -21,11 +22,21 @@ void main() async {
   //Logging ermöglichen
   Logger.level = Level.debug;
 
-  runApp(const MainApp());
+  // Konfiguration laden und Startroute bestimmen
+  final config = await SporttagConfig.laden();
+  final startRoute = switch (config.routeEntscheiden()) {
+    RouteEntscheidung.vorabAnmeldung => 'vorabAnmeldung',
+    RouteEntscheidung.wettkampfbuero => 'home',
+  };
+
+  runApp(MainApp(startRoute: startRoute, config: config));
 }
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+  final String startRoute;
+  final SporttagConfig config;
+
+  const MainApp({super.key, required this.startRoute, required this.config});
 
   @override
   Widget build(BuildContext context) {
@@ -57,8 +68,10 @@ class MainApp extends StatelessWidget {
           fillColor: Colors.white,
         ),
       ),
-      // Die App startet standardmäßig bei der Route "home" → entspricht Wettkampfbuero()
-      initialRoute: 'home',
+      // Die App startet bei der in der sporttag-config-Datei bestimmten Route
+      // entspricht Wettkampfbuero() --> falls aktuelles Datum nach Anmeldeschluss liegt
+      // entspricht AnmeldenVorher() --> falls aktuelles Datum vor Anmeldeschluss liegt
+      initialRoute: startRoute,
       // Diese Funktion wird aufgerufen, wann immer eine Route aufgerufen wird, die nicht explizit in routes: registriert ist.
       // Du kannst hier dynamisch auf den Routen-String reagieren.
       onGenerateRoute: (settings) {

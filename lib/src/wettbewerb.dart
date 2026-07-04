@@ -94,6 +94,7 @@ class WettbewerbState extends State<Wettbewerb> {
     final geladen = await riegenRepository.ladeRiegeNachNummer(
       riegenNummer: widget.riegenNummer,
     );
+    if (!mounted) return; // Widget bereits disposed → abbrechen
     setState(() {
       riegenPointer = geladen;
     });

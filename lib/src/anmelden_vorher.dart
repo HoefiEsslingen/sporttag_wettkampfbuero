@@ -85,7 +85,7 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
                           ),
                           TextSpan(
                             text:
-                                '''\nhier können Sie vorab Ihr Kind\n(zwischen 3 und 14 Jahren)\nfür den Sporttag anmelden.\nDie 3-5jährigen Kinder absolvieren fünf,\ndie 6jährigen und älteren zehn  Disziplinen.\n\nAm Sporttag selbst müssen Sie nur noch\ndie Startgebühr von € 2,50 bezahlen,\ndamit die Anmeldung aktiv wird.\n''',
+                                '''\nhier können Sie vorab Ihr Kind\n(zwischen 3 und 14 Jahren)\nfür den Sporttag anmelden.\nDie Kinder bis 5 Jahre absolvieren fünf,\ndie älteren zehn  Disziplinen.\n\nAm Sporttag selbst müssen Sie nur noch\ndie Startgebühr von € 2,50 bezahlen,\ndamit die Anmeldung aktiv wird.\n''',
                           ),
                         ],
                       ),

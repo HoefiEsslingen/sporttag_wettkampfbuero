@@ -113,26 +113,6 @@ class _MehrfacheEingabeDialogWidgetState
                       });
                     },
                   ),
-        // DropdownButton<int>(
-        //   value: selectedValue,
-        //   icon: const Icon(Icons.arrow_drop_down),
-        //   iconSize: 24,
-        //   elevation: 16,
-        //   style: const TextStyle(color: Colors.black, fontSize: 18),
-        //   underline: Container(height: 2, color: Colors.blueAccent),
-        //   onChanged: (int? newValue) {
-        //     setState(() {
-        //       selectedValue = newValue!;
-        //     });
-        //   },
-        //   items: List.generate(
-        //     7,
-        //     (index) => DropdownMenuItem<int>(
-        //       value: index,
-        //       child: Text('Zone $index'),
-        //     ),
-        //   ),
-        // ),
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: _bestaetigeWert,
@@ -141,46 +121,6 @@ class _MehrfacheEingabeDialogWidgetState
                 ],
               ),
             ),
-
-          /**************
-           * alte Version mit CupertinoPicker
-          // if (aktivBearbeitetesKind != null)
-          //   Container(
-          //     color: Colors.white,
-          //     height: 190,
-          //     child: Expanded(
-          //       child: Column(
-          //         children: [
-          //           Text(
-          //             '${aktivBearbeitetesKind!.vorname} ${aktivBearbeitetesKind!.nachname}: erreichte Zone',
-          //             style: const TextStyle(fontSize: 20),
-          //           ),
-          //           SizedBox(
-          //             height: 100,
-          //             child: CupertinoPicker(
-          //               itemExtent: 40,
-          //               scrollController:
-          //                   FixedExtentScrollController(initialItem: 0),
-          //               onSelectedItemChanged: (value) {
-          //                 setState(() {
-          //                   selectedValue = value; // Werte ab 1
-          //                 });
-          //               },
-          //               children: List<Widget>.generate(
-          //                 7,
-          //                 (index) => Center(child: Text('$index')),
-          //               ),
-          //             ),
-          //           ),
-          //           CupertinoButton(
-          //             onPressed: _bestaetigeWert,
-          //             child: const Text('Bestätigen'),
-          //           ),
-          //         ],
-          //       ),
-          //     ),
-          //   ),
-          ***************/
           Expanded(
             child: ListView.builder(
               itemCount: teilnehmerReihenfolge.length,

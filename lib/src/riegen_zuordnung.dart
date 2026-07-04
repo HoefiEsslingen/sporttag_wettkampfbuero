@@ -49,7 +49,8 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   // Methode für die Anzeige der einzelnen Riege
   Future<void> _filterKinderNachRiege(int riegenNummer) async {
     alleKinder = await kindRepository.ladeAlleKinder();
-    setState(() {
+   if (!mounted) return; // Widget bereits disposed → abbrechen
+   setState(() {
       gefilterteKinder = alleKinder
           .where((kind) => kind.riegenNummer == riegenNummer)
           .toList()
