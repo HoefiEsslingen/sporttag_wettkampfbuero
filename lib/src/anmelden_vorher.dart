@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sporttag/src/hilfs_widgets/kinder_bestaetigen_dialog.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/tools/sporttag_config.dart';
 // import 'package:sporttag/src/tools/sporttag_config.dart';
@@ -206,17 +207,20 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
                           style: ElevatedButton.styleFrom(
                             foregroundColor: Colors.green,
                           ),
-                          onPressed: () {
+                          onPressed: () async {
                             // Wenn alle Validatoren der Felder des Formulars gültig sind.
                             if (_formKey.currentState!.validate()) {
                               if (kDebugMode) {
                                 print(
                                     "Formular ist gültig und kann verarbeitet werden");
                               }
-                              doSaveData();
-                              // Namensfelder leeren und Fokus zurücksetzen
-                              resetFelder();
-                              myFocusNode.requestFocus();
+                              // Vor dem eigentlichen Speichern die Eingaben noch
+                              // einmal zur Bestätigung anzeigen.
+                              await pruefeUndSpeichere();
+                              // doSaveData();
+                              // // Namensfelder leeren und Fokus zurücksetzen
+                              // resetFelder();
+                              // myFocusNode.requestFocus();
                             } else {
                               if (kDebugMode) {
                                 print("Formular ist nicht gültig");
@@ -235,14 +239,47 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
         ));
   }
 
-  Future<void> doSaveData() async {
-    Kind neuAngemeldet = Kind(
+  /// Zeigt den Bestätigungsdialog mit den erfassten Angaben an. Nur wenn der
+  /// Anwender bestätigt, wird tatsächlich gespeichert; bei Abbruch kommt der
+  /// Anwender zurück zum (noch ausgefüllten) Eingabeformular.
+  Future<void> pruefeUndSpeichere() async {
+    final vorschauKind = Kind(
       vorname: _vorName.text.trim(),
       nachname: _nachName.text.trim(),
       jahrgang: _jahrgang,
       geschlecht: _geschlecht,
       bezahlt: false,
     );
+
+    final bestaetigt = await KinderBestaetigenDialog.zeigen(
+      context: context,
+      kinder: [vorschauKind],
+      titel: 'Anmeldung bestätigen',
+      hinweisText: 'Soll diese Person tatsächlich angemeldet werden?',
+      bestaetigenText: 'Ja, anmelden',
+      abbrechenText: 'Abbrechen',
+    );
+
+    if (!bestaetigt) {
+      // Anwender möchte die Angaben noch korrigieren -> zurück zum Formular,
+      // die bereits eingegebenen Werte bleiben erhalten.
+      return;
+    }
+
+    await doSaveData(vorschauKind);
+    // Namensfelder leeren und Fokus zurücksetzen
+    resetFelder();
+    myFocusNode.requestFocus();
+  }
+
+  Future<void> doSaveData(Kind neuAngemeldet) async {
+    // Kind neuAngemeldet = Kind(
+    //   vorname: _vorName.text.trim(),
+    //   nachname: _nachName.text.trim(),
+    //   jahrgang: _jahrgang,
+    //   geschlecht: _geschlecht,
+    //   bezahlt: false,
+    // );
     if (await kindRepository.saveKind(kind: neuAngemeldet)) {
       showSuccess();
     } else {
