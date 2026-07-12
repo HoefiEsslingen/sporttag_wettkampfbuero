@@ -1,6 +1,8 @@
 // import 'dart:convert';
 // import 'package:flutter/services.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
+import 'package:intl/intl.dart';
+
 
 enum RouteEntscheidung { vorabAnmeldung, wettkampfbuero }
 class SporttagConfig {
@@ -25,6 +27,13 @@ class SporttagConfig {
     required this.kindAlterMax,
     required this.fuenfkampfMaxAlter,
   });
+
+  /// z.B. "14.07.2026"
+  String get datumKurz => DateFormat('dd.MM.yyyy', 'de_DE').format(datum);
+
+  /// z.B. "14. Juli"
+  String get datumLang => DateFormat('d. MMMM', 'de_DE').format(datum);
+
 
   static Future<SporttagConfig> laden() async {
   final query = QueryBuilder<ParseObject>(ParseObject('AppSetting'));
@@ -58,7 +67,6 @@ class SporttagConfig {
     fuenfkampfMaxAlter: (obj.get<num>('MaxAlterFuenfkampf') ?? 0).toInt(),
   );
 }
-
   /// Entscheidet anhand des aktuellen Datums welche Seite gezeigt wird:
   ///   - Vor  'anmeldung_bis' → Vorab-Anmeldung
   ///   - Ab   'anmeldung_bis' bis Veranstaltungsdatum → Wettkampfbüro

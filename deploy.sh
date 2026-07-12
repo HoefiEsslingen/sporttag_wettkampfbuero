@@ -49,3 +49,7 @@ else
     git push origin main
     echo "✅ Fertig! App live unter: https://HoefiEsslingen.github.io/sporttag/"
 fi
+echo "✅ Fertig! Push erfolgreich."
+echo "⏳ GitHub Pages braucht ca. 1-2 Minuten zum Veröffentlichen."
+echo "🔗 Status prüfen: https://github.com/HoefiEsslingen/sporttag/deployments"
+echo "🌐 Danach mit Hard-Reload (Cmd+Shift+R) oder im Inkognito-Fenster testen: https://HoefiEsslingen.github.io/sporttag/"

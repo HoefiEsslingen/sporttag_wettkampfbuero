@@ -13,9 +13,11 @@ import 'src/anmelden_vorher.dart';
 import 'src/danke_vorab_anmeldung.dart';
 import 'src/wettbewerb.dart';
 import 'package:sporttag/src/tools/parse_config.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('de_DE', null);
 
   await Parse().initialize(keyApplicationId, keyParseServerUrl,
       clientKey: keyClientKey, debug: true);
