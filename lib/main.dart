@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:sporttag/src/riegen_zuordnung.dart';
 import 'package:sporttag/src/tools/sporttag_config.dart';
@@ -29,14 +30,19 @@ void main() async {
     RouteEntscheidung.wettkampfbuero => 'home',
   };
 
-  runApp(MainApp(startRoute: startRoute, config: config));
+  runApp(
+    Provider<SporttagConfig>.value(
+      value: config,
+      child: MainApp(startRoute: startRoute),
+    ),
+  );
 }
 
 class MainApp extends StatelessWidget {
   final String startRoute;
-  final SporttagConfig config;
+//  final SporttagConfig config;
 
-  const MainApp({super.key, required this.startRoute, required this.config});
+  const MainApp({super.key, required this.startRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -89,13 +95,13 @@ class MainApp extends StatelessWidget {
           // Extrahiert die Riegennummer (als int) und Wettbewerbstyp (z. B. "Zehnkampf")
           final riegenNummer = int.tryParse(uri.pathSegments[1]);
           final wettbewerbsTyp = Uri.decodeComponent(uri.pathSegments[2]);
-            if (riegenNummer != null && wettbewerbsTyp.isNotEmpty) {
+          if (riegenNummer != null && wettbewerbsTyp.isNotEmpty) {
             return MaterialPageRoute(
-               builder: (_) => Wettbewerb(
-                 riegenNummer: riegenNummer,
-                 wettbewerbsTyp: wettbewerbsTyp,
-               ),
-             );
+              builder: (_) => Wettbewerb(
+                riegenNummer: riegenNummer,
+                wettbewerbsTyp: wettbewerbsTyp,
+              ),
+            );
           }
         } else if (uri.pathSegments.length == 1) {
           // Diese Route zeigt auf die Voranameldung für den Zehnkampf.

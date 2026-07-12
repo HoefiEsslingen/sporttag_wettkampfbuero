@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
-// import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
+import 'package:sporttag/src/tools/sporttag_config.dart';
+// import 'package:sporttag/src/tools/sporttag_config.dart';
 
 import 'klassen/kind_klasse.dart';
 import 'tools/kind_repository.dart';
@@ -22,6 +24,7 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
   late FocusNode myFocusNode;
   late List<int> _jahrgangListe;
   late int _jahrgang;
+  late SporttagConfig config;
 
   /// Controller für die TextFormField-Widgets
   final _vorName = TextEditingController();
@@ -32,19 +35,29 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
   @override
   void initState() {
     super.initState();
+    // Konfiguration laden und Startroute bestimmen
+    // final config = await SporttagConfig.laden();
+    // final startRoute = switch (config.routeEntscheiden()) {
+    //   RouteEntscheidung.vorabAnmeldung => 'vorabAnmeldung',
+    //   RouteEntscheidung.wettkampfbuero => 'home',
+    // };
     myFocusNode = FocusNode();
     kindRepository = KindRepository();
+    // Zugriff über context.read, da initState synchron ist
+    config = context.read<SporttagConfig>();
 
-    _jahrgang = _zulaessigeJahrgaenge().first;
+    _jahrgang = _zulaessigeJahrgaenge(config).first;
   }
 
-  List<int> _zulaessigeJahrgaenge() {
+  List<int> _zulaessigeJahrgaenge(SporttagConfig config) {
     // Die Logik um die zulässigen Jahrgänge zu bestimmen:
     // basierend auf dem aktuellen Datum und dem festegelegten minAlter bzw. maxAlter
     // wird die Liste der zulässigen Jahrgänge erstellt.
     int currentYear = DateTime.now().year;
-    int maxAlter = 14; // Maximales Alter für die Anmeldung
-    int minAlter = 3; // Minimales Alter für die Anmeldung
+    int maxAlter = config.kindAlterMax;
+    int minAlter = config.kindAlterMin;
+    // int maxAlter = 14; // Maximales Alter für die Anmeldung
+    // int minAlter = 3; // Minimales Alter für die Anmeldung
     _jahrgangListe = [];
     for (int i = minAlter; i <= maxAlter; i++) {
       _jahrgangListe.add(currentYear - i);
@@ -71,12 +84,12 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
                     const SizedBox(height: 32.0),
                     RichText(
                       textAlign: TextAlign.center,
-                      text: const TextSpan(
-                        style: TextStyle(
+                      text: TextSpan(
+                        style: const TextStyle(
                           fontSize: 16.0,
                         ),
                         children: <TextSpan>[
-                          TextSpan(
+                          const TextSpan(
                             text: 'Herzlich Willkommen\n',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
@@ -84,8 +97,14 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
                             ),
                           ),
                           TextSpan(
-                            text:
-                                '''\nhier können Sie vorab Ihr Kind\n(zwischen 3 und 14 Jahren)\nfür den Sporttag anmelden.\nDie Kinder bis 5 Jahre absolvieren fünf,\ndie älteren zehn  Disziplinen.\n\nAm Sporttag selbst müssen Sie nur noch\ndie Startgebühr von € 2,50 bezahlen,\ndamit die Anmeldung aktiv wird.\n''',
+                            text: '\nHier können Sie Ihr Kind\n'
+                                '(im Alter zwischen ${config.kindAlterMin} und ${config.kindAlterMax} Jahren)\n'
+                                'vorab für den Sporttag anmelden.\n'
+                                'Kinder in Alter bis ${config.fuenfkampfMaxAlter} Jahre absolvieren fünf,\n'
+                                'die älteren zehn  Disziplinen.\n\n'
+                                'Am Sporttag selbst bezahlen Sie lediglich noch\n'
+                                'die Startgebühr von € ${config.gebuehr.toStringAsFixed(2).replaceAll('.', ',')},\n'
+                                'damit die Anmeldung aktiv wird.\n',
                           ),
                         ],
                       ),
@@ -224,10 +243,11 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
       geschlecht: _geschlecht,
       bezahlt: false,
     );
-    if(await kindRepository.saveKind(kind: neuAngemeldet)) {
+    if (await kindRepository.saveKind(kind: neuAngemeldet)) {
       showSuccess();
     } else {
-      showError("Die Anmeldung Ihres Kindes war nicht erfolgreich. Bitte versuchen Sie es später erneut.");
+      showError(
+          "Die Anmeldung Ihres Kindes war nicht erfolgreich. Bitte versuchen Sie es später erneut.");
     }
   }
 
