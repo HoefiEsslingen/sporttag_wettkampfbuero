@@ -98,12 +98,102 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
   }
 
   // Methode, um Änderungen an den Kindern zu speichern
-  Future<void> _speichereAenderungen() async {
-    await kindRepository
-        .saveKinderListe(kinder: kinderListe); // Änderungen speichern
-    _ladeKinder();
+Future<void> _speichereAenderungen() async {
+  final zuSpeichern = kinderListe.where((k) => k.mussGespeichertWerden).toList();
+
+  if (zuSpeichern.isEmpty) {
+    return;
   }
 
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const PopScope(
+      canPop: false,
+      child: Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Änderungen werden gespeichert…'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  try {
+    // NEU: Rückgabewert (fehlgeschlagene Kinder) auswerten
+    final fehlgeschlagen = await kindRepository.saveKinderListe(kinder: zuSpeichern);
+
+    setState(() {
+      for (final k in zuSpeichern) {
+        if (!fehlgeschlagen.contains(k)) {
+          k.markiereAlsGespeichert();
+        }
+        // fehlgeschlagene Kinder behalten ihren Status (neu/geaendert)
+      }
+    });
+
+    await _ladeKinder();
+
+    if (fehlgeschlagen.isNotEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${fehlgeschlagen.length} Kind(er) konnten nicht gespeichert werden. '
+            'Bitte erneut versuchen.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } finally {
+    if (mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
+}
+// Future<void> _speichereAenderungen() async {
+//   // Blockierenden Ladedialog anzeigen
+//   showDialog(
+//     context: context,
+//     barrierDismissible: false,
+//     builder: (context) => PopScope(
+//       canPop: false, // verhindert Schließen per Zurück-Taste
+//       child: Center(
+//         child: Card(
+//           child: Padding(
+//             padding: const EdgeInsets.all(24.0),
+//             child: Column(
+//               mainAxisSize: MainAxisSize.min,
+//               children: const [
+//                 CircularProgressIndicator(),
+//                 SizedBox(height: 16),
+//                 Text('Änderungen werden gespeichert…'),
+//               ],
+//             ),
+//           ),
+//         ),
+//       ),
+//     ),
+//   );
+
+//   try {
+//     await kindRepository.saveKinderListe(kinder: kinderListe);
+//     await _ladeKinder();
+//   } finally {
+//     if (mounted) {
+//       Navigator.of(context, rootNavigator: true).pop(); // Ladedialog schließen
+//     }
+//   }
+// }
   void undoChanges() {
     // alten DAtenbestand wieder anzeigen
     _ladeKinder();
@@ -128,14 +218,23 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
               tooltip: "Änderungen speichern",
               icon: const Icon(Icons.save),
               onPressed: _speichereAenderungen),
-          IconButton(
-            tooltip: "Anmeldung beenden",
-            icon: const Icon(Icons.cancel),
-            onPressed: () {
-              _speichereAenderungen();
-              Navigator.of(context).pop();
-            },
-          ),
+IconButton(
+  tooltip: "Anmeldung beenden",
+  icon: const Icon(Icons.cancel),
+  onPressed: () async {
+    await _speichereAenderungen(); // NEU: await ergänzt
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+  },
+),          // IconButton(
+          //   tooltip: "Anmeldung beenden",
+          //   icon: const Icon(Icons.cancel),
+          //   onPressed: () {
+          //     _speichereAenderungen();
+          //     Navigator.of(context).pop();
+          //   },
+          // ),
           const HelpIconButton(typ: HilfeTyp.text, thema: HilfeThema.anmeldung),
         ],
       ),
@@ -170,7 +269,8 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                               },
                             ),
                             DropdownButtonFormField<String>(
-                              initialValue: _geschlecht,
+                              initialValue: kind.geschlecht.isNotEmpty ? kind.geschlecht : _geschlecht,
+                              // initialValue: _geschlecht,
                               onChanged: (newValue) =>
                                   setState(() => kind.geschlecht = newValue!),
                               items: [
@@ -187,7 +287,8 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
                             ),
                             // Auswahl-Menü für den Jahrgang
                             DropdownButtonFormField<int>(
-                              initialValue: _jahrgang,
+                              initialValue: kind.jahrgang != 0 ? kind.jahrgang : _jahrgang,
+                              // initialValue: _jahrgang,
                               onChanged: (newValue) => setState(
                                   () => kind.jahrgang = newValue!),
                               items: [
