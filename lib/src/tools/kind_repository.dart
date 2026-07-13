@@ -22,8 +22,7 @@ class BatchErgebnis {
   bool get alleErfolgreich => fehlgeschlagen == 0;
 
   @override
-  String toString() =>
-      'BatchErgebnis(✓ $erfolgreich / ✗ $fehlgeschlagen)';
+  String toString() => 'BatchErgebnis(✓ $erfolgreich / ✗ $fehlgeschlagen)';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -44,13 +43,13 @@ class KindRepository {
   /// Baut ein Kind-Dart-Objekt aus einem ParseObject (Klasse "Kind").
   Kind _kindVonParse(ParseObject p) {
     return Kind(
-      objectId:   p.objectId ?? '',
-      vorname:    p.get<String>('vorName')    ?? '',
-      nachname:   p.get<String>('nachName')   ?? '',
+      objectId: p.objectId ?? '',
+      vorname: p.get<String>('vorName') ?? '',
+      nachname: p.get<String>('nachName') ?? '',
       geschlecht: p.get<String>('geschlecht') ?? 'w',
-      jahrgang:   p.get<int>('jahrgang')      ?? 2017,
-      bezahlt:    p.get<bool>('bezahlt')       ?? false,
-      version:    p.get<int>('version')        ?? 1,
+      jahrgang: p.get<int>('jahrgang') ?? 2017,
+      bezahlt: p.get<bool>('bezahlt') ?? false,
+      version: p.get<int>('version') ?? 1,
     );
   }
 
@@ -61,7 +60,9 @@ class KindRepository {
     int maxVersuche = 3,
   }) async {
     ParseResponse response = await obj.save();
-    for (int versuch = 2; versuch <= maxVersuche && !response.success; versuch++) {
+    for (int versuch = 2;
+        versuch <= maxVersuche && !response.success;
+        versuch++) {
       await Future.delayed(Duration(seconds: 1 << (versuch - 2))); // 1s, 2s
       _log.w('Retry $versuch/$maxVersuche…');
       response = await obj.save();
@@ -79,84 +80,88 @@ class KindRepository {
   ///   Beim Update wird geprüft, ob "version" in der DB noch dem erwarteten
   ///   Wert entspricht. Stimmt er nicht überein, hat ein anderes Gerät
   ///   zwischenzeitlich gespeichert → Konflikt wird gemeldet.
-/// Erstellt ein neues Kind in der Datenbank.
-/// Setzt bei Erfolg objectId und version auf dem übergebenen Kind-Objekt.
-Future<bool> _createKind(Kind kind) async {
-  final obj = ParseObject('Kind')
-    ..set('vorName',    kind.vorname)
-    ..set('nachName',   kind.nachname)
-    ..set('geschlecht', kind.geschlecht)
-    ..set('jahrgang',   kind.jahrgang)
-    ..set('bezahlt',    kind.bezahlt)
-    ..set('version',    1);
+  /// Erstellt ein neues Kind in der Datenbank.
+  /// Setzt bei Erfolg objectId und version auf dem übergebenen Kind-Objekt.
+  Future<bool> _createKind(Kind kind) async {
+    final obj = ParseObject('Kind')
+      ..set('vorName', kind.vorname)
+      ..set('nachName', kind.nachname)
+      ..set('geschlecht', kind.geschlecht)
+      ..set('jahrgang', kind.jahrgang)
+      ..set('bezahlt', kind.bezahlt)
+      ..set('version', 1);
 
-  final response = await _saveWithRetry(obj);
-  if (response.success) {
-    kind.objectId = (response.results!.first as ParseObject).objectId!;
-    kind.version  = 1;
-    _log.i('Kind neu angelegt: ${kind.vorname} ${kind.nachname}');
-    return true;
-  }
-  _log.e('CREATE Kind fehlgeschlagen: ${response.error?.message}');
-  return false;
-}
-
-/// Aktualisiert ein bestehendes Kind mit Optimistic Locking.
-/// Erhöht bei Erfolg die version auf dem übergebenen Kind-Objekt.
-Future<bool> _updateKind(Kind kind) async {
-  // Nur Felder aktualisieren, die in Kind direkt gespeichert sind.
-  // "version" wird atomar inkrementiert und als Guard verwendet.
-  final obj = ParseObject('Kind')
-    ..objectId = kind.objectId
-    ..set('vorName',    kind.vorname)
-    ..set('nachName',   kind.nachname)
-    ..set('geschlecht', kind.geschlecht)
-    ..set('jahrgang',   kind.jahrgang)
-    ..set('bezahlt',    kind.bezahlt)
-    ..setIncrement('version', 1); // atomar: kein Read-Modify-Write nötig
-
-  // Guard: update nur wenn version noch dem erwarteten Wert entspricht
-  // (Parse Server unterstützt kein WHERE in save() direkt →
-  //  wir prüfen nach dem Save, ob version tatsächlich +1 ist)
-  final response = await _saveWithRetry(obj);
-  if (response.success) {
-    kind.version += 1;
-    _log.i('Kind aktualisiert: ${kind.vorname} ${kind.nachname} (v${kind.version})');
-    return true;
-  }
-  _log.e('UPDATE Kind fehlgeschlagen: ${response.error?.message}');
-  return false;
-}
-
-/// Öffentlicher Einstiegspunkt zum Speichern eines einzelnen Kindes.
-/// Entscheidet automatisch zwischen Create und Update.
-Future<bool> saveKind({required Kind kind}) async {
-  final istNeu = kind.objectId.isEmpty;
-  return istNeu ? await _createKind(kind) : await _updateKind(kind);
-}
-/// Speichert nur die übergebenen Kinder (z.B. nur neue/geänderte).
-/// Ruft je nach objectId _createKind() oder _updateKind() auf.
-///
-/// Gibt die Liste der Kinder zurück, deren Speichern fehlgeschlagen ist
-/// (leer = alles erfolgreich).
-Future<List<Kind>> saveKinderListe({required List<Kind> kinder}) async {
-  final fehlgeschlagen = <Kind>[];
-
-  for (final kind in kinder) {
-    final istNeu = kind.objectId.isEmpty;
-    final erfolgreich = istNeu ? await _createKind(kind) : await _updateKind(kind);
-
-    if (!erfolgreich) {
-      fehlgeschlagen.add(kind);
+    final response = await _saveWithRetry(obj);
+    if (response.success) {
+      kind.objectId = (response.results!.first as ParseObject).objectId!;
+      kind.version = 1;
+      _log.i('Kind neu angelegt: ${kind.vorname} ${kind.nachname}');
+      return true;
     }
+    _log.e('CREATE Kind fehlgeschlagen: ${response.error?.message}');
+    return false;
   }
 
-  if (fehlgeschlagen.isNotEmpty) {
-    _log.w('${fehlgeschlagen.length} von ${kinder.length} Kindern konnten nicht gespeichert werden');
+  /// Aktualisiert ein bestehendes Kind mit Optimistic Locking.
+  /// Erhöht bei Erfolg die version auf dem übergebenen Kind-Objekt.
+  Future<bool> _updateKind(Kind kind) async {
+    // Nur Felder aktualisieren, die in Kind direkt gespeichert sind.
+    // "version" wird atomar inkrementiert und als Guard verwendet.
+    final obj = ParseObject('Kind')
+      ..objectId = kind.objectId
+      ..set('vorName', kind.vorname)
+      ..set('nachName', kind.nachname)
+      ..set('geschlecht', kind.geschlecht)
+      ..set('jahrgang', kind.jahrgang)
+      ..set('bezahlt', kind.bezahlt)
+      ..setIncrement('version', 1); // atomar: kein Read-Modify-Write nötig
+
+    // Guard: update nur wenn version noch dem erwarteten Wert entspricht
+    // (Parse Server unterstützt kein WHERE in save() direkt →
+    //  wir prüfen nach dem Save, ob version tatsächlich +1 ist)
+    final response = await _saveWithRetry(obj);
+    if (response.success) {
+      kind.version += 1;
+      _log.i(
+          'Kind aktualisiert: ${kind.vorname} ${kind.nachname} (v${kind.version})');
+      return true;
+    }
+    _log.e('UPDATE Kind fehlgeschlagen: ${response.error?.message}');
+    return false;
   }
 
-  return fehlgeschlagen;
-}
+  /// Öffentlicher Einstiegspunkt zum Speichern eines einzelnen Kindes.
+  /// Entscheidet automatisch zwischen Create und Update.
+  Future<bool> saveKind({required Kind kind}) async {
+    final istNeu = kind.objectId.isEmpty;
+    return istNeu ? await _createKind(kind) : await _updateKind(kind);
+  }
+
+  /// Speichert nur die übergebenen Kinder (z.B. nur neue/geänderte).
+  /// Ruft je nach objectId _createKind() oder _updateKind() auf.
+  ///
+  /// Gibt die Liste der Kinder zurück, deren Speichern fehlgeschlagen ist
+  /// (leer = alles erfolgreich).
+  Future<List<Kind>> saveKinderListe({required List<Kind> kinder}) async {
+    final fehlgeschlagen = <Kind>[];
+
+    for (final kind in kinder) {
+      final istNeu = kind.objectId.isEmpty;
+      final erfolgreich =
+          istNeu ? await _createKind(kind) : await _updateKind(kind);
+
+      if (!erfolgreich) {
+        fehlgeschlagen.add(kind);
+      }
+    }
+
+    if (fehlgeschlagen.isNotEmpty) {
+      _log.w(
+          '${fehlgeschlagen.length} von ${kinder.length} Kindern konnten nicht gespeichert werden');
+    }
+
+    return fehlgeschlagen;
+  }
 
   // ─────────────────────────────────────────────────────────────────────────
   // READ  –  Kind
@@ -193,10 +198,8 @@ Future<List<Kind>> saveKinderListe({required List<Kind> kinder}) async {
       final response = await query.query();
       if (!response.success || response.results == null) break;
 
-      final seite = response.results!
-          .cast<ParseObject>()
-          .map(_kindVonParse)
-          .toList();
+      final seite =
+          response.results!.cast<ParseObject>().map(_kindVonParse).toList();
 
       ergebnis.addAll(seite);
       if (seite.length < seitenGroesse) break; // letzte Seite erreicht
@@ -212,32 +215,34 @@ Future<List<Kind>> saveKinderListe({required List<Kind> kinder}) async {
   /// Ordnet ein Kind einer Riege zu (neuer Eintrag in "kinderDerRiege").
   /// Prüft vorher, ob der Eintrag bereits existiert (Idempotenz).
   Future<bool> weiseKindRiegeZu({
-    required Kind   kind,
-    required Riege  riege,
-    required int    position,
+    required Kind kind,
+    required Riege riege,
+    required int position,
   }) async {
     // Idempotenz-Check: existiert der Eintrag bereits?
     final existing = await _ladeKindDerRiegeEintrag(
-      kindObjectId:   kind.objectId,
+      kindObjectId: kind.objectId,
       riegenObjectId: riege.objectId,
     );
     if (existing != null) {
-      _log.w('Zuordnung ${kind.nachname} → Riege ${riege.riegenNummer} existiert bereits.');
+      _log.w(
+          'Zuordnung ${kind.nachname} → Riege ${riege.riegenNummer} existiert bereits.');
       return true; // bereits korrekt zugeordnet
     }
 
-    final kindPointer  = ParseObject('Kind')..objectId = kind.objectId;
+    final kindPointer = ParseObject('Kind')..objectId = kind.objectId;
     final riegePointer = ParseObject('Riege')..objectId = riege.objectId;
 
     final obj = ParseObject('kinderDerRiege')
-      ..set('kindID',    kindPointer)
-      ..set('riegenID',  riegePointer)
-      ..set('position',  position)
-      ..set('version',   1);
+      ..set('kindID', kindPointer)
+      ..set('riegenID', riegePointer)
+      ..set('position', position)
+      ..set('version', 1);
 
     final response = await _saveWithRetry(obj);
     if (response.success) {
-      _log.i('${kind.nachname} → Riege ${riege.riegenNummer} (Pos. $position) gespeichert.');
+      _log.i(
+          '${kind.nachname} → Riege ${riege.riegenNummer} (Pos. $position) gespeichert.');
       return true;
     }
     _log.e('Zuordnung fehlgeschlagen: ${response.error?.message}');
@@ -246,9 +251,9 @@ Future<List<Kind>> saveKinderListe({required List<Kind> kinder}) async {
 
   /// Aktualisiert die Riegenzuordnung eines Kindes (z. B. beim Umteilen).
   Future<bool> aktualisiereRiegenZuordnung({
-    required Kind  kind,
+    required Kind kind,
     required Riege neueRiege,
-    required int   neuePosition,
+    required int neuePosition,
   }) async {
     // bestehenden Eintrag suchen
     final query = QueryBuilder<ParseObject>(ParseObject('kinderDerRiege'))
@@ -256,9 +261,12 @@ Future<List<Kind>> saveKinderListe({required List<Kind> kinder}) async {
       ..includeObject(['riegenID']);
 
     final response = await query.query();
-    if (!response.success || response.results == null || response.results!.isEmpty) {
+    if (!response.success ||
+        response.results == null ||
+        response.results!.isEmpty) {
       // Kein Eintrag vorhanden → neu anlegen
-      return weiseKindRiegeZu(kind: kind, riege: neueRiege, position: neuePosition);
+      return weiseKindRiegeZu(
+          kind: kind, riege: neueRiege, position: neuePosition);
     }
 
     final eintrag = response.results!.first as ParseObject;
@@ -266,16 +274,18 @@ Future<List<Kind>> saveKinderListe({required List<Kind> kinder}) async {
 
     final update = ParseObject('kinderDerRiege')
       ..objectId = eintrag.objectId
-      ..set('riegenID',  riegePointer)
-      ..set('position',  neuePosition)
+      ..set('riegenID', riegePointer)
+      ..set('position', neuePosition)
       ..setIncrement('version', 1);
 
     final updateRes = await _saveWithRetry(update);
     if (updateRes.success) {
-      _log.i('Riegenzuordnung ${kind.nachname} → Riege ${neueRiege.riegenNummer} aktualisiert.');
+      _log.i(
+          'Riegenzuordnung ${kind.nachname} → Riege ${neueRiege.riegenNummer} aktualisiert.');
       return true;
     }
-    _log.e('Aktualisierung Riegenzuordnung fehlgeschlagen: ${updateRes.error?.message}');
+    _log.e(
+        'Aktualisierung Riegenzuordnung fehlgeschlagen: ${updateRes.error?.message}');
     return false;
   }
 
@@ -322,7 +332,8 @@ Future<List<Kind>> saveKinderListe({required List<Kind> kinder}) async {
       ..whereEqualTo('riegenID', riegePointer);
 
     final response = await query.query();
-    if (!response.success || response.results == null) return true; // bereits leer
+    if (!response.success || response.results == null)
+      return true; // bereits leer
 
     int fehler = 0;
     for (final obj in response.results!.cast<ParseObject>()) {
@@ -345,33 +356,35 @@ Future<List<Kind>> saveKinderListe({required List<Kind> kinder}) async {
   ///   Damit sind doppelte Auswertungen (z. B. durch versehentlichen
   ///   Doppelklick oder Netzwerk-Retry) ausgeschlossen.
   Future<bool> speichereResultat({
-    required Kind    kind,
+    required Kind kind,
     required Station station,
-    required int     punkte,
+    required int punkte,
   }) async {
     // Guard: existiert der Eintrag bereits?
     final vorhanden = await _resultatVorhanden(
-      kindObjectId:     kind.objectId,
+      kindObjectId: kind.objectId,
       stationsObjectId: station.objectId,
     );
     if (vorhanden) {
-      _log.w('Resultat für ${kind.nachname} @ ${station.stationsName} existiert bereits. Übersprungen.');
+      _log.w(
+          'Resultat für ${kind.nachname} @ ${station.stationsName} existiert bereits. Übersprungen.');
       return false; // kein Doppel-Eintrag
     }
 
-    final kindPointer    = ParseObject('Kind')    ..objectId = kind.objectId;
-    final stationPointer = ParseObject('Station') ..objectId = station.objectId;
+    final kindPointer = ParseObject('Kind')..objectId = kind.objectId;
+    final stationPointer = ParseObject('Station')..objectId = station.objectId;
 
     final obj = ParseObject('resultate')
-      ..set('kindID',      kindPointer)
-      ..set('stationsID',  stationPointer)
-      ..set('punkte',      punkte)
-      ..set('erreichtUm',  DateTime.now())
-      ..set('version',     1);
+      ..set('kindID', kindPointer)
+      ..set('stationsID', stationPointer)
+      ..set('punkte', punkte)
+      ..set('erreichtUm', DateTime.now())
+      ..set('version', 1);
 
     final response = await _saveWithRetry(obj);
     if (response.success) {
-      _log.i('Resultat gespeichert: ${kind.nachname} @ ${station.stationsName} → $punkte Pkt.');
+      _log.i(
+          'Resultat gespeichert: ${kind.nachname} @ ${station.stationsName} → $punkte Pkt.');
       return true;
     }
     _log.e('Resultat-Speichern fehlgeschlagen: ${response.error?.message}');
@@ -379,30 +392,30 @@ Future<List<Kind>> saveKinderListe({required List<Kind> kinder}) async {
   }
 
   /// Lädt die Gesamtpunktzahl eines Kindes aus der Back4App-Klasse 'resultate'.
-/// Gibt 0 zurück, falls keine Ergebnisse vorhanden sind oder die Abfrage fehlschlägt.
-Future<int> ladePunktesumme({required Kind kind}) async {
+  /// Gibt 0 zurück, falls keine Ergebnisse vorhanden sind oder die Abfrage fehlschlägt.
+  Future<int> ladePunktesumme({required Kind kind}) async {
+    // Pointer auf den Kind-Datensatz in Back4App erstellen.
+    // Parse benötigt diesen Pointer, um in 'resultate' nach kindID zu filtern.
+    final kindPointer = ParseObject('Kind')..objectId = kind.objectId;
 
-  // Pointer auf den Kind-Datensatz in Back4App erstellen.
-  // Parse benötigt diesen Pointer, um in 'resultate' nach kindID zu filtern.
-  final kindPointer = ParseObject('Kind')..objectId = kind.objectId;
+    // Abfrage auf die Klasse 'resultate': alle Einträge dieses Kindes laden.
+    final query = QueryBuilder<ParseObject>(ParseObject('resultate'))
+      ..whereEqualTo('kindID', kindPointer);
 
-  // Abfrage auf die Klasse 'resultate': alle Einträge dieses Kindes laden.
-  final query = QueryBuilder<ParseObject>(ParseObject('resultate'))
-    ..whereEqualTo('kindID', kindPointer);
+    final response = await query.query();
 
-  final response = await query.query();
+    // Fehlerfall: Abfrage fehlgeschlagen oder keine Einträge → 0 Punkte
+    if (!response.success || response.results == null) return 0;
 
-  // Fehlerfall: Abfrage fehlgeschlagen oder keine Einträge → 0 Punkte
-  if (!response.success || response.results == null) return 0;
+    // Alle resultate-Einträge durchlaufen, Punktefeld auslesen und aufsummieren.
+    // ?? 0 verhindert null-Fehler falls 'punkte' in einem Eintrag nicht gesetzt ist.
+    // fold() akkumuliert die Summe: startet bei 0, addiert jeden Punktewert.
+    return response.results!
+        .cast<ParseObject>() // Typ auf ParseObject festlegen
+        .map((obj) => obj.get<int>('punkte') ?? 0) // Punktefeld auslesen
+        .fold<int>(0, (sum, p) => sum + p); // Summe bilden
+  }
 
-  // Alle resultate-Einträge durchlaufen, Punktefeld auslesen und aufsummieren.
-  // ?? 0 verhindert null-Fehler falls 'punkte' in einem Eintrag nicht gesetzt ist.
-  // fold() akkumuliert die Summe: startet bei 0, addiert jeden Punktewert.
-  return response.results!
-      .cast<ParseObject>()                        // Typ auf ParseObject festlegen
-      .map((obj) => obj.get<int>('punkte') ?? 0)  // Punktefeld auslesen
-      .fold<int>(0, (sum, p) => sum + p);              // Summe bilden
-}
   /// Lädt alle Resultate (als Map Kind → Punkte) für eine Liste von Kindern.
   /// Effizienter als n Einzelabfragen.
   Future<Map<String, int>> ladePunkteSummenFuerKinder({
@@ -411,9 +424,8 @@ Future<int> ladePunktesumme({required Kind kind}) async {
     if (kinder.isEmpty) return {};
 
     // whereContainedIn: ein einziger DB-Request für alle Kinder
-    final pointers = kinder
-        .map((k) => ParseObject('Kind')..objectId = k.objectId)
-        .toList();
+    final pointers =
+        kinder.map((k) => ParseObject('Kind')..objectId = k.objectId).toList();
 
     final query = QueryBuilder<ParseObject>(ParseObject('resultate'))
       ..whereContainedIn('kindID', pointers);
@@ -424,9 +436,9 @@ Future<int> ladePunktesumme({required Kind kind}) async {
     final summen = <String, int>{};
     for (final obj in response.results!.cast<ParseObject>()) {
       final kindPointer = obj.get<ParseObject>('kindID');
-      final objectId    = kindPointer?.objectId ?? '';
-      final punkte      = obj.get<int>('punkte') ?? 0;
-      summen[objectId]  = (summen[objectId] ?? 0) + punkte;
+      final objectId = kindPointer?.objectId ?? '';
+      final punkte = obj.get<int>('punkte') ?? 0;
+      summen[objectId] = (summen[objectId] ?? 0) + punkte;
     }
     return summen;
   }
@@ -446,7 +458,7 @@ Future<int> ladePunktesumme({required Kind kind}) async {
 
   List<Kind> zurAnzeigeSortieren({
     required List<Kind> alleKinder,
-    required Set<Kind>  ausgewerteteKinder,
+    required Set<Kind> ausgewerteteKinder,
   }) {
     return List<Kind>.from(alleKinder)
       ..sort((a, b) {
@@ -477,11 +489,14 @@ Future<int> ladePunktesumme({required Kind kind}) async {
     required String riegenObjectId,
   }) async {
     final query = QueryBuilder<ParseObject>(ParseObject('kinderDerRiege'))
-      ..whereEqualTo('kindID',   ParseObject('Kind')  ..objectId = kindObjectId)
-      ..whereEqualTo('riegenID', ParseObject('Riege') ..objectId = riegenObjectId);
+      ..whereEqualTo('kindID', ParseObject('Kind')..objectId = kindObjectId)
+      ..whereEqualTo(
+          'riegenID', ParseObject('Riege')..objectId = riegenObjectId);
 
     final response = await query.query();
-    if (response.success && response.results != null && response.results!.isNotEmpty) {
+    if (response.success &&
+        response.results != null &&
+        response.results!.isNotEmpty) {
       return response.results!.first as ParseObject;
     }
     return null;
@@ -492,8 +507,9 @@ Future<int> ladePunktesumme({required Kind kind}) async {
     required String stationsObjectId,
   }) async {
     final query = QueryBuilder<ParseObject>(ParseObject('resultate'))
-      ..whereEqualTo('kindID',     ParseObject('Kind')    ..objectId = kindObjectId)
-      ..whereEqualTo('stationsID', ParseObject('Station') ..objectId = stationsObjectId);
+      ..whereEqualTo('kindID', ParseObject('Kind')..objectId = kindObjectId)
+      ..whereEqualTo(
+          'stationsID', ParseObject('Station')..objectId = stationsObjectId);
 
     final response = await query.query();
     return response.success &&
