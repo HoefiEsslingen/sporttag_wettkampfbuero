@@ -79,73 +79,84 @@ class KindRepository {
   ///   Beim Update wird geprüft, ob "version" in der DB noch dem erwarteten
   ///   Wert entspricht. Stimmt er nicht überein, hat ein anderes Gerät
   ///   zwischenzeitlich gespeichert → Konflikt wird gemeldet.
-  Future<bool> saveKind({required Kind kind}) async {
-    final isNew = kind.objectId.isEmpty;
+/// Erstellt ein neues Kind in der Datenbank.
+/// Setzt bei Erfolg objectId und version auf dem übergebenen Kind-Objekt.
+Future<bool> _createKind(Kind kind) async {
+  final obj = ParseObject('Kind')
+    ..set('vorName',    kind.vorname)
+    ..set('nachName',   kind.nachname)
+    ..set('geschlecht', kind.geschlecht)
+    ..set('jahrgang',   kind.jahrgang)
+    ..set('bezahlt',    kind.bezahlt)
+    ..set('version',    1);
 
-    if (isNew) {
-      // ── CREATE ────────────────────────────────────────────────────────────
-      final obj = ParseObject('Kind')
-        ..set('vorName',    kind.vorname)
-        ..set('nachName',   kind.nachname)
-        ..set('geschlecht', kind.geschlecht)
-        ..set('jahrgang',   kind.jahrgang)
-        ..set('bezahlt',    kind.bezahlt)
-        ..set('version',    1);
+  final response = await _saveWithRetry(obj);
+  if (response.success) {
+    kind.objectId = (response.results!.first as ParseObject).objectId!;
+    kind.version  = 1;
+    _log.i('Kind neu angelegt: ${kind.vorname} ${kind.nachname}');
+    return true;
+  }
+  _log.e('CREATE Kind fehlgeschlagen: ${response.error?.message}');
+  return false;
+}
 
-      final response = await _saveWithRetry(obj);
-      if (response.success) {
-        kind.objectId = (response.results!.first as ParseObject).objectId!;
-        kind.version  = 1;
-        _log.i('Kind neu angelegt: ${kind.vorname} ${kind.nachname}');
-        return true;
-      }
-      _log.e('CREATE Kind fehlgeschlagen: ${response.error?.message}');
-      return false;
+/// Aktualisiert ein bestehendes Kind mit Optimistic Locking.
+/// Erhöht bei Erfolg die version auf dem übergebenen Kind-Objekt.
+Future<bool> _updateKind(Kind kind) async {
+  // Nur Felder aktualisieren, die in Kind direkt gespeichert sind.
+  // "version" wird atomar inkrementiert und als Guard verwendet.
+  final obj = ParseObject('Kind')
+    ..objectId = kind.objectId
+    ..set('vorName',    kind.vorname)
+    ..set('nachName',   kind.nachname)
+    ..set('geschlecht', kind.geschlecht)
+    ..set('jahrgang',   kind.jahrgang)
+    ..set('bezahlt',    kind.bezahlt)
+    ..setIncrement('version', 1); // atomar: kein Read-Modify-Write nötig
+
+  // Guard: update nur wenn version noch dem erwarteten Wert entspricht
+  // (Parse Server unterstützt kein WHERE in save() direkt →
+  //  wir prüfen nach dem Save, ob version tatsächlich +1 ist)
+  final response = await _saveWithRetry(obj);
+  if (response.success) {
+    kind.version += 1;
+    _log.i('Kind aktualisiert: ${kind.vorname} ${kind.nachname} (v${kind.version})');
+    return true;
+  }
+  _log.e('UPDATE Kind fehlgeschlagen: ${response.error?.message}');
+  return false;
+}
+
+/// Öffentlicher Einstiegspunkt zum Speichern eines einzelnen Kindes.
+/// Entscheidet automatisch zwischen Create und Update.
+Future<bool> saveKind({required Kind kind}) async {
+  final istNeu = kind.objectId.isEmpty;
+  return istNeu ? await _createKind(kind) : await _updateKind(kind);
+}
+/// Speichert nur die übergebenen Kinder (z.B. nur neue/geänderte).
+/// Ruft je nach objectId _createKind() oder _updateKind() auf.
+///
+/// Gibt die Liste der Kinder zurück, deren Speichern fehlgeschlagen ist
+/// (leer = alles erfolgreich).
+Future<List<Kind>> saveKinderListe({required List<Kind> kinder}) async {
+  final fehlgeschlagen = <Kind>[];
+
+  for (final kind in kinder) {
+    final istNeu = kind.objectId.isEmpty;
+    final erfolgreich = istNeu ? await _createKind(kind) : await _updateKind(kind);
+
+    if (!erfolgreich) {
+      fehlgeschlagen.add(kind);
     }
-
-    // ── UPDATE mit Optimistic Locking ────────────────────────────────────
-    // Nur Felder aktualisieren, die in Kind direkt gespeichert sind.
-    // "version" wird atomar inkrementiert und als Guard verwendet.
-    final obj = ParseObject('Kind')
-      ..objectId = kind.objectId
-      ..set('vorName',    kind.vorname)
-      ..set('nachName',   kind.nachname)
-      ..set('geschlecht', kind.geschlecht)
-      ..set('jahrgang',   kind.jahrgang)
-      ..set('bezahlt',    kind.bezahlt)
-      ..setIncrement('version', 1); // atomar: kein Read-Modify-Write nötig
-
-    // Guard: update nur wenn version noch dem erwarteten Wert entspricht
-    // (Parse Server unterstützt kein WHERE in save() direkt →
-    //  wir prüfen nach dem Save, ob version tatsächlich +1 ist)
-    final response = await _saveWithRetry(obj);
-    if (response.success) {
-      kind.version += 1;
-      _log.i('Kind aktualisiert: ${kind.vorname} ${kind.nachname} (v${kind.version})');
-      return true;
-    }
-    _log.e('UPDATE Kind fehlgeschlagen: ${response.error?.message}');
-    return false;
   }
 
-  /// Speichert eine Liste von Kindern und meldet Teilfehler zurück.
-  /// ACID – Atomicity: jeder Fehler wird erfasst, kein stiller Abbruch.
-  Future<BatchErgebnis> saveKinderListe({required List<Kind> kinder}) async {
-    int ok = 0;
-    int nok = 0;
-    final fehler = <String>[];
-
-    for (final kind in kinder) {
-      if (await saveKind(kind: kind)) {
-        ok++;
-      } else {
-        nok++;
-        fehler.add('${kind.vorname} ${kind.nachname}');
-      }
-    }
-    _log.i('saveKinderListe: ✓ $ok  ✗ $nok');
-    return BatchErgebnis(erfolgreich: ok, fehlgeschlagen: nok, fehlerMeldungen: fehler);
+  if (fehlgeschlagen.isNotEmpty) {
+    _log.w('${fehlgeschlagen.length} von ${kinder.length} Kindern konnten nicht gespeichert werden');
   }
+
+  return fehlgeschlagen;
+}
 
   // ─────────────────────────────────────────────────────────────────────────
   // READ  –  Kind

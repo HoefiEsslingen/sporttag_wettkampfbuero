@@ -41,29 +41,6 @@ class KinderBestaetigenDialog extends StatelessWidget {
   ///                 z.B. "Soll diese Person tatsächlich angemeldet werden?".
   /// [bestaetigenText] Beschriftung des Bestätigen-Buttons.
   /// [abbrechenText]   Beschriftung des Abbrechen-Buttons.
-  // static Future<bool> zeigen({
-  //   required BuildContext context,
-  //   required List<Kind> kinder,
-  //   String titel = 'Bitte bestätigen',
-  //   String bestaetigenText = 'Bestätigen',
-  //   String abbrechenText = 'Abbrechen',
-  //   String? hinweisText,
-  // }) async {
-  //   final ergebnis = await showDialog<bool>(
-  //     context: context,
-  //     barrierDismissible: false,
-  //     builder: (context) => KinderBestaetigenDialog(
-  //       kinder: kinder,
-  //       titel: titel,
-  //       bestaetigenText: bestaetigenText,
-  //       abbrechenText: abbrechenText,
-  //       hinweisText: hinweisText,
-  //     ),
-  //   );
-  //   // Wenn der Dialog z.B. per Zurück-Taste/Escape geschlossen wird,
-  //   // kommt "null" zurück -> das werten wir als Abbruch.
-  //   return ergebnis ?? false;
-  // }
 
 static Future<bool> zeigen({
     required BuildContext context,
@@ -98,7 +75,7 @@ static Future<bool> zeigen({
     // kommt "null" zurück -> das werten wir als Abbruch.
     return ergebnis ?? false;
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
