@@ -332,8 +332,9 @@ class KindRepository {
       ..whereEqualTo('riegenID', riegePointer);
 
     final response = await query.query();
-    if (!response.success || response.results == null)
+    if (!response.success || response.results == null) {
       return true; // bereits leer
+    }
 
     int fehler = 0;
     for (final obj in response.results!.cast<ParseObject>()) {

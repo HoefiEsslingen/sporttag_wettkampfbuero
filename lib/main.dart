@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:sporttag/src/riegen_zuordnung.dart';
+import 'package:sporttag/src/tools/pin_gate.dart';
 import 'package:sporttag/src/tools/sporttag_config.dart';
 import 'package:sporttag/src/urkunden.dart';
 import 'package:sporttag/src/anmelden_sporttag.dart';
@@ -117,8 +118,14 @@ class MainApp extends StatelessWidget {
 
         // Wenn keine QR-Code-Route erkannt wurde, wird eine normale fixe Route geladen.
         switch (settings.name) {
+          // case 'home':
+          //   return MaterialPageRoute(builder: (_) => const Wettkampfbuero());
           case 'home':
-            return MaterialPageRoute(builder: (_) => const Wettkampfbuero());
+            return MaterialPageRoute(
+              builder: (_) => const PinGate(
+                child: Wettkampfbuero(),
+              ),
+            );
           case 'anmeldeSeite':
             return MaterialPageRoute(
                 builder: (_) =>
