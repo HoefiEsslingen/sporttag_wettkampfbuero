@@ -36,12 +36,6 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
   @override
   void initState() {
     super.initState();
-    // Konfiguration laden und Startroute bestimmen
-    // final config = await SporttagConfig.laden();
-    // final startRoute = switch (config.routeEntscheiden()) {
-    //   RouteEntscheidung.vorabAnmeldung => 'vorabAnmeldung',
-    //   RouteEntscheidung.wettkampfbuero => 'home',
-    // };
     myFocusNode = FocusNode();
     kindRepository = KindRepository();
     // Zugriff über context.read, da initState synchron ist
@@ -56,8 +50,6 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
     int currentYear = DateTime.now().year;
     int maxAlter = config.kindAlterMax;
     int minAlter = config.kindAlterMin;
-    // int maxAlter = 14; // Maximales Alter für die Anmeldung
-    // int minAlter = 3; // Minimales Alter für die Anmeldung
     _jahrgangListe = [];
     for (int i = minAlter; i <= maxAlter; i++) {
       _jahrgangListe.add(currentYear - i);
@@ -213,17 +205,6 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
                                       },
                                 child: const Text('Löschen'),
                               ),
-                              // ElevatedButton(
-                              //   style: ElevatedButton.styleFrom(
-                              //     foregroundColor: Colors.red,
-                              //   ),
-                              //   onPressed: () {
-                              //     // reset() setzt alle Felder wieder auf den Initalwert zurück.
-                              //     resetFelder();
-                              //     myFocusNode.requestFocus();
-                              //   },
-                              //   child: const Text('Löschen'),
-                              // ),
                               const SizedBox(width: 25),
                               // Button um die Eingaben zu speichern.
                               ElevatedButton(
@@ -256,28 +237,6 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
                                       },
                                 child: const Text('Speichern'),
                               ),
-                              // ElevatedButton(
-                              //   style: ElevatedButton.styleFrom(
-                              //     foregroundColor: Colors.green,
-                              //   ),
-                              //   onPressed: () async {
-                              //     // Wenn alle Validatoren der Felder des Formulars gültig sind.
-                              //     if (_formKey.currentState!.validate()) {
-                              //       if (kDebugMode) {
-                              //         print(
-                              //             "Formular ist gültig und kann verarbeitet werden");
-                              //       }
-                              //       // Vor dem eigentlichen Speichern die Eingaben noch
-                              //       // einmal zur Bestätigung anzeigen.
-                              //       await pruefeUndSpeichere();
-                              //     } else {
-                              //       if (kDebugMode) {
-                              //         print("Formular ist nicht gültig");
-                              //       }
-                              //     }
-                              //   },
-                              //   child: const Text('Speichern'),
-                              // ),
                             ],
                           ),
                           const SizedBox(height: 25),

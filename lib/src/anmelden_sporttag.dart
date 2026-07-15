@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:sporttag/src/tools/sporttag_config.dart';
 //import 'package:sporttag/src/hilfs_widgets/beschreibung_button.dart';
 import 'hilfs_widgets/hilfe_button.dart';
 import 'klassen/kind_klasse.dart'; // Import der Kind-Klasse
@@ -16,6 +18,7 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
   final KindRepository kindRepository = KindRepository(); // Repository-Objekt
   List<Kind> kinderListe = []; // Liste der Kinder
   bool isLoading = true; // Ladeindikator
+  late SporttagConfig config;
 
 //  List<ParseObject> kinder = [];
   List<bool> editStates = [];
@@ -33,6 +36,8 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
   void initState() {
     super.initState();
     _ladeKinder();
+    // Zugriff über context.read, da initState synchron ist
+    config = context.read<SporttagConfig>();
 
     _geschlecht = _geschlechtListe.first;
     _jahrgang = _zulaessigeJahrgaenge().first;
@@ -44,8 +49,8 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag> {
     // basierend auf dem aktuellen Datum und dem festegelegten minAlter bzw. maxAlter
     // wird die Liste der zulässigen Jahrgänge erstellt.
     int currentYear = DateTime.now().year;
-    int maxAlter = 14; // Maximales Alter für die Anmeldung
-    int minAlter = 3; // Minimales Alter für die Anmeldung
+    int maxAlter = config.kindAlterMax;
+    int minAlter = config.kindAlterMin;
     _jahrgangListe = [];
     for (int i = minAlter; i <= maxAlter; i++) {
       _jahrgangListe.add(currentYear - i);

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/hilfs_widgets/icon_widget.dart';
+import 'package:sporttag/src/tools/sporttag_config.dart';
 
 class Wettkampfbuero extends StatefulWidget {
   const Wettkampfbuero({super.key});
@@ -11,6 +13,7 @@ class Wettkampfbuero extends StatefulWidget {
 }
 
 class WettkampfbueroState extends State<Wettkampfbuero> {
+  late SporttagConfig config;
   Map<String, Map<String, dynamic>> seitenInfo = {
     'anmeldeSeite': {
       'iconColor': Colors.white,
@@ -29,6 +32,12 @@ class WettkampfbueroState extends State<Wettkampfbuero> {
       'aktiv': false,
     },
   };
+ @override
+  void initState() {
+    super.initState();
+    // Zugriff über context.read, da initState synchron ist
+    config = context.read<SporttagConfig>();
+  }
 // Methode, die Status von gerufender Seite zurückgibt
 // kommt 'false' zurück, dann wird der entsprechende aufrufende Button disabled
   Future<void> navigateAndPossiblyDisableButton(
@@ -79,14 +88,14 @@ class WettkampfbueroState extends State<Wettkampfbuero> {
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: RichText(
                   textAlign: TextAlign.center,
-                  text: const TextSpan(
+                  text: TextSpan(
                     style: TextStyle(
                       fontSize: 16.0,
                     ),
                     children: <TextSpan>[
                       TextSpan(
                         text:
-                            'Hier erfolgen die Anmeldungen und\nBezahlung der Vorab-Anmeldungen.\n',
+                            'Hier erfolgen die Bezahlung der Vorab-Anmeldungen sowie\ndie Nachmeldungen.\n',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 26.0,
@@ -94,7 +103,7 @@ class WettkampfbueroState extends State<Wettkampfbuero> {
                       ),
                       TextSpan(
                         text:
-                            '''\nFür die vorabangemeldeten Kinder müssen noch\ndie Startgebühr von € 2,-- bezahlt werden.\nNach Abschluss der Anmeldung werden die Riegen automaiisch eingeteilt.\nHier erscheint dann eine Kontrollausgabe.\nAm Ende des Tages erfolgt die Auswertung und der Urkundendruck.\n''',
+                            '''\nFür die vorabangemeldeten Kinder müssen noch\ndie Startgebühr von € ${config.gebuehr.toStringAsFixed(2).replaceAll('.', ',')} bezahlt werden.\nNach Abschluss der Anmeldung werden die Riegen automaiisch eingeteilt.\nHier erscheint dann eine Kontrollausgabe.\nAm Ende des Tages erfolgt die Auswertung und der Urkundendruck.\n''',
                       ),
                     ],
                   ),
