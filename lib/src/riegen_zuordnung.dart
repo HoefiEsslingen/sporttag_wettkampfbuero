@@ -21,10 +21,10 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   final KindRepository kindRepository = KindRepository(); // Repository-Objekt
   final RiegenRepository riegeRepository = RiegenRepository();
   List<Riege> alleRiegen = []; // Liste aller Riegen
-//  List<Kind> alleKinder = [];
   final int riegenAnzahl = 8;
   List<int> riegenListe = [];
   int? ausgewaehlteRiegenNummer;
+  Riege? ausgewaehlteRiege; // vollständiges Riege-Objekt der aktuellen Auswahl
   List<Kind> gefilterteKinder = [];
  // Jahrgänge der Kinder der ausgewählten Riege
   List<int> jahrgaengeInRiege = [];
@@ -47,21 +47,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   }
 
   // Methode für die Anzeige der einzelnen Riege
-  Future<void> _filterKinderNachRiege(int riegenNummer) async {
-    // Passendes Riege-Objekt zur gewählten Riegennummer suchen,
-    // da ladeKinderDerRiege ein Riege-Objekt (mit objectId) benötigt.
-    Riege? riege;
-    for (final r in alleRiegen) {
-      if (r.riegenNummer == riegenNummer) {
-        riege = r;
-        break;
-      }
-    }
-    if (riege == null) {
-      log.w('Riege $riegenNummer wurde in alleRiegen nicht gefunden.');
-      return;
-    }
-
+  Future<void> _filterKinderNachRiege(Riege riege) async {
     // Lädt gezielt nur die Kinder dieser Riege (über kinderDerRiege),
     // statt alle Kinder zu laden und clientseitig zu filtern.
     final kinderDerRiege =
@@ -89,15 +75,13 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
 
   String _updateQrCodeUrl() {
     if (ausgewaehlteRiegenNummer != null) {
-      // Wettbewerb für ausgewählte Riege bestimmen
-      for (var riege in alleRiegen) {
-        if (riege.riegenNummer == ausgewaehlteRiegenNummer) {
-          wettbewerb = riege.fuenfKampf ? 'Fuenfkampf' : 'Zehnkampf';
-          break;
-        }
-      }
+        // Wettbewerb wird weiterhin lokal benötigt, um im Button unten die
+      // Anzahl der Disziplinen (5 bzw. 10) anzuzeigen. In die QR-URL selbst
+      // muss er nicht mehr aufgenommen werden, da die Ziel-App diese
+      // Information bereits aus der Datenbank lädt.
+      wettbewerb = ausgewaehlteRiege!.fuenfKampf ? 'Fuenfkampf' : 'Zehnkampf';
       qrCodeUrl =
-          'https://hoefiesslingen.github.io/#/wettkampf/$ausgewaehlteRiegenNummer/$wettbewerb'; //?wettbewerb=$wettbewerb';
+          'https://hoefiesslingen.github.io/#/wettkampf/$ausgewaehlteRiegenNummer'; //?wettbewerb=$wettbewerb';
     } else {
       qrCodeUrl = '';
     }
@@ -140,11 +124,27 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
                       );
                     }).toList(),
                     onChanged: (newValue) {
+                      // Passendes Riege-Objekt zur gewählten Riegennummer
+                      // einmalig ermitteln und für die weitere Verwendung speichern.
+                      Riege? riege;
+                      if (newValue != null) {
+                        for (final r in alleRiegen) {
+                          if (r.riegenNummer == newValue) {
+                            riege = r;
+                            break;
+                          }
+                        }
+                        if (riege == null) {
+                          log.w(
+                              'Riege $newValue wurde in alleRiegen nicht gefunden.');
+                        }
+                      }
                       setState(() {
                         ausgewaehlteRiegenNummer = newValue;
+                        ausgewaehlteRiege = riege;
                       });
-                      if (newValue != null) {
-                        _filterKinderNachRiege(newValue);
+                      if (riege != null) {
+                        _filterKinderNachRiege(riege);
                         // Aktualisiert die URL des QR-Codes
                         _updateQrCodeUrl();
                       }
