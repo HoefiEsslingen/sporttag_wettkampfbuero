@@ -8,8 +8,6 @@ import 'package:sporttag/src/klassen/kind_klasse.dart';
 import 'package:sporttag/src/tools/kind_repository.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-//import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
-
 class RiegenZuordnung extends StatefulWidget {
   const RiegenZuordnung({super.key, required this.titel});
   final String? titel;
@@ -23,11 +21,13 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   final KindRepository kindRepository = KindRepository(); // Repository-Objekt
   final RiegenRepository riegeRepository = RiegenRepository();
   List<Riege> alleRiegen = []; // Liste aller Riegen
-  List<Kind> alleKinder = [];
+//  List<Kind> alleKinder = [];
   final int riegenAnzahl = 8;
   List<int> riegenListe = [];
   int? ausgewaehlteRiegenNummer;
   List<Kind> gefilterteKinder = [];
+ // Jahrgänge der Kinder der ausgewählten Riege
+  List<int> jahrgaengeInRiege = [];
   String? wettbewerb;
   String qrCodeUrl =
       ''; //= 'https://gs-gp.eu'; // Platzhalter für die URL des QR-Codes
@@ -48,12 +48,27 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
 
   // Methode für die Anzeige der einzelnen Riege
   Future<void> _filterKinderNachRiege(int riegenNummer) async {
-    alleKinder = await kindRepository.ladeAlleKinder();
-   if (!mounted) return; // Widget bereits disposed → abbrechen
-   setState(() {
-      gefilterteKinder = alleKinder
-          .where((kind) => kind.riegenNummer == riegenNummer)
-          .toList()
+    // Passendes Riege-Objekt zur gewählten Riegennummer suchen,
+    // da ladeKinderDerRiege ein Riege-Objekt (mit objectId) benötigt.
+    Riege? riege;
+    for (final r in alleRiegen) {
+      if (r.riegenNummer == riegenNummer) {
+        riege = r;
+        break;
+      }
+    }
+    if (riege == null) {
+      log.w('Riege $riegenNummer wurde in alleRiegen nicht gefunden.');
+      return;
+    }
+
+    // Lädt gezielt nur die Kinder dieser Riege (über kinderDerRiege),
+    // statt alle Kinder zu laden und clientseitig zu filtern.
+    final kinderDerRiege =
+        await kindRepository.ladeKinderDerRiege(riege: riege);
+    if (!mounted) return; // Widget bereits disposed → abbrechen
+    setState(() {
+      gefilterteKinder = kinderDerRiege
         // sortiert die Kinder nach Geschlecht unnerhalb des gleichen Jahrgangs
         ..sort((a, b) {
           int jahrgangsVergleich = b.jahrgang.compareTo(a.jahrgang);
@@ -63,6 +78,12 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
           }
           return b.geschlecht.compareTo(a.geschlecht);
         });
+      // ermittelt die (eindeutigen) Jahrgänge der Riege für die Untertitel-Anzeige
+      jahrgaengeInRiege = gefilterteKinder
+          .map((kind) => kind.jahrgang)
+          .toSet()
+          .toList()
+        ..sort();
     });
   }
 
@@ -90,6 +111,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
             ausgewaehlteRiegenNummer); // Entfernt die ausgewählte Riege aus der Liste
         ausgewaehlteRiegenNummer = null; // Setzt die Auswahl zurück
         gefilterteKinder.clear(); // Löscht die Liste der angezeigten Kinder
+        jahrgaengeInRiege.clear(); // Löscht die Jahrgangs-Übersicht
         qrCodeUrl =
             ''; // Kommentar entfernen, wenn Qr-Code generiert werden kann
       });
@@ -136,17 +158,43 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   children: [
+                    // Linke Spalte: Übersicht der Riege vor der Freigabe
+                    // Titel = Riegennummer, Untertitel = Jahrgänge, darunter Name/Vorname der Kinder
                     Expanded(
                       flex: 2,
-                      child: ListView.builder(
-                        itemCount: gefilterteKinder.length,
-                        itemBuilder: (context, index) {
-                          final kind = gefilterteKinder[index];
-                          return ListTile(
-                            title: Text(
-                                '${kind.vorname} ${kind.nachname} ${kind.jahrgang} ${kind.geschlecht}'),
-                          );
-                        },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (ausgewaehlteRiegenNummer != null)
+                            Card(
+                              child: ListTile(
+                                title: Text(
+                                  'Riege $ausgewaehlteRiegenNummer',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${jahrgaengeInRiege.isEmpty ? 'Keine Jahrgänge' : 'Jahrgänge: ${jahrgaengeInRiege.join(', ')}'}\n'
+                                  'Anzahl Kinder: ${gefilterteKinder.length}',
+                                ),
+                                isThreeLine: true,
+                              ),
+                            ),
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: gefilterteKinder.length,
+                              itemBuilder: (context, index) {
+                                final kind = gefilterteKinder[index];
+                                return ListTile(
+                                  title: Text(
+                                      '${index + 1}. ${kind.nachname} ${kind.vorname}'),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     // Rechte Spalte: QR-Code
