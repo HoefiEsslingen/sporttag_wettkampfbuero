@@ -93,17 +93,25 @@ class MainApp extends StatelessWidget {
         // Das zweite Segment sollte eine Zahl (Riegen-Nummer) sein und das dritte Segment sollte ein String (Wettbewerbs-Typ) sein.
         // Beispiel: /wettkampf/3/Zehnkampf bzw. /wettkampf/5/Fuenfkampf
         // Wenn die Route korrekt ist, wird eine MaterialPageRoute zurückgegeben, die zur Wettbewerb-Seite führt.
-        if (uri.pathSegments.length == 3 &&
+        // if (uri.pathSegments.length == 3 &&
+        //     uri.pathSegments[0] == 'wettkampf') {
+        //   // Extrahiert die Riegennummer (als int) und Wettbewerbstyp (z. B. "Zehnkampf")
+        //   final riegenNummer = int.tryParse(uri.pathSegments[1]);
+        //   final wettbewerbsTyp = Uri.decodeComponent(uri.pathSegments[2]);
+        //   if (riegenNummer != null && wettbewerbsTyp.isNotEmpty) {
+        //     return MaterialPageRoute(
+        //       builder: (_) => Wettbewerb(
+        //         riegenNummer: riegenNummer,
+        //         wettbewerbsTyp: wettbewerbsTyp,
+        //       ),
+        //     );
+        //   }
+        if (uri.pathSegments.length == 2 &&
             uri.pathSegments[0] == 'wettkampf') {
-          // Extrahiert die Riegennummer (als int) und Wettbewerbstyp (z. B. "Zehnkampf")
           final riegenNummer = int.tryParse(uri.pathSegments[1]);
-          final wettbewerbsTyp = Uri.decodeComponent(uri.pathSegments[2]);
-          if (riegenNummer != null && wettbewerbsTyp.isNotEmpty) {
+          if (riegenNummer != null) {
             return MaterialPageRoute(
-              builder: (_) => Wettbewerb(
-                riegenNummer: riegenNummer,
-                wettbewerbsTyp: wettbewerbsTyp,
-              ),
+              builder: (_) => Wettbewerb(riegenNummer: riegenNummer),
             );
           }
         } else if (uri.pathSegments.length == 1) {

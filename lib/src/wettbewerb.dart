@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sporttag/src/klassen/station_klasse.dart';
+import 'package:sporttag/src/tools/station_repository.dart';
 import 'klassen/riegen_klasse.dart';
 import 'pause.dart';
 import 'danke_ende.dart';
@@ -21,10 +23,9 @@ import 'tools/riegen_repository.dart';
 
 class Wettbewerb extends StatefulWidget {
   final int riegenNummer;
-  final String wettbewerbsTyp;
 
   const Wettbewerb(
-      {super.key, required this.riegenNummer, required this.wettbewerbsTyp});
+      {super.key, required this.riegenNummer});
 
   @override
   WettbewerbState createState() => WettbewerbState();
@@ -33,6 +34,7 @@ class Wettbewerb extends StatefulWidget {
 class WettbewerbState extends State<Wettbewerb> {
   final KindRepository kindRepository = KindRepository();
   final RiegenRepository riegenRepository = RiegenRepository();
+  final StationRepository stationRepository = StationRepository();
   List<Kind> riegenKinder = [];
 
   final log = getLogger();
@@ -46,12 +48,18 @@ class WettbewerbState extends State<Wettbewerb> {
   // beim Aufruf übergebenen riegneNummer. Wird an die Disziplinen-Widgets übergeben,
   //amit diese auf die Riege zugreifen können.
   Riege? riegenPointer;
-  String get wettbewerbsTyp => widget.wettbewerbsTyp;
+  // Aus der DB geladene Stationen, passend zum Wettkampftyp der Riege
+  // (bereits nach stationsNummer sortiert, siehe StationRepository).
+  List<Station>? erlaubteStationen;
+
+  // Wettbewerbstyp wird aus der Riege (Feld fuenfKampf) abgeleitet.
+  String get wettbewerbsTyp =>
+      (riegenPointer?.fuenfKampf ?? false) ? 'Fuenfkampf' : 'Zehnkampf';
 
   @override
   void initState() {
     super.initState();
-    _ladeRiege();
+    _ladeRiegeUndStationen();
 
     disziplinPages = {
       'Schlagwurf': () => (riegenPointer == null)
@@ -66,19 +74,19 @@ class WettbewerbState extends State<Wettbewerb> {
       'Sprint': () => (riegenPointer == null)
           ? const Center(child: CircularProgressIndicator())
           : Sprint(riegenPointer: riegenPointer!),
-      '30m Banankartons': () => (riegenPointer == null)
+      'Banankartons': () => (riegenPointer == null)
           ? const Center(child: CircularProgressIndicator())
           : Bananenkartons(riegenPointer: riegenPointer!),
-      '30 sec Lauf': () => (riegenPointer == null)
+      '30sec-Lauf': () => (riegenPointer == null)
           ? const Center(child: CircularProgressIndicator())
           : Lauf(riegenPointer: riegenPointer!),
       'Stabfliegen': () => (riegenPointer == null)
           ? const Center(child: CircularProgressIndicator())
           : Stabfliegen(riegenPointer: riegenPointer!),
-      'Hoch-Weitsprung': () => (riegenPointer == null)
+      'Hochsprung': () => (riegenPointer == null)
           ? const Center(child: CircularProgressIndicator())
           : HochWeitSprung(riegenPointer: riegenPointer!),
-      'Zonenweitsprung': () => (riegenPointer == null)
+      'Weitsprung': () => (riegenPointer == null)
           ? const Center(child: CircularProgressIndicator())
           : Zonenweitsprung(riegenPointer: riegenPointer!),
       'Stadionrunde': () => (riegenPointer == null)
@@ -89,14 +97,53 @@ class WettbewerbState extends State<Wettbewerb> {
     _loadState();
   }
 
-  Future<void> _ladeRiege() async {
+  Future<void> _ladeRiegeUndStationen() async {
     // Lade die Riege aus dem Repository basierend auf der Riegennummer
-    final geladen = await riegenRepository.ladeRiegeNachNummer(
+    final geladeneRiege = await riegenRepository.ladeRiegeNachNummer(
       riegenNummer: widget.riegenNummer,
     );
     if (!mounted) return; // Widget bereits disposed → abbrechen
     setState(() {
-      riegenPointer = geladen;
+      riegenPointer = geladeneRiege;
+    });
+
+    if (geladeneRiege == null) {
+      log.w('Riege ${widget.riegenNummer} nicht gefunden.');
+      return;
+    }
+
+    final stationen = await stationRepository.ladeStationenFuerWettkampf(
+      istZehnkampf: !geladeneRiege.fuenfKampf,
+    );
+  
+    // Kinder der Riege + deren Punktesummen laden
+    await _ladeKinderMitPunkten(geladeneRiege);
+
+  if (!mounted) return;
+
+    setState(() {
+      erlaubteStationen = stationen;
+    });
+  }
+
+  /// Lädt die Kinder der Riege, ergänzt die erreichten Punkte und
+  /// sortiert die Liste nach Vorname für die Anzeige.
+  Future<void> _ladeKinderMitPunkten(Riege riege) async {
+    final kinder = await kindRepository.ladeKinderDerRiege(riege: riege);
+    final punkteSummen =
+        await kindRepository.ladePunkteSummenFuerKinder(kinder: kinder);
+
+    for (final kind in kinder) {
+      kind.erreichtePunkte = punkteSummen[kind.objectId] ?? 0;
+    }
+
+    kinder.sort(
+      (a, b) => a.vorname.toLowerCase().compareTo(b.vorname.toLowerCase()),
+    );
+
+    if (!mounted) return;
+    setState(() {
+      riegenKinder = kinder;
     });
   }
 
@@ -132,109 +179,178 @@ class WettbewerbState extends State<Wettbewerb> {
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, Widget Function()> angeboteneDisziplinen =
-        wettbewerbsTyp != 'Zehnkampf'
-            ? Map.fromEntries(disziplinPages.entries.take(5))
-            : disziplinPages;
-    // Hier wird die letzte Station ermittelt, diese sollte am Ende auswählbaren Disziplinen stehen
-    // und ist erst dann auswählbar, wenn alle anderen Disziplinen besucht wurden
-    const String dieLetzeStation =
-        'Stadionrunde'; // für Zehnkampf immer Stadionrunde
-//        angeboteneDisziplinen.keys.last; // hier: Stadionrunde
+    // Solange Riege oder Stationen noch nicht geladen sind: Ladeanzeige.
+    if (riegenPointer == null || erlaubteStationen == null) {
+      return Scaffold(
+        appBar: MeineAppBar(titel: 'Sporttag-Wettbewerbe'),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Reihenfolge & Auswahl richten sich nach den aus der DB geladenen,
+    // bereits nach stationsNummer sortierten Stationen.
+    final Map<String, Widget Function()> angeboteneDisziplinen = {
+      for (final station in erlaubteStationen!)
+        if (disziplinPages.containsKey(station.stationsName))
+          station.stationsName: disziplinPages[station.stationsName]!
+    };
+
+    const String dieLetzeStation = 'Stadionrunde';
     final List<String> disziplinNamen = angeboteneDisziplinen.keys.toList();
 
     return Scaffold(
       appBar: MeineAppBar(
         titel: 'Riege ${riegenPointer?.riegenNummer} Sporttag-Wettbewerbe',
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: disziplinNamen.map((disziplin) {
-                      final istBesucht =
-                          besuchteDisziplinen.contains(disziplin);
-                      final istLetzteStation = disziplin == dieLetzeStation;
-                      final alleAnderenBesucht = besuchteDisziplinen.length ==
-                          angeboteneDisziplinen.length - 1;
-                      final istAktiv = !istBesucht &&
-                          (!istLetzteStation || alleAnderenBesucht);
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: ElevatedButton(
-                          onPressed: istAktiv
-                              ? () async {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          angeboteneDisziplinen[disziplin]
-                                              ?.call() ??
-                                          const Center(
-                                              child: Text(
-                                                  'Disziplin nicht gefunden')),
-                                    ),
-                                  );
-                                  setState(() {
-                                    besuchteDisziplinen.add(disziplin);
-                                  });
-                                }
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                istBesucht ? Colors.grey : Colors.red,
-                          ),
-                          child: Text(
-                            istBesucht ? '$disziplin (besucht)' : disziplin,
-                            style: TextStyle(
-                              color: istBesucht ? Colors.black45 : Colors.white,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Linke Seite: Kinderliste ──────────────────────────
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Riegenmitglieder',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: riegenKinder.isEmpty
+                        ? const Center(
+                            child: CircularProgressIndicator(),
+                          )
+                        : ListView.builder(
+                            itemCount: riegenKinder.length,
+                            itemBuilder: (context, index) {
+                              final kind = riegenKinder[index];
+                              return Card(
+                                margin:
+                                    const EdgeInsets.symmetric(vertical: 4.0),
+                                child: ListTile(
+                                  title: Text(
+                                    '${kind.vorname} ${kind.nachname}',
+                                  ),
+                                  trailing: Text(
+                                    '${kind.erreichtePunkte} Pkt.',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              if (besuchteDisziplinen.length == angeboteneDisziplinen.length)
-                ElevatedButton(
-                  onPressed: () {
-                    _clearState();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const DankeEnde(),
+            ),
+            const SizedBox(width: 24),
+            // ── Rechte Seite: Disziplin-Buttons ───────────────────
+            Expanded(
+              flex: 3,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: disziplinNamen.map((disziplin) {
+                          final istBesucht =
+                              besuchteDisziplinen.contains(disziplin);
+                          final istLetzteStation =
+                              disziplin == dieLetzeStation;
+                          final alleAnderenBesucht =
+                              besuchteDisziplinen.length ==
+                                  angeboteneDisziplinen.length - 1;
+                          final istAktiv = !istBesucht &&
+                              (!istLetzteStation || alleAnderenBesucht);
+
+                          return Padding(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 8.0),
+                            child: ElevatedButton(
+                              onPressed: istAktiv
+                                  ? () async {
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              angeboteneDisziplinen[
+                                                          disziplin]
+                                                      ?.call() ??
+                                                  const Center(
+                                                      child: Text(
+                                                          'Disziplin nicht gefunden')),
+                                        ),
+                                      );
+                                      setState(() {
+                                        besuchteDisziplinen.add(disziplin);
+                                      });
+                                    }
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    istBesucht ? Colors.grey : Colors.red,
+                              ),
+                              child: Text(
+                                istBesucht
+                                    ? '$disziplin (besucht)'
+                                    : disziplin,
+                                style: TextStyle(
+                                  color: istBesucht
+                                      ? Colors.black45
+                                      : Colors.white,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    );
-                  },
-                  child: const Text('Ende Sporttag'),
-                )
-              else if (!pauseGemacht &&
-                  wettbewerbsTyp == 'Zehnkampf' &&
-                  besuchteDisziplinen.length >= 4)
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      pauseGemacht = true;
-                    });
-                    _saveState();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const Pause(),
-                      ),
-                    );
-                  },
-                  child: const Text('Pause'),
-                ),
-            ],
-          ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (besuchteDisziplinen.length ==
+                      angeboteneDisziplinen.length)
+                    ElevatedButton(
+                      onPressed: () {
+                        _clearState();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DankeEnde(),
+                          ),
+                        );
+                      },
+                      child: const Text('Ende Sporttag'),
+                    )
+                  else if (!pauseGemacht &&
+                      wettbewerbsTyp == 'Zehnkampf' &&
+                      besuchteDisziplinen.length >= 4)
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          pauseGemacht = true;
+                        });
+                        _saveState();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const Pause(),
+                          ),
+                        );
+                      },
+                      child: const Text('Pause'),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
