@@ -1,9 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:web/web.dart' as web;
 import 'dart:ui_web' as ui_web;
 import 'logger.util.dart';
-import 'package:http/http.dart' as http;
+import 'station_repository.dart';
 
 class PdfModal extends StatefulWidget {
   final String stationsName;
@@ -15,6 +14,7 @@ class PdfModal extends StatefulWidget {
 
 class PdfModalState extends State<PdfModal> {
   final log = getLogger();
+  final StationRepository stationRepository = StationRepository();
   String? pdfUrl;
   bool isLoading = true;
 
@@ -26,35 +26,22 @@ class PdfModalState extends State<PdfModal> {
 
   Future<void> _loadPdfUrl(String stationsName) async {
     try {
-      final response = await http.get(
-        Uri.parse(
-          'https://parseapi.back4app.com/classes/Station?where=${Uri.encodeComponent(jsonEncode({
-                "StationsName": stationsName
-              }))}',
-        ),
-        headers: {
-          'X-Parse-Application-Id': 'WLgenML3TwDSZ80DBWggNnJaNePhJ3RQgzdCvvv0',
-          'X-Parse-REST-API-Key': 'J2d7lGWvOXMpyMe5NzOhWpmON7uheSNwQFxnHv5B',
-        },
+      final station = await stationRepository.ladeStationNachName(
+        stationsName: stationsName,
       );
 
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-        final results = jsonResponse['results'] as List?;
-        if (results != null && results.isNotEmpty) {
-          setState(() {
-            pdfUrl = results.first['Beschreibung']?['url'];
-            isLoading = false;
-          });
-        } else {
-          throw Exception('Keine Ergebnisse für $stationsName gefunden.');
-        }
-      } else {
-        throw Exception(
-            'Fehler beim Abrufen der Daten: ${response.statusCode}');
+      if (station == null || station.beschreibungUrl == null) {
+        throw Exception('Keine PDF-Beschreibung für $stationsName gefunden.');
       }
+
+      if (!mounted) return;
+      setState(() {
+        pdfUrl = station.beschreibungUrl;
+        isLoading = false;
+      });
     } catch (e) {
       log.e('Fehler beim Laden der PDF-URL: $e');
+      if (!mounted) return;
       _showErrorDialog('Fehler', 'PDF konnte nicht geladen werden.');
       setState(() {
         isLoading = false;

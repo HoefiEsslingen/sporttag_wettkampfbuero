@@ -30,6 +30,8 @@ class StationRepository {
       stationsName:   p.get<String>('stationsName')   ?? '',
       stationsNummer: p.get<int>('stationsNummer')     ?? 0,
       nurZehnKampf:   p.get<bool>('nurZehnKampf')      ?? false,
+    // NEU: Parse-File-Feld auslesen. get<ParseFile> gibt ein Objekt mit .url zurück.
+    beschreibungUrl: p.get<ParseFileBase>('beschreibung')?.url,
       version:        p.get<int>('version')             ?? 1,
     );
   }

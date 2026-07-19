@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sporttag/src/klassen/station_klasse.dart';
+import 'package:sporttag/src/tools/pdf_modal.dart';
 import 'package:sporttag/src/tools/station_repository.dart';
 import 'klassen/riegen_klasse.dart';
 import 'pause.dart';
@@ -24,8 +25,7 @@ import 'tools/riegen_repository.dart';
 class Wettbewerb extends StatefulWidget {
   final int riegenNummer;
 
-  const Wettbewerb(
-      {super.key, required this.riegenNummer});
+  const Wettbewerb({super.key, required this.riegenNummer});
 
   @override
   WettbewerbState createState() => WettbewerbState();
@@ -74,9 +74,9 @@ class WettbewerbState extends State<Wettbewerb> {
       'Sprint': () => (riegenPointer == null)
           ? const Center(child: CircularProgressIndicator())
           : Sprint(riegenPointer: riegenPointer!),
-      'Banankartons': () => (riegenPointer == null)
+      'Huerdenlauf': () => (riegenPointer == null)
           ? const Center(child: CircularProgressIndicator())
-          : Bananenkartons(riegenPointer: riegenPointer!),
+          : Huerdenlauf(riegenPointer: riegenPointer!),
       '30sec-Lauf': () => (riegenPointer == null)
           ? const Center(child: CircularProgressIndicator())
           : Lauf(riegenPointer: riegenPointer!),
@@ -115,15 +115,79 @@ class WettbewerbState extends State<Wettbewerb> {
     final stationen = await stationRepository.ladeStationenFuerWettkampf(
       istZehnkampf: !geladeneRiege.fuenfKampf,
     );
-  
+
     // Kinder der Riege + deren Punktesummen laden
     await _ladeKinderMitPunkten(geladeneRiege);
 
-  if (!mounted) return;
+    if (!mounted) return;
 
     setState(() {
       erlaubteStationen = stationen;
     });
+  }
+
+  /// Zeigt die Stationsbeschreibung (PDF) zur gewählten Disziplin an und
+  /// lässt den Benutzer die Wahl bestätigen oder abbrechen.
+  /// Gibt true zurück, wenn bestätigt wurde, sonst false/null.
+  Future<bool?> _bestaetigeDisziplinAuswahl(
+    BuildContext context,
+    String disziplin,
+  ) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      // Verhindert versehentliches Schließen ohne bewusste Wahl
+      isDismissible: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: FractionallySizedBox(
+            heightFactor: 0.85,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 12.0,
+                  ),
+                  child: Text(
+                    'Ist "$disziplin" die richtige Station?',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                // Bestehende PDF-Ansicht der Stationsbeschreibung
+                Expanded(
+                  child: PdfModal(stationsName: disziplin),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(sheetContext, false),
+                          child: const Text('Abbrechen'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(sheetContext, true),
+                          child: const Text('Bestätigen'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   /// Lädt die Kinder der Riege, ergänzt die erreichten Punkte und
@@ -263,8 +327,7 @@ class WettbewerbState extends State<Wettbewerb> {
                         children: disziplinNamen.map((disziplin) {
                           final istBesucht =
                               besuchteDisziplinen.contains(disziplin);
-                          final istLetzteStation =
-                              disziplin == dieLetzeStation;
+                          final istLetzteStation = disziplin == dieLetzeStation;
                           final alleAnderenBesucht =
                               besuchteDisziplinen.length ==
                                   angeboteneDisziplinen.length - 1;
@@ -272,21 +335,30 @@ class WettbewerbState extends State<Wettbewerb> {
                               (!istLetzteStation || alleAnderenBesucht);
 
                           return Padding(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 8.0),
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
                             child: ElevatedButton(
                               onPressed: istAktiv
                                   ? () async {
+                                      final bestaetigt =
+                                          await _bestaetigeDisziplinAuswahl(
+                                        context,
+                                        disziplin,
+                                      );
+                                      if (bestaetigt != true) {
+                                        return; // abgebrochen → nichts weiter tun
+                                      }
+                                      if (!context.mounted){
+                                        return; // NEU: Guard gegen async-gap-Warnung
+                                      }
                                       await Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) =>
-                                              angeboteneDisziplinen[
-                                                          disziplin]
-                                                      ?.call() ??
-                                                  const Center(
-                                                      child: Text(
-                                                          'Disziplin nicht gefunden')),
+                                              angeboteneDisziplinen[disziplin]
+                                                  ?.call() ??
+                                              const Center(
+                                                  child: Text(
+                                                      'Disziplin nicht gefunden')),
                                         ),
                                       );
                                       setState(() {
@@ -294,14 +366,31 @@ class WettbewerbState extends State<Wettbewerb> {
                                       });
                                     }
                                   : null,
+                              // onPressed: istAktiv
+                              // ? () async {
+                              //     await Navigator.push(
+                              //       context,
+                              //       MaterialPageRoute(
+                              //         builder: (context) =>
+                              //             angeboteneDisziplinen[
+                              //                         disziplin]
+                              //                     ?.call() ??
+                              //                 const Center(
+                              //                     child: Text(
+                              //                         'Disziplin nicht gefunden')),
+                              //       ),
+                              //     );
+                              //     setState(() {
+                              //       besuchteDisziplinen.add(disziplin);
+                              //     });
+                              //   }
+                              // : null,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
                                     istBesucht ? Colors.grey : Colors.red,
                               ),
                               child: Text(
-                                istBesucht
-                                    ? '$disziplin (besucht)'
-                                    : disziplin,
+                                istBesucht ? '$disziplin (besucht)' : disziplin,
                                 style: TextStyle(
                                   color: istBesucht
                                       ? Colors.black45

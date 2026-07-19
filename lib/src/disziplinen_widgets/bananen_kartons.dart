@@ -11,17 +11,17 @@ import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
 
-class Bananenkartons extends StatefulWidget {
+class Huerdenlauf extends StatefulWidget {
   final Riege riegenPointer;
 
-  const Bananenkartons({super.key, required this.riegenPointer});
+  const Huerdenlauf({super.key, required this.riegenPointer});
 
   /// Aktivität vorbereiten
   @override
-  BananenkartonsState createState() => BananenkartonsState();
+  HuerdenlaufState createState() => HuerdenlaufState();
 }
 
-class BananenkartonsState extends State<Bananenkartons> {
+class HuerdenlaufState extends State<Huerdenlauf> {
   late String stationsName; // Variable für die zugewiesene Ausgabe
 
   // Repository-Objekte
