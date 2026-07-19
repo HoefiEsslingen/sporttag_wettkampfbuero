@@ -56,7 +56,12 @@ class WettkampfbueroState extends State<Wettkampfbuero> {
       // Lineare Fortschaltung
       switch (zuSeite) {
         case 'riegenEinteilung':
-          // Anmeldung abschalten, Riegenzuordnung aktivieren
+          // Riegeneinteilung abgeschlossen: eigenen Button abschalten
+          // (Anmeldung ist danach eigentlich vorbei, siehe Nachmeldung
+          // weiter unten), Riegenzuordnung freischalten.
+          seitenInfo['riegenEinteilung']!
+            ..['iconColor'] = Colors.grey
+            ..['aktiv'] = false;
           seitenInfo['anmeldeSeite']!
             ..['iconColor'] = Colors.grey
             ..['aktiv'] = false;
@@ -73,6 +78,55 @@ class WettkampfbueroState extends State<Wettkampfbuero> {
           break;
       }
     });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Nachmeldung nach bereits durchgeführter Riegeneinteilung
+  //
+  // Regulär ist die Anmeldeseite nach der Riegeneinteilung deaktiviert.
+  // In der Praxis kommt es trotzdem vor, dass noch ein Kind nachgemeldet
+  // werden muss (z. B. Restarter geändert eine Situation vor Ort). Das wird
+  // hier zugelassen, aber nur nach ausdrücklicher Bestätigung – und im
+  // Anschluss wird automatisch erneut die Riegeneinteilung angestoßen,
+  // damit das nachgemeldete Kind einer bestehenden Riege zugeteilt wird
+  // (siehe Bestandsschutz-Logik in RiegenEinteilung).
+  // ─────────────────────────────────────────────────────────────────────────
+  Future<void> _nachmeldungBestaetigenUndStarten() async {
+    final bestaetigt = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Nachmeldung nach Riegeneinteilung'),
+        content: const Text(
+          'Die Riegeneinteilung wurde bereits durchgeführt. Eine Nachmeldung '
+          'ist danach eigentlich nicht mehr vorgesehen.\n\n'
+          'Wird trotzdem fortgefahren, wird im Anschluss automatisch erneut '
+          'die Riegeneinteilung gestartet, damit das nachgemeldete Kind '
+          'einer Riege zugeteilt wird.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Trotzdem fortfahren'),
+          ),
+        ],
+      ),
+    );
+
+    if (bestaetigt != true || !mounted) return;
+
+    // Nachmeldung öffnen – bewusst bestätigt, daher unabhängig vom
+    // aktiv-Status der Anmeldeseite.
+    await navigateAndPossiblyDisableButton(zuSeite: 'anmeldeSeite');
+
+    if (!mounted) return;
+
+    // Automatisch erneut die Riegeneinteilung anstoßen, damit das
+    // nachgemeldete Kind einer bestehenden Riege zugeteilt wird.
+    await navigateAndPossiblyDisableButton(zuSeite: 'riegenEinteilung');
   }
 
   @override
@@ -111,10 +165,14 @@ class WettkampfbueroState extends State<Wettkampfbuero> {
               ),
               IconButton(
                 onPressed: () {
-                  seitenInfo['anmeldeSeite']!['aktiv']
-                      ? navigateAndPossiblyDisableButton(
-                          zuSeite: 'anmeldeSeite')
-                      : null;
+                  if (seitenInfo['anmeldeSeite']!['aktiv']) {
+                    navigateAndPossiblyDisableButton(zuSeite: 'anmeldeSeite');
+                  } else {
+                    // Anmeldeseite ist nach der Riegeneinteilung eigentlich
+                    // gesperrt – eine Nachmeldung ist aber mit Bestätigung
+                    // weiterhin möglich (siehe _nachmeldungBestaetigenUndStarten).
+                    _nachmeldungBestaetigenUndStarten();
+                  }
                 },
                 icon: KartenIcon(
                   key: UniqueKey(),

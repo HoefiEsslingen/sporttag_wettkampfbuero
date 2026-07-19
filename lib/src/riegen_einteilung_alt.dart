@@ -25,15 +25,10 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
   List<Kind>         alleKinder   = [];
   List<Riege>        alleRiegen   = [];
   List<List<Kind>>   riegenListen = [];  // Index 0 = Riege 1, etc.
+  List<Kind>         gefilterteKinder = [];
+  int?               ausgewaehlteRiegenNummer;
   bool               isLoading = true;
-  bool               isSaving  = false;
   String?            fehlerMeldung;
-
-  // Für Phase A/B des Speicherns benötigt (siehe SCHRITT 3), wird beim
-  // Berechnen des Vorschlags gemerkt und erst beim expliziten Speichern
-  // durch den Benutzer verwendet.
-  late List<bool>       _bisherigerTyp;
-  late Map<String, int> _bisherigeZuordnung;
 
   final int  riegenAnzahl   = 8;
   final int  aktuellesJahr  = DateTime.now().year;
@@ -44,9 +39,9 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
     super.initState();
     // Zugriff über context.read, da initState synchron ist
     config = context.read<SporttagConfig>();
-    
+
     riegenListen = List.generate(riegenAnzahl, (_) => []);
-    _ladeUndBerechneVorschlag();
+    _riegenEinteilenUndSpeichern();
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -56,12 +51,8 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
   //   Unabhängige Lesezugriffe laufen parallel statt sequenziell, und der
   //   bisherige Datenstand wird mitgeladen, damit in SCHRITT 3 nur wirklich
   //   geänderte Datensätze geschrieben werden (Dirty-Tracking).
-  //
-  // Wichtig: Es wird hier nur noch ein Vorschlag berechnet und angezeigt.
-  // Gespeichert wird erst, wenn der Benutzer die Riegenübersicht (ggf. nach
-  // manuellen Anpassungen) explizit bestätigt (siehe _speichernUndAbschliessen).
   // ─────────────────────────────────────────────────────────────────────────
-  Future<void> _ladeUndBerechneVorschlag() async {
+  Future<void> _riegenEinteilenUndSpeichern() async {
     setState(() { isLoading = true; fehlerMeldung = null; });
 
     try {
@@ -79,23 +70,27 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
         );
       }
 
-      // Bisherigen Stand merken, um beim Speichern nur Änderungen zu schreiben.
+      // Bisherigen Stand merken, um in SCHRITT 3 nur Änderungen zu schreiben.
       // ladeKinderAusRiegen() fragt alle Riegen bereits parallel ab.
       final bisherigeKinder = await kindRepository.ladeKinderAusRiegen(
         listeVonRiegen: alleRiegen,
       );
-      _bisherigeZuordnung = {
+      final bisherigeZuordnung = {
         for (final k in bisherigeKinder) k.objectId: k.riegenNummer,
       };
-      _bisherigerTyp = [for (final r in alleRiegen) r.fuenfKampf];
+      final bisherigerTyp = [for (final r in alleRiegen) r.fuenfKampf];
 
       // SCHRITT 2: Verteilung lokal berechnen (kein DB-Zugriff)
       //   Kinder, die bereits einer Riege zugeordnet sind, bleiben dort.
       //   Nur neue (noch nicht zugeordnete) Kinder werden nach den
       //   gültigen Kriterien in die bestehenden Riegen einsortiert.
-      //   Das Ergebnis ist zunächst nur ein Vorschlag – der Benutzer kann
-      //   ihn in der Übersicht noch anpassen, bevor gespeichert wird.
-      _berechneRiegenEinteilung(_bisherigeZuordnung);
+      _berechneRiegenEinteilung(bisherigeZuordnung);
+
+      // SCHRITT 3: nur geänderte Ergebnisse in DB speichern (mit Fehlerbehandlung)
+      await _speichereEinteilungInDatenbank(
+        bisherigerTyp: bisherigerTyp,
+        bisherigeZuordnung: bisherigeZuordnung,
+      );
 
     } catch (e) {
       _log.e('Riegeneinteilung fehlgeschlagen: $e');
@@ -272,17 +267,9 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
     }
   }
 
-  /// Verteilt nur die übergebenen (neuen) Kinder auf die bestehenden Riegen.
-  ///
-  /// Grundlage ist weiterhin der Greedy-Algorithmus (größte Kohorte zuerst,
-  /// jeweils in die zum Kriterium passende Riege mit den aktuell wenigsten
-  /// Kindern). Zusätzlich wird vorher geprüft, ob beide Geschlechter
-  /// desselben Jahrgangs zusammen in eine Riege passen, ohne deren
-  /// Zielgröße wesentlich (mehr als _jahrgangZusammenlegenToleranz Kinder)
-  /// zu überschreiten. Ist das der Fall, werden beide Geschlechter als eine
-  /// gemeinsame Gruppe behandelt – das vermeidet Altersunterschiede
-  /// innerhalb einer Riege, ohne die Größenbalance zu gefährden. Passt es
-  /// nicht, bleibt es bei der bisherigen Verteilung nach Kohortengröße.
+  /// Verteilt nur die übergebenen (neuen) Kinder auf die bestehenden Riegen –
+  /// gruppiert nach Jahrgang + Geschlecht, größte Gruppe zuerst, jeweils in
+  /// die zum Kriterium passende Riege mit den aktuell wenigsten Kindern.
   void _verteileNeueKinderAufBestehendeRiegen(List<Kind> neueKinder) {
     if (neueKinder.isEmpty) return;
 
@@ -331,90 +318,8 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
       _log.w('Neue Zehnkampf-Kinder vorhanden, aber keine Zehnkampf-Riege existiert.');
     }
 
-    // Ziel-Riegengröße je Wettkampf-Typ: alle Kinder dieses Typs (bereits
-    // zugeordnete + neue) geteilt durch die Anzahl der Riegen dieses Typs.
-    // Dient als Referenz dafür, ob das Zusammenlegen beider Geschlechter
-    // eines Jahrgangs die Riegengröße "wesentlich" sprengen würde.
-    final zielGroesseFuenfkampf = _zielRiegenGroesse(
-      passtZuTyp: (alter) => alter <= config.fuenfkampfMaxAlter,
-      anzahlRiegenDiesesTyps: fuenfkampfRiegen.length,
-    );
-    final zielGroesseZehnkampf = _zielRiegenGroesse(
-      passtZuTyp: (alter) => alter > config.fuenfkampfMaxAlter,
-      anzahlRiegenDiesesTyps: zehnkampfRiegen.length,
-    );
-
-    final fuenfkampfGruppenZusammengefasst = _fasseJahrgaengeZusammenWennPassend(
-      fuenfkampfGruppen,
-      zielGroesseFuenfkampf,
-    );
-    final zehnkampfGruppenZusammengefasst = _fasseJahrgaengeZusammenWennPassend(
-      zehnkampfGruppen,
-      zielGroesseZehnkampf,
-    );
-
-    _verteileGruppenAufRiegen(fuenfkampfGruppenZusammengefasst, fuenfkampfRiegen);
-    _verteileGruppenAufRiegen(zehnkampfGruppenZusammengefasst,  zehnkampfRiegen);
-  }
-
-  /// Zielgröße einer Riege dieses Wettkampf-Typs: alle Kinder, deren Alter
-  /// laut [passtZuTyp] zu diesem Typ passt (unabhängig davon, ob sie schon
-  /// zugeordnet sind oder gerade neu verteilt werden), geteilt durch die
-  /// Anzahl der Riegen dieses Typs.
-  double _zielRiegenGroesse({
-    required bool Function(int alter) passtZuTyp,
-    required int anzahlRiegenDiesesTyps,
-  }) {
-    if (anzahlRiegenDiesesTyps == 0) return 0;
-    final anzahlKinder = alleKinder
-        .where((k) => passtZuTyp(aktuellesJahr - k.jahrgang))
-        .length;
-    return anzahlKinder / anzahlRiegenDiesesTyps;
-  }
-
-  // Wie viele Kinder eine aus beiden Geschlechtern zusammengelegte
-  // Jahrgangsgruppe die Ziel-Riegengröße überschreiten darf, damit die
-  // Überschreitung noch als "unwesentlich" gilt.
-  static const int _jahrgangZusammenlegenToleranz = 3;
-
-  /// Fasst für jeden Jahrgang die Kohorten beider Geschlechter zu einer
-  /// gemeinsamen Gruppe zusammen, sofern das die Ziel-Riegengröße nicht
-  /// wesentlich überschreitet (siehe _jahrgangZusammenlegenToleranz). So
-  /// bleiben Riegen altersmäßig möglichst homogen (Altersunterschied 0
-  /// innerhalb des Jahrgangs), ohne die Größenbalance nennenswert zu
-  /// verschlechtern. Passt die Kombination nicht, bleiben die Kohorten
-  /// getrennt und werden wie bisher einzeln per Greedy verteilt.
-  List<MapEntry<String, List<Kind>>> _fasseJahrgaengeZusammenWennPassend(
-    List<MapEntry<String, List<Kind>>> gruppen,
-    double zielGroesse,
-  ) {
-    // Gruppen (Schlüssel "jahrgang_geschlecht") nach Jahrgang bündeln
-    final proJahrgang = <String, List<MapEntry<String, List<Kind>>>>{};
-    for (final gruppe in gruppen) {
-      final jahrgang = gruppe.key.split('_')[0];
-      proJahrgang.putIfAbsent(jahrgang, () => []).add(gruppe);
-    }
-
-    final ergebnis = <MapEntry<String, List<Kind>>>[];
-    for (final entry in proJahrgang.entries) {
-      final geschlechterGruppen = entry.value;
-      final kombinierteGroesse = geschlechterGruppen
-          .fold<int>(0, (summe, g) => summe + g.value.length);
-
-      final passtZusammen = geschlechterGruppen.length > 1 &&
-          kombinierteGroesse <= zielGroesse + _jahrgangZusammenlegenToleranz;
-
-      if (passtZusammen) {
-        // Beide Geschlechter des Jahrgangs zusammen als eine Gruppe behandeln
-        final alleKinderDesJahrgangs = [
-          for (final g in geschlechterGruppen) ...g.value,
-        ];
-        ergebnis.add(MapEntry('${entry.key}_gemischt', alleKinderDesJahrgangs));
-      } else {
-        ergebnis.addAll(geschlechterGruppen);
-      }
-    }
-    return ergebnis;
+    _verteileGruppenAufRiegen(fuenfkampfGruppen, fuenfkampfRiegen);
+    _verteileGruppenAufRiegen(zehnkampfGruppen,  zehnkampfRiegen);
   }
 
   // Riegen gelten als "gleich klein" (und damit für den Alters-Tie-Break
@@ -562,83 +467,19 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Manuelle Anpassung durch den Benutzer
-  //
-  // Wird die Riegennummer einer Kohorte (Jahrgang + Geschlecht) in der
-  // Übersicht geändert, ziehen alle Kinder dieser Kohorte gemeinsam in die
-  // neu eingegebene Riege um – die Kohorte bleibt also auch bei manueller
-  // Anpassung ungetrennt.
-  // ─────────────────────────────────────────────────────────────────────────
-  void _kohorteVerschieben(String kohortenSchluessel, int neueRiegenNummer) {
-    final zielIndex = neueRiegenNummer - 1;
-    if (zielIndex < 0 || zielIndex >= riegenAnzahl) return;
-
-    bool passtZumSchluessel(Kind k) => '${k.jahrgang}_${k.geschlecht}' == kohortenSchluessel;
-
-    final betroffeneKinder = <Kind>[
-      for (final liste in riegenListen) ...liste.where(passtZumSchluessel),
-    ];
-    if (betroffeneKinder.isEmpty) return;
-
-    setState(() {
-      for (final liste in riegenListen) {
-        liste.removeWhere(passtZumSchluessel);
-      }
-      riegenListen[zielIndex].addAll(betroffeneKinder);
-      for (final kind in betroffeneKinder) {
-        kind.riegenNummer = alleRiegen[zielIndex].riegenNummer;
-      }
-    });
-
-    _log.i('Kohorte $kohortenSchluessel manuell in Riege $neueRiegenNummer verschoben '
-        '(${betroffeneKinder.length} Kind(er)).');
-
-    // Weicher Hinweis, falls die Kohorte in eine Riege des jeweils anderen
-    // Wettkampf-Typs verschoben wird. Die Verschiebung wird trotzdem
-    // durchgeführt – der Benutzer soll bewusst übersteuern können.
-    final jahrgang = int.parse(kohortenSchluessel.split('_')[0]);
-    final istFuenfkampfKohorte = (aktuellesJahr - jahrgang) <= 5;
-    if (istFuenfkampfKohorte != alleRiegen[zielIndex].fuenfKampf && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Achtung: Kohorte wurde in eine Riege des jeweils anderen '
-            'Wettkampf-Typs (Fünf-/Zehnkampf) verschoben.',
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Speichern nach (ggf. manueller) Bestätigung durch den Benutzer
-  // ─────────────────────────────────────────────────────────────────────────
-  Future<void> _speichernUndAbschliessen() async {
-    setState(() => isSaving = true);
-    try {
-      await _speichereEinteilungInDatenbank(
-        bisherigerTyp: _bisherigerTyp,
-        bisherigeZuordnung: _bisherigeZuordnung,
-      );
-      if (mounted) Navigator.pop(context, true);
-    } catch (e) {
-      _log.e('Speichern der Riegeneinteilung fehlgeschlagen: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Speichern fehlgeschlagen: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        setState(() => isSaving = false);
-      }
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
   // UI
   // ─────────────────────────────────────────────────────────────────────────
+  void _filterKinderNachRiege(int riegenNummer) {
+    setState(() {
+      gefilterteKinder = alleKinder
+          .where((k) => k.riegenNummer == riegenNummer)
+          .toList()
+        ..sort((a, b) {
+          final jv = b.jahrgang.compareTo(a.jahrgang);
+          return jv != 0 ? jv : b.geschlecht.compareTo(a.geschlecht);
+        });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -661,195 +502,55 @@ class RiegenEinteilungState extends State<RiegenEinteilung> {
                         Text(fehlerMeldung!, textAlign: TextAlign.center),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: _ladeUndBerechneVorschlag,
+                          onPressed: _riegenEinteilenUndSpeichern,
                           child: const Text('Erneut versuchen'),
                         ),
                       ],
                     ),
                   ),
                 )
-              : _buildRiegenUebersicht(),
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Riegen-Übersicht: erst alle Fünfkampf-Riegen nebeneinander, dann alle
-  // Zehnkampf-Riegen nebeneinander. Pro Riege eine Kopfzeile mit der
-  // Gesamtgröße sowie je eine Zeile pro Kohorte (Jahrgang + Geschlecht) mit
-  // Anzahl und editierbarer Riegennummer.
-  // ─────────────────────────────────────────────────────────────────────────
-  Widget _buildRiegenUebersicht() {
-    final fuenfkampfIndizes = [
-      for (int i = 0; i < riegenAnzahl; i++) if (alleRiegen[i].fuenfKampf) i,
-    ];
-    final zehnkampfIndizes = [
-      for (int i = 0; i < riegenAnzahl; i++) if (!alleRiegen[i].fuenfKampf) i,
-    ];
-
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text('Fünfkampf-Riegen',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-                _buildRiegenReihe(fuenfkampfIndizes),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-                  child: Text('Zehnkampf-Riegen',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-                _buildRiegenReihe(zehnkampfIndizes),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        ),
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isSaving ? null : _speichernUndAbschliessen,
-                child: isSaving
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Riegeneinteilung speichern & abschließen'),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Zielbreite einer Riegen-Karte. Die tatsächliche Breite wird pro Zeile
-  // an die verfügbare Bildschirmbreite angepasst (siehe _buildRiegenReihe),
-  // dieser Wert dient nur als Richtwert für die Spaltenanzahl.
-  static const double _riegenKarteZielBreite = 230;
-  static const double _riegenKarteAbstand    = 12;
-
-  Widget _buildRiegenReihe(List<int> riegenIndizes) {
-    if (riegenIndizes.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        child: Text('– keine Riegen dieses Typs –'),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Wie viele Karten passen bei der aktuellen Breite nebeneinander?
-          final spaltenAnzahl = ((constraints.maxWidth + _riegenKarteAbstand) /
-                  (_riegenKarteZielBreite + _riegenKarteAbstand))
-              .floor()
-              .clamp(1, riegenIndizes.length);
-
-          // Karten gleichmäßig auf die verfügbare Breite strecken, statt
-          // rechts Leerraum zu lassen.
-          final kartenBreite = (constraints.maxWidth -
-                  (spaltenAnzahl - 1) * _riegenKarteAbstand) /
-              spaltenAnzahl;
-
-          return Wrap(
-            spacing: _riegenKarteAbstand,
-            runSpacing: _riegenKarteAbstand,
-            children: riegenIndizes
-                .map((i) => _buildRiegenKarte(i, kartenBreite))
-                .toList(),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildRiegenKarte(int riegenIndex, double breite) {
-    final riege  = alleRiegen[riegenIndex];
-    final kinder = riegenListen[riegenIndex];
-
-    // Kohorten (Jahrgang + Geschlecht) innerhalb dieser Riege gruppieren
-    final kohorten = <String, List<Kind>>{};
-    for (final kind in kinder) {
-      kohorten.putIfAbsent('${kind.jahrgang}_${kind.geschlecht}', () => []).add(kind);
-    }
-    final kohortenEintraege = kohorten.entries.toList()
-      ..sort((a, b) => b.key.compareTo(a.key));
-
-    return SizedBox(
-      width: breite,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Kopfzeile: Riegennummer + Gesamtgröße
-              Text(
-                'Riege ${riege.riegenNummer}   ·   ${kinder.length} Kind(er)',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const Divider(),
-              if (kohortenEintraege.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text('– leer –', style: TextStyle(color: Colors.grey)),
-                ),
-              // Eine Zeile je Kohorte: Jahrgang, Geschlecht, Anzahl,
-              // editierbare Riegennummer
-              ...kohortenEintraege.map((entry) {
-                final teile      = entry.key.split('_');
-                final jahrgang   = teile[0];
-                final geschlecht = teile[1];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '$jahrgang ${geschlecht == 'w' ? '♀' : '♂'}  '
-                          '(${entry.value.length})',
-                        ),
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: DropdownButton<int>(
+                        hint: const Text('Wähle eine Riege'),
+                        value: ausgewaehlteRiegenNummer,
+                        items: List.generate(riegenAnzahl, (i) => i + 1)
+                            .map((n) => DropdownMenuItem(
+                                  value: n,
+                                  child: Text(
+                                    'Riege $n  (${alleRiegen.length > n - 1 && alleRiegen[n - 1].fuenfKampf ? "Fünfkampf" : "Zehnkampf"})',
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (v) {
+                          setState(() => ausgewaehlteRiegenNummer = v);
+                          if (v != null) _filterKinderNachRiege(v);
+                        },
                       ),
-                      SizedBox(
-                        width: 68,
-                        child: DropdownButtonFormField<int>(
-                          initialValue: riege.riegenNummer,
-                          isDense: true,
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            border: OutlineInputBorder(),
-                          ),
-                          items: List.generate(riegenAnzahl, (i) => i + 1)
-                              .map((n) => DropdownMenuItem(value: n, child: Text('$n')))
-                              .toList(),
-                          onChanged: (neueNummer) {
-                            if (neueNummer != null && neueNummer != riege.riegenNummer) {
-                              _kohorteVerschieben(entry.key, neueNummer);
-                            }
-                          },
-                        ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: gefilterteKinder.length,
+                        itemBuilder: (_, i) {
+                          final kind = gefilterteKinder[i];
+                          return ListTile(
+                            title: Text('${kind.vorname} ${kind.nachname} '
+                                '${kind.jahrgang} ${kind.geschlecht}'),
+                          );
+                        },
                       ),
-                    ],
-                  ),
-                );
-              }),
-            ],
-          ),
-        ),
-      ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text(
+                        'Riegeneinteilung abschließen',
+                        style: TextStyle(fontSize: 50, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
     );
   }
 }
