@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sporttag/src/hilfs_widgets/meine_karten_eintrag.dart';
 import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/tools/pdf_modal.dart';
 import 'package:sporttag/src/tools/station_repository.dart';
@@ -294,18 +295,14 @@ class WettbewerbState extends State<Wettbewerb> {
                             itemCount: riegenKinder.length,
                             itemBuilder: (context, index) {
                               final kind = riegenKinder[index];
-                              return Card(
-                                margin:
-                                    const EdgeInsets.symmetric(vertical: 4.0),
+                              return MeinKartenEintrag(
                                 child: ListTile(
-                                  title: Text(
-                                    '${kind.vorname} ${kind.nachname}',
-                                  ),
+                                  title:
+                                      Text('${kind.vorname} ${kind.nachname}'),
                                   trailing: Text(
                                     '${kind.erreichtePunkte} Pkt.',
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               );
@@ -347,7 +344,7 @@ class WettbewerbState extends State<Wettbewerb> {
                                       if (bestaetigt != true) {
                                         return; // abgebrochen → nichts weiter tun
                                       }
-                                      if (!context.mounted){
+                                      if (!context.mounted) {
                                         return; // NEU: Guard gegen async-gap-Warnung
                                       }
                                       await Navigator.push(
@@ -366,25 +363,6 @@ class WettbewerbState extends State<Wettbewerb> {
                                       });
                                     }
                                   : null,
-                              // onPressed: istAktiv
-                              // ? () async {
-                              //     await Navigator.push(
-                              //       context,
-                              //       MaterialPageRoute(
-                              //         builder: (context) =>
-                              //             angeboteneDisziplinen[
-                              //                         disziplin]
-                              //                     ?.call() ??
-                              //                 const Center(
-                              //                     child: Text(
-                              //                         'Disziplin nicht gefunden')),
-                              //       ),
-                              //     );
-                              //     setState(() {
-                              //       besuchteDisziplinen.add(disziplin);
-                              //     });
-                              //   }
-                              // : null,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
                                     istBesucht ? Colors.grey : Colors.red,
