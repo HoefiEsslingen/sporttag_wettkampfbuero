@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sporttag/src/tools/station_repository.dart';
+import 'package:sporttag/src/repositories/station_repository.dart';
 import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
@@ -7,7 +7,7 @@ import 'package:sporttag/src/klassen/kind_klasse.dart';
 import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
 import 'package:sporttag/src/tools/stationen_in_durchgaengen.dart';
-import 'package:sporttag/src/tools/kind_repository.dart';
+import 'package:sporttag/src/repositories/kind_repository.dart';
 import 'package:sporttag/src/tools/logger.util.dart';
 
 class Drehwurf extends StatefulWidget {

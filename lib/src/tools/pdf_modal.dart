@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:web/web.dart' as web;
 import 'dart:ui_web' as ui_web;
 import 'logger.util.dart';
-import 'station_repository.dart';
+import '../repositories/station_repository.dart';
 
 class PdfModal extends StatefulWidget {
   final String stationsName;

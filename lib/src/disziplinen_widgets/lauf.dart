@@ -5,9 +5,9 @@ import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
 import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
-import 'package:sporttag/src/tools/kind_repository.dart';
+import 'package:sporttag/src/repositories/kind_repository.dart';
 import 'package:sporttag/src/tools/logger.util.dart';
-import 'package:sporttag/src/tools/station_repository.dart';
+import 'package:sporttag/src/repositories/station_repository.dart';
 import 'package:sporttag/src/tools/stop_uhr.dart';
 
 class Lauf extends StatefulWidget {

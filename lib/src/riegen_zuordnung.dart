@@ -1,11 +1,11 @@
-import 'package:sporttag/src/tools/riegen_repository.dart';
+import 'package:sporttag/src/repositories/riegen_repository.dart';
 
 import 'hilfs_widgets/meine_appbar.dart';
 import 'klassen/riegen_klasse.dart';
 import 'tools/logger.util.dart';
 import 'package:flutter/material.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
-import 'package:sporttag/src/tools/kind_repository.dart';
+import 'package:sporttag/src/repositories/kind_repository.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class RiegenZuordnung extends StatefulWidget {

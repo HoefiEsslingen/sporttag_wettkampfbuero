@@ -5,10 +5,10 @@ import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
 import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
-import 'package:sporttag/src/tools/kind_repository.dart';
+import 'package:sporttag/src/repositories/kind_repository.dart';
 import 'package:sporttag/src/tools/logger.util.dart';
 import 'package:sporttag/src/tools/mehrere_versuche_pro_durchgang.dart';
-import 'package:sporttag/src/tools/station_repository.dart';
+import 'package:sporttag/src/repositories/station_repository.dart';
 
 class HochWeitSprung extends StatefulWidget {
   final Riege riegenPointer;

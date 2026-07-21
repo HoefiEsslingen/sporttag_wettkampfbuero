@@ -6,7 +6,7 @@ import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/tools/sporttag_config.dart';
 
 import 'klassen/kind_klasse.dart';
-import 'tools/kind_repository.dart';
+import 'repositories/kind_repository.dart';
 
 class AnmeldenVorher extends StatefulWidget {
   const AnmeldenVorher({super.key, this.title});

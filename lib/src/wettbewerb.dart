@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sporttag/src/hilfs_widgets/meine_karten_eintrag.dart';
+import 'package:sporttag/src/hilfs_widgets/mein_karten_eintrag.dart';
 import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/tools/pdf_modal.dart';
-import 'package:sporttag/src/tools/station_repository.dart';
+import 'package:sporttag/src/repositories/station_repository.dart';
 import 'klassen/riegen_klasse.dart';
 import 'pause.dart';
 import 'danke_ende.dart';
@@ -18,10 +18,10 @@ import 'disziplinen_widgets/druck_wurf.dart';
 import 'disziplinen_widgets/weit_sprung.dart';
 import 'disziplinen_widgets/stadion_runde.dart';
 import 'klassen/kind_klasse.dart';
-import 'tools/kind_repository.dart';
+import 'repositories/kind_repository.dart';
 import 'tools/logger.util.dart';
 import 'hilfs_widgets/meine_appbar.dart';
-import 'tools/riegen_repository.dart';
+import 'repositories/riegen_repository.dart';
 
 class Wettbewerb extends StatefulWidget {
   final int riegenNummer;

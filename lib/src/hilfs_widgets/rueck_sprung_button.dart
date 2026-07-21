@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sporttag/src/tools/riegen_repository.dart';
+import 'package:sporttag/src/repositories/riegen_repository.dart';
 
 import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';

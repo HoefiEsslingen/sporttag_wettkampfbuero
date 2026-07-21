@@ -1,3 +1,141 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// KindRepository – Methodenübersicht
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Klasse: BatchErgebnis
+//   Hilfsobjekt zur Zusammenfassung von Batch-Speicheroperationen.
+//   Felder: erfolgreich (int), fehlgeschlagen (int), fehlerMeldungen (List<String>)
+//   Getter: alleErfolgreich -> bool (true, wenn fehlgeschlagen == 0)
+//
+// ─── INTERNE HILFSMETHODEN ───────────────────────────────────────────────
+//
+// _kindVonParse(ParseObject p)
+//   Wandelt ein ParseObject der Klasse "Kind" in ein Kind-Dart-Objekt um.
+//   Input:  p (ParseObject)
+//   Output: Kind
+//
+// _saveWithRetry(ParseObject obj, {int maxVersuche = 3})
+//   Speichert ein ParseObject mit Exponential-Backoff-Retry (bis zu maxVersuche
+//   Versuche), um stille Netzwerkfehler abzufangen.
+//   Input:  obj (ParseObject), maxVersuche (int, optional, default 3)
+//   Output: Future<ParseResponse>
+//
+// ─── CREATE / UPDATE – Kind ───────────────────────────────────────────────
+//
+// _createKind(Kind kind)
+//   Legt ein neues Kind in der Datenbank an (version wird auf 1 gesetzt).
+//   Setzt bei Erfolg objectId und version auf dem übergebenen Kind-Objekt.
+//   Input:  kind (Kind)
+//   Output: Future<bool> (true = erfolgreich gespeichert)
+//
+// _updateKind(Kind kind)
+//   Aktualisiert ein bestehendes Kind (Optimistic Locking über atomares
+//   Inkrementieren von "version"). Erhöht bei Erfolg kind.version um 1.
+//   Input:  kind (Kind)
+//   Output: Future<bool> (true = erfolgreich aktualisiert)
+//
+// saveKind({required Kind kind})
+//   Öffentlicher Einstiegspunkt: entscheidet anhand von kind.objectId
+//   automatisch zwischen _createKind() und _updateKind().
+//   Input:  kind (Kind)
+//   Output: Future<bool>
+//
+// saveKinderListe({required List<Kind> kinder})
+//   Speichert eine Liste von Kindern (Create oder Update je nach objectId).
+//   Input:  kinder (List<Kind>)
+//   Output: Future<List<Kind>> – Liste der Kinder, deren Speichern
+//           fehlgeschlagen ist (leer = alles erfolgreich)
+//
+// ─── READ – Kind ───────────────────────────────────────────────────────
+//
+// ladeAlleKinder()
+//   Lädt alle Kinder aus der Datenbank (paginiert).
+//   Input:  –
+//   Output: Future<List<Kind>>
+//
+// ladeAngemeldeteKinder()
+//   Lädt nur Kinder mit bezahlt == true (= angemeldet).
+//   Input:  –
+//   Output: Future<List<Kind>>
+//
+// _paginierteAbfrage({required QueryBuilder<ParseObject> query, int seitenGroesse = 100})
+//   Generische paginierte Abfrage, um das 100-Ergebnis-Limit von Parse zu umgehen.
+//   Input:  query (QueryBuilder<ParseObject>), seitenGroesse (int, optional, default 100)
+//   Output: Future<List<Kind>>
+//
+// ─── kinderDerRiege – Riegenzuordnung ────────────────────────────────────
+//
+// weiseKindRiegeZu({required Kind kind, required Riege riege, required int position})
+//   Ordnet ein Kind einer Riege zu (neuer Eintrag in "kinderDerRiege").
+//   Prüft vorher per Idempotenz-Check, ob die Zuordnung bereits existiert.
+//   Input:  kind (Kind), riege (Riege), position (int)
+//   Output: Future<bool> (true = zugeordnet bzw. bereits vorhanden)
+//
+// aktualisiereRiegenZuordnung({required Kind kind, required Riege neueRiege, required int neuePosition})
+//   Aktualisiert die Riegenzuordnung eines Kindes (z. B. beim Umteilen).
+//   Legt neu an, falls noch kein Eintrag existiert.
+//   Input:  kind (Kind), neueRiege (Riege), neuePosition (int)
+//   Output: Future<bool>
+//
+// ladeKinderDerRiege({required Riege riege})
+//   Lädt alle Kinder einer bestimmten Riege (inkl. Positionssortierung).
+//   Input:  riege (Riege)
+//   Output: Future<List<Kind>>
+//
+// ladeKinderAusRiegen({required List<Riege> listeVonRiegen})
+//   Lädt Kinder aus mehreren Riegen parallel (effizienter als sequenzielle Schleife).
+//   Input:  listeVonRiegen (List<Riege>)
+//   Output: Future<List<Kind>>
+//
+// loescheRiegenZuordnungen({required Riege riege})
+//   Löscht alle kinderDerRiege-Einträge einer Riege (z. B. vor Neueinteilung).
+//   Input:  riege (Riege)
+//   Output: Future<bool> (true = alle Einträge erfolgreich gelöscht)
+//
+// ─── resultate – Punkte pro Kind und Station ─────────────────────────────
+//
+// speichereResultat({required Kind kind, required Station station, required int punkte})
+//   Speichert das Ergebnis eines Kindes für eine Station. Idempotenz-Guard
+//   verhindert doppelte Einträge (z. B. durch Doppelklick/Netzwerk-Retry).
+//   Input:  kind (Kind), station (Station), punkte (int)
+//   Output: Future<bool> (true = gespeichert, false = bereits vorhanden/Fehler)
+//
+// ladePunktesumme({required Kind kind})
+//   Lädt die Gesamtpunktzahl eines einzelnen Kindes aus "resultate".
+//   Input:  kind (Kind)
+//   Output: Future<int> (0, falls keine Ergebnisse vorhanden/Abfrage fehlschlägt)
+//
+// ladePunkteSummenFuerKinder({required List<Kind> kinder})
+//   Lädt Punktesummen für mehrere Kinder in einem einzigen DB-Request.
+//   Input:  kinder (List<Kind>)
+//   Output: Future<Map<String, int>> (Key = Kind-objectId, Value = Punktesumme)
+//
+// ─── Darstellung / Sortierung (reine Logik, kein DB-Zugriff) ─────────────
+//
+// gruppiereKinder({required List<Kind> ausDerListe})
+//   Gruppiert Kinder nach Geschlecht + Jahrgang.
+//   Input:  ausDerListe (List<Kind>)
+//   Output: Map<String, List<Kind>> (Key = "geschlecht_jahrgang")
+//
+// zurAnzeigeSortieren({required List<Kind> alleKinder, required Set<Kind> ausgewerteteKinder})
+//   Sortiert Kinder für die Anzeige: unausgewertete zuerst (nach Jahrgang,
+//   Geschlecht, Nachname), bereits ausgewertete Kinder danach (nach Nachname).
+//   Input:  alleKinder (List<Kind>), ausgewerteteKinder (Set<Kind>)
+//   Output: List<Kind> (neu sortierte Kopie der Liste)
+//
+// ─── PRIVATE HILFSMETHODEN ───────────────────────────────────────────────
+//
+// _ladeKindDerRiegeEintrag({required String kindObjectId, required String riegenObjectId})
+//   Prüft, ob für ein Kind bereits ein kinderDerRiege-Eintrag existiert.
+//   Input:  kindObjectId (String), riegenObjectId (String)
+//   Output: Future<ParseObject?> (Eintrag oder null, falls nicht vorhanden)
+//
+// _resultatVorhanden({required String kindObjectId, required String stationsObjectId})
+//   Prüft, ob für Kind + Station bereits ein Resultat existiert.
+//   Input:  kindObjectId (String), stationsObjectId (String)
+//   Output: Future<bool> (true = Resultat existiert bereits)
+// ═══════════════════════════════════════════════════════════════════════════
+
 import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 
 import 'package:sporttag/src/klassen/kind_klasse.dart';

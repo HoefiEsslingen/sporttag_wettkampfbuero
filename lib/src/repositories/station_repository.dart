@@ -1,3 +1,71 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// StationRepository – Methodenübersicht
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Hinweis: Stationen sind Stammdaten (einmalig angelegt, überwiegend
+// gelesen). Die Klasse führt daher einen lokalen Cache (Map: stationsName →
+// Station), um wiederholte DB-Abfragen zu vermeiden.
+//
+// ─── INTERNE HILFSMETHODEN ───────────────────────────────────────────────
+//
+// _stationVonParse(ParseObject p)
+//   Wandelt ein ParseObject der Klasse "Station" in ein Station-Dart-Objekt
+//   um. Liest zusätzlich die URL einer optional hinterlegten Beschreibungs-
+//   Datei (ParseFile-Feld "beschreibung") aus.
+//   Input:  p (ParseObject)
+//   Output: Station
+//
+// _saveWithRetry(ParseObject obj, {int maxVersuche = 3})
+//   Speichert ein ParseObject mit Exponential-Backoff-Retry (bis zu
+//   maxVersuche Versuche), um stille Netzwerkfehler abzufangen.
+//   Input:  obj (ParseObject), maxVersuche (int, optional, default 3)
+//   Output: Future<ParseResponse>
+//
+// ─── READ ──────────────────────────────────────────────────────────────────
+//
+// ladeAlleStationen()
+//   Lädt alle Stationen (sortiert nach stationsNummer) und befüllt
+//   anschließend den lokalen Cache mit allen geladenen Stationen.
+//   Input:  –
+//   Output: Future<List<Station>>
+//
+// ladeStationNachName({required String stationsName})
+//   Gibt eine Station anhand ihres Namens zurück. Prüft zuerst den Cache;
+//   nur bei Cache-Miss erfolgt eine DB-Abfrage (Ergebnis wird dann gecacht).
+//   Input:  stationsName (String)
+//   Output: Future<Station?> (null, falls nicht gefunden)
+//
+// ladeStationenFuerWettkampf({required bool istZehnkampf})
+//   Gibt nur die für den angegebenen Wettkampftyp relevanten Stationen
+//   zurück, sortiert nach stationsNummer. Bei Zehnkampf alle Stationen,
+//   bei Fünfkampf nur jene mit nurZehnKampf == false. Ist der Cache noch
+//   leer, wird zuerst ladeAlleStationen() aufgerufen und die Methode
+//   danach erneut ausgeführt.
+//   Input:  istZehnkampf (bool)
+//   Output: Future<List<Station>>
+//
+// ─── CREATE / UPDATE  (Stammdaten-Pflege, selten benötigt) ────────────────
+//
+// saveStation({required Station station})
+//   Erstellt eine neue Station oder aktualisiert eine bestehende (anhand
+//   von station.objectId). Aktualisiert bei Erfolg zusätzlich den lokalen
+//   Cache mit der gespeicherten Station.
+//   Input:  station (Station)
+//   Output: Future<bool> (true = erfolgreich gespeichert)
+//
+// ─── Cache-Verwaltung ──────────────────────────────────────────────────────
+//
+// cacheLeeren()
+//   Leert den lokalen Stationen-Cache vollständig.
+//   Input:  –
+//   Output: void
+//
+// cacheGefuellt (Getter)
+//   Gibt an, ob der Cache aktuell mindestens einen Eintrag enthält.
+//   Input:  –
+//   Output: bool
+// ═══════════════════════════════════════════════════════════════════════════
+
 import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 
 import 'package:sporttag/src/klassen/station_klasse.dart';

@@ -6,8 +6,8 @@ import 'hilfs_widgets/meine_appbar.dart';
 import 'tools/logger.util.dart';
 import 'klassen/kind_klasse.dart';
 import 'klassen/riegen_klasse.dart';
-import 'tools/kind_repository.dart';
-import 'tools/riegen_repository.dart';
+import 'repositories/kind_repository.dart';
+import 'repositories/riegen_repository.dart';
 
 class RiegenEinteilung extends StatefulWidget {
   const RiegenEinteilung({super.key, required this.titel});

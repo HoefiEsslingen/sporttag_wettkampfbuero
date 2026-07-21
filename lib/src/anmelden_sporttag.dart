@@ -4,7 +4,7 @@ import 'package:sporttag/src/tools/sporttag_config.dart';
 //import 'package:sporttag/src/hilfs_widgets/beschreibung_button.dart';
 import 'hilfs_widgets/hilfe_button.dart';
 import 'klassen/kind_klasse.dart'; // Import der Kind-Klasse
-import 'tools/kind_repository.dart'; // Import der KindRepository-Klasse
+import 'repositories/kind_repository.dart'; // Import der KindRepository-Klasse
 
 class AnmeldenSporttag extends StatefulWidget {
   const AnmeldenSporttag({super.key, required this.titel});

@@ -3,14 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
-import 'package:sporttag/src/hilfs_widgets/meine_karten_eintrag.dart';
+import 'package:sporttag/src/hilfs_widgets/mein_karten_eintrag.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
 import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
-import 'package:sporttag/src/tools/kind_repository.dart';
+import 'package:sporttag/src/repositories/kind_repository.dart';
+import 'package:sporttag/src/repositories/riegen_repository.dart';
 import 'package:sporttag/src/tools/logger.util.dart';
-import 'package:sporttag/src/tools/station_repository.dart';
+import 'package:sporttag/src/repositories/station_repository.dart';
 import 'package:sporttag/src/tools/stop_uhr.dart';
 
 class Sprint extends StatefulWidget {
@@ -29,6 +30,7 @@ class SprintState extends State<Sprint> {
   // Repository-Objekte
   final KindRepository kindRepository = KindRepository();
   final StationRepository stationRepository = StationRepository();
+  final RiegenRepository riegenRepository = RiegenRepository();
   bool testLauf = true; // Kinder dürfen zuerst ihre Entscheidung testen
 
   late Riege riegenPointer;
@@ -54,21 +56,33 @@ class SprintState extends State<Sprint> {
     _loadData();
   }
 
-  Future<void> _loadData() async {
-    riegenKinder =
-        await kindRepository.ladeKinderDerRiege(riege: riegenPointer);
-    station =
-        await stationRepository.ladeStationNachName(stationsName: stationsName);
-    // // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    // kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
-    //     alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
-    setState(() {
-      // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-      kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
-          alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
-    }); // UI aktualisieren
+Future<void> _loadData() async {
+  // 1. Kinder der Riege + Station laden
+  riegenKinder = await kindRepository.ladeKinderDerRiege(riege: riegenPointer);
+  station = await stationRepository.ladeStationNachName(
+      stationsName: stationsName);
+
+  // 2. Exakter Check: wurde GENAU diese Station ("Sprint") für diese Riege
+  //    laut riegenLogging bereits abgeschlossen? Relevant z.B. nach einem
+  //    Abbruch/Neustart der Web-App mitten im Wettkampf.
+  final stationBereitsAbgeschlossen =
+      await riegenRepository.istStationBereitsProtokolliert(
+    riege: riegenPointer,
+    station: station!,
+  );
+
+  if (stationBereitsAbgeschlossen) {
+    // Alle Kinder der Riege gelten für diese Station als bereits
+    // ausgewertet -> sie dürfen an dieser Station nicht nochmal antreten.
+    ausgewerteteKinder.addAll(riegenKinder);
   }
 
+  if (!mounted) return;
+  setState(() {
+    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+        alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+  });
+}
   /// Liefert die Kinder, die aktuell in der Liste angezeigt werden sollen.
   /// - Vor dem Testlauf (testLauf == true): alle Kinder der Riege
   ///   (bereits ausgewertete Kinder stehen dank zurAnzeigeSortieren hinten).
@@ -85,53 +99,65 @@ class SprintState extends State<Sprint> {
         .toList();
   }
 
-  Future<void> auswerten(Map<Kind, int> resultate) async {
-    log.i(
-        'in auswerten -> Ergebniss erstes Kind: ${resultate.values.first.toString()}');
+Future<void> auswerten(Map<Kind, int> resultate) async {
+  log.i(
+      'in auswerten -> Ergebniss erstes Kind: ${resultate.values.first.toString()}');
 
-    // Auswertung nur zulassen, falls der Testlauf beendet ist
-    if (testLauf) return;
+  // Auswertung nur zulassen, falls der Testlauf beendet ist
+  if (testLauf) return;
 
-    // NEU: Completer anlegen, BEVOR die erste await-Stelle erreicht wird.
-    // Da diese Methode synchron bis zum ersten "await" ausgeführt wird,
-    // existiert der Completer garantiert schon, wenn der Aufrufer
-    // (StopUhr / Navigator.pop) weiterläuft.
-    _auswertungAbgeschlossen = Completer<void>();
+  _auswertungAbgeschlossen = Completer<void>();
 
-    try {
-      // 1. Punkte berechnen (synchron)
-      final Map<Kind, int> punkteProKind = {
-        for (final entry in resultate.entries)
-          entry.key: _werteZeitenAus(entry.value, entry.key)
-      };
+  try {
+    // 1. Punkte berechnen (synchron)
+    final Map<Kind, int> punkteProKind = {
+      for (final entry in resultate.entries)
+        entry.key: _werteZeitenAus(entry.value, entry.key)
+    };
 
-      // 2. Punkte in der Datenbank speichern (asynchron, außerhalb von setState)
-      for (final entry in punkteProKind.entries) {
-        log.i('in auswerten ${entry.value} für ${entry.key.nachname}');
-        await kindRepository.speichereResultat(
-            kind: entry.key, station: station!, punkte: entry.value);
-      }
-
-      // 3. State synchron aktualisieren -> löst Rebuild aus
-      if (!mounted) return;
-      setState(() {
-        kinderMitZeiten.addAll(punkteProKind);
-        ausgewerteteKinder.addAll(resultate.keys);
-        selectedKinder.clear();
-        kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
-            alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
-      });
-
-      // 4. Kind-Objekte abschließend speichern
-      for (final kind in resultate.keys) {
-        await kindRepository.saveKind(kind: kind);
-      }
-    } finally {
-      // NEU: Signal geben, dass die Auswertung (inkl. setState) abgeschlossen ist
-      _auswertungAbgeschlossen?.complete();
+    // 2. Punkte in 'resultate' speichern. speichereResultat() hat bereits
+    //    einen eigenen Idempotenz-Guard (_resultatVorhanden) -> auch bei
+    //    versehentlichem Doppelaufruf kein doppelter Eintrag.
+    for (final entry in punkteProKind.entries) {
+      log.i('in auswerten ${entry.value} für ${entry.key.nachname}');
+      await kindRepository.speichereResultat(
+          kind: entry.key, station: station!, punkte: entry.value);
     }
-  }
 
+    // 3. State synchron aktualisieren -> löst Rebuild aus
+    if (!mounted) return;
+    setState(() {
+      kinderMitZeiten.addAll(punkteProKind);
+      ausgewerteteKinder.addAll(resultate.keys);
+      selectedKinder.clear();
+      kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
+          alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
+    });
+
+    // 4. Kind-Objekte abschließend speichern
+    for (final kind in resultate.keys) {
+      await kindRepository.saveKind(kind: kind);
+    }
+
+    // 5. NEU: Wenn jetzt ALLE Kinder der Riege an dieser Station
+    //    ausgewertet sind, gilt die Station für die Riege als
+    //    abgeschlossen -> riegenLogging-Eintrag erhöhen. Idempotent:
+    //    ein zweiter Aufruf für dieselbe Riege+Station wird intern
+    //    ignoriert (siehe _loggingEintragVorhanden).
+    if (ausgewerteteKinder.length == riegenKinder.length) {
+      final erhoeht = await riegenRepository.erhoeheStationszaehler(
+        riege: riegenPointer,
+        station: station!,
+      );
+      if (!erhoeht) {
+        log.w(
+            'Stationszähler für ${station!.stationsName} war bereits erhöht.');
+      }
+    }
+  } finally {
+    _auswertungAbgeschlossen?.complete();
+  }
+}
   int _werteZeitenAus(int zeitInMillis, Kind kind) {
     int punkte;
     zeitInMillis > 0
