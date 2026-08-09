@@ -26,11 +26,14 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
   int? ausgewaehlteRiegenNummer;
   Riege? ausgewaehlteRiege; // vollständiges Riege-Objekt der aktuellen Auswahl
   List<Kind> gefilterteKinder = [];
- // Jahrgänge der Kinder der ausgewählten Riege
+ // Jahrgänge der Kinder der ausgewählten Riege (eindeutig, aufsteigend sortiert)
   List<int> jahrgaengeInRiege = [];
+  // Wettbewerb ("Fuenfkampf"/"Zehnkampf") der ausgewählten Riege, für die
+  // Anzeige der Disziplinenanzahl im Button unten.
   String? wettbewerb;
-  String qrCodeUrl =
-      ''; //= 'https://gs-gp.eu'; // Platzhalter für die URL des QR-Codes
+  // URL, die als QR-Code angezeigt wird; leer, solange keine Riege gewählt ist
+  String qrCodeUrl = '';
+  
   // Logger einrichten
   final log = getLogger();
 
@@ -75,13 +78,15 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
 
   String _updateQrCodeUrl() {
     if (ausgewaehlteRiegenNummer != null) {
-        // Wettbewerb wird weiterhin lokal benötigt, um im Button unten die
-      // Anzahl der Disziplinen (5 bzw. 10) anzuzeigen. In die QR-URL selbst
-      // muss er nicht mehr aufgenommen werden, da die Ziel-App diese
-      // Information bereits aus der Datenbank lädt.
+      // Die QR-URL enthält seit Kurzem nur noch die Riegennummer.
+      // Die Ziel-App (hoefiesslingen.github.io) lädt Fünf-/Zehnkampf-Info
+      // selbst aus der Datenbank, daher wird "wettbewerb" hier bewusst
+      // nicht mehr für die URL ermittelt.
+      // Wettbewerb wird weiterhin lokal benötigt, um im Button unten die
+      // Anzahl der Disziplinen (5 bzw. 10) anzuzeigen.
       wettbewerb = ausgewaehlteRiege!.fuenfKampf ? 'Fuenfkampf' : 'Zehnkampf';
       qrCodeUrl =
-          'https://hoefiesslingen.github.io/#/wettkampf/$ausgewaehlteRiegenNummer'; //?wettbewerb=$wettbewerb';
+          'https://hoefiesslingen.github.io/#/wettbewerb/$ausgewaehlteRiegenNummer'; //?wettbewerb=$wettbewerb';
     } else {
       qrCodeUrl = '';
     }
@@ -96,8 +101,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
         ausgewaehlteRiegenNummer = null; // Setzt die Auswahl zurück
         gefilterteKinder.clear(); // Löscht die Liste der angezeigten Kinder
         jahrgaengeInRiege.clear(); // Löscht die Jahrgangs-Übersicht
-        qrCodeUrl =
-            ''; // Kommentar entfernen, wenn Qr-Code generiert werden kann
+        qrCodeUrl = ''; // Setzt die QR-Code-URL zurück
       });
     }
   }
@@ -145,8 +149,8 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
                       });
                       if (riege != null) {
                         _filterKinderNachRiege(riege);
-                        // Aktualisiert die URL des QR-Codes
-                        _updateQrCodeUrl();
+                        // // Aktualisiert die URL des QR-Codes
+                        // _updateQrCodeUrl();
                       }
                     },
                   ),
@@ -159,7 +163,8 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
                 child: Row(
                   children: [
                     // Linke Spalte: Übersicht der Riege vor der Freigabe
-                    // Titel = Riegennummer, Untertitel = Jahrgänge, darunter Name/Vorname der Kinder
+                    // Titel = Riegennummer, Untertitel = Jahrgänge + Anzahl Kinder,
+                    // darunter laufende Nummer + Nachname/Vorname der Kinder
                     Expanded(
                       flex: 2,
                       child: Column(

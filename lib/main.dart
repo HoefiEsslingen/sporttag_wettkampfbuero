@@ -77,63 +77,46 @@ class MainApp extends StatelessWidget {
           fillColor: Colors.white,
         ),
       ),
-      // Die App startet bei der in der sporttag-config-Datei bestimmten Route
-      // entspricht Wettkampfbuero() --> falls aktuelles Datum nach Anmeldeschluss liegt
-      // entspricht AnmeldenVorher() --> falls aktuelles Datum vor Anmeldeschluss liegt
+      // Die App startet bei der in der sporttag-config-Datei bestimmten Route 'startRoute'.
+      //        entspricht Wettkampfbuero() --> falls aktuelles Datum nach Anmeldeschluss liegt
+      //        entspricht AnmeldenVorher() --> falls aktuelles Datum vor Anmeldeschluss liegt
       initialRoute: startRoute,
-      // Diese Funktion wird aufgerufen, wann immer eine Route aufgerufen wird, die nicht explizit in routes: registriert ist.
+      // Die folgende Funktion wird aufgerufen, wann immer eine Route aufgerufen wird, die nicht explizit in routes: registriert ist.
       // Du kannst hier dynamisch auf den Routen-String reagieren.
       onGenerateRoute: (settings) {
-        // Wandelt den Routennamen (z. B. /wettkampf/3/Zehnkampf) in ein Uri-Objekt um,
+        // Wandelt den Routennamen (z. B. /wettkampf/3) in ein Uri-Objekt um,
         // um bequem auf Pfadsegmente (pathSegments) zuzugreifen.
         final uri = Uri.parse(settings.name ?? '');
 
         // Dynamische QR-Code-Route
-        // Prüft, ob die Route drei Segmente hat und das erste Segment 'wettkampf' ist.
-        // Das zweite Segment sollte eine Zahl (Riegen-Nummer) sein und das dritte Segment sollte ein String (Wettbewerbs-Typ) sein.
-        // Beispiel: /wettkampf/3/Zehnkampf bzw. /wettkampf/5/Fuenfkampf
+        // Prüft, ob die Route zwei Segmente hat und das erste Segment 'wettbewerb' ist.
+        // Das zweite Segment sollte eine Zahl (Riegen-Nummer) sein.
+        // Beispiel: /wettbewerb/3 bzw. /wettbewerb/5
         // Wenn die Route korrekt ist, wird eine MaterialPageRoute zurückgegeben, die zur Wettbewerb-Seite führt.
-        // if (uri.pathSegments.length == 3 &&
-        //     uri.pathSegments[0] == 'wettkampf') {
-        //   // Extrahiert die Riegennummer (als int) und Wettbewerbstyp (z. B. "Zehnkampf")
-        //   final riegenNummer = int.tryParse(uri.pathSegments[1]);
-        //   final wettbewerbsTyp = Uri.decodeComponent(uri.pathSegments[2]);
-        //   if (riegenNummer != null && wettbewerbsTyp.isNotEmpty) {
-        //     return MaterialPageRoute(
-        //       builder: (_) => Wettbewerb(
-        //         riegenNummer: riegenNummer,
-        //         wettbewerbsTyp: wettbewerbsTyp,
-        //       ),
-        //     );
-        //   }
         if (uri.pathSegments.length == 2 &&
-            uri.pathSegments[0] == 'wettkampf') {
+            uri.pathSegments[0] == 'wettbewerb') {
+          // Extrahiert die Riegennummer (als int) aus dem zweiten Segment der Route.
           final riegenNummer = int.tryParse(uri.pathSegments[1]);
           if (riegenNummer != null) {
             return MaterialPageRoute(
               builder: (_) => Wettbewerb(riegenNummer: riegenNummer),
             );
           }
-        } else if (uri.pathSegments.length == 1) {
-          // Diese Route zeigt auf die Voranameldung für den Zehnkampf.
-          // Beispiel: 'Sporttag - Vorab - Anmeldung'
-          if (uri.pathSegments[0] == 'vorabAnmeldung') {
-            return MaterialPageRoute(
-                builder: (_) => const AnmeldenVorher(
-                    title: 'Sporttag - Vorab - Anmeldung'));
-          }
         }
 
         // Wenn keine QR-Code-Route erkannt wurde, wird eine normale fixe Route geladen.
         switch (settings.name) {
-          // case 'home':
-          //   return MaterialPageRoute(builder: (_) => const Wettkampfbuero());
           case 'home':
             return MaterialPageRoute(
-              builder: (_) => const PinGate(
-                child: Wettkampfbuero(),
-              ),
-            );
+              // PinGate ist ein Widget, das den Zugriff auf das Wettkampfbüro schützt und nur autorisierten Benutzern den Zugang erlaubt.
+              builder: (_) => 
+              const PinGate(
+                child: Wettkampfbuero(),),
+              );
+          case 'vorabAnmeldung':
+            return MaterialPageRoute(
+                builder: (_) => 
+                const AnmeldenVorher(title: 'Sporttag - Vorab - Anmeldung'));
           case 'anmeldeSeite':
             return MaterialPageRoute(
                 builder: (_) =>
