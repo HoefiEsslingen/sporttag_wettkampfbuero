@@ -86,7 +86,7 @@ class RiegenZuordnungState extends State<RiegenZuordnung> {
       // Anzahl der Disziplinen (5 bzw. 10) anzuzeigen.
       wettbewerb = ausgewaehlteRiege!.fuenfKampf ? 'Fuenfkampf' : 'Zehnkampf';
       qrCodeUrl =
-          'https://hoefiesslingen.github.io/#/wettbewerb/$ausgewaehlteRiegenNummer'; //?wettbewerb=$wettbewerb';
+          'https://hoefiesslingen.github.io/sporttag/#/wettbewerb/$ausgewaehlteRiegenNummer'; //?wettbewerb=$wettbewerb';
     } else {
       qrCodeUrl = '';
     }
