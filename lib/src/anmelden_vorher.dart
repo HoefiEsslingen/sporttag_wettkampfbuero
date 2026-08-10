@@ -1,12 +1,17 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sporttag/src/hilfs_widgets/kinder_bestaetigen_dialog.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
+import 'package:sporttag/src/mixins/anmeldung/kind_pruef_ergebnis.dart';
 import 'package:sporttag/src/tools/sporttag_config.dart';
-
-import 'klassen/kind_klasse.dart';
-import 'repositories/kind_repository.dart';
+import 'package:sporttag/src/klassen/kind_klasse.dart';
+import 'package:sporttag/src/repositories/kind_repository.dart';
+// Import der Hilfsklassen für die Anmeldung
+import 'package:sporttag/src/tools/anmeldung/geschlecht_optionen.dart';
+import 'package:sporttag/src/tools/anmeldung/jahrgangs_helper.dart';
+import 'package:sporttag/src/tools/anmeldung/kind_validator.dart';
+import 'package:sporttag/src/mixins/anmeldung/anmelde_sperre_mixin.dart';
+import 'package:sporttag/src/mixins/anmeldung/duplikat_pruefung_mixin.dart';
 
 class AnmeldenVorher extends StatefulWidget {
   const AnmeldenVorher({super.key, this.title});
@@ -17,7 +22,10 @@ class AnmeldenVorher extends StatefulWidget {
   AnmeldenVorherState createState() => AnmeldenVorherState();
 }
 
-class AnmeldenVorherState extends State<AnmeldenVorher> {
+class AnmeldenVorherState extends State<AnmeldenVorher>
+    with
+        DuplikatPruefungMixin<AnmeldenVorher>,
+        AnmeldeSperreMixin<AnmeldenVorher> {
   /// Systemvariable verwendet
   final _formKey = GlobalKey<FormState>();
   late KindRepository kindRepository;
@@ -25,13 +33,11 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
   late List<int> _jahrgangListe;
   late int _jahrgang;
   late SporttagConfig config;
-  bool _istAmSpeichern = false; // NEU: Sperr-Flag während Prüfen/Speichern
 
   /// Controller für die TextFormField-Widgets
   final _vorName = TextEditingController();
   final _nachName = TextEditingController();
-  static const List<String> _geschlechtListe = ['w', 'm'];
-  String _geschlecht = _geschlechtListe.first;
+  String _geschlecht = GeschlechtOptionen.standard;
 
   @override
   void initState() {
@@ -40,239 +46,186 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
     kindRepository = KindRepository();
     // Zugriff über context.read, da initState synchron ist
     config = context.read<SporttagConfig>();
-    _jahrgang = _zulaessigeJahrgaenge(config).first;
-  }
-
-  List<int> _zulaessigeJahrgaenge(SporttagConfig config) {
-    // Die Logik um die zulässigen Jahrgänge zu bestimmen:
-    // basierend auf dem aktuellen Datum und dem festegelegten minAlter bzw. maxAlter
-    // wird die Liste der zulässigen Jahrgänge erstellt.
-    int currentYear = DateTime.now().year;
-    int maxAlter = config.kindAlterMax;
-    int minAlter = config.kindAlterMin;
-    _jahrgangListe = [];
-    for (int i = minAlter; i <= maxAlter; i++) {
-      _jahrgangListe.add(currentYear - i);
-    }
-    _jahrgangListe
-        .sort((a, b) => b.compareTo(a)); // Jahrgänge absteigend sortieren
-    return _jahrgangListe;
+    _jahrgangListe = JahrgangsHelper.zulaessigeJahrgaenge(config);
+    _jahrgang = _jahrgangListe.first;
+    _geschlecht = GeschlechtOptionen.standard;
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !_istAmSpeichern, // Sperrt das Zurückgehen während des Speicherns
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Die Anmeldung wird gerade verarbeitet – bitte warten.')),
-        );
-      },
-      child: Stack(
-        children: [
-          Scaffold(
-              appBar: MeineAppBar(titel: 'Vorab - Anmeldung Sporttag'),
-              body: Center(
-                child: SingleChildScrollView(
-                  // ein Formular erstellen
-                  child: Form(
-                    key: _formKey,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 48.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: <Widget>[
-                          const SizedBox(height: 32.0),
-                          RichText(
-                            textAlign: TextAlign.center,
-                            text: TextSpan(
-                              style: const TextStyle(
-                                fontSize: 16.0,
-                              ),
-                              children: <TextSpan>[
-                                const TextSpan(
-                                  text: 'Herzlich Willkommen\n',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 26.0,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: '\nHier können Sie Ihr Kind\n'
-                                      '(im Alter zwischen ${config.kindAlterMin} und ${config.kindAlterMax} Jahren)\n'
-                                      'vorab für den Sporttag anmelden.\n'
-                                      'Kinder in Alter bis ${config.fuenfkampfMaxAlter} Jahre absolvieren fünf,\n'
-                                      'die älteren zehn  Disziplinen.\n\n'
-                                      'Am Sporttag selbst bezahlen Sie lediglich noch\n'
-                                      'die Startgebühr von € ${config.gebuehr.toStringAsFixed(2).replaceAll('.', ',')},\n'
-                                      'damit die Anmeldung aktiv wird.\n',
-                                ),
-                              ],
+    return sperrbaresPopScope(
+      child: Scaffold(
+        appBar: MeineAppBar(titel: 'Vorab - Anmeldung Sporttag'),
+        body: Center(
+          child: SingleChildScrollView(
+            // ein Formular erstellen
+            child: Form(
+              key: _formKey,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 48.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    const SizedBox(height: 32.0),
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontSize: 16.0,
+                        ),
+                        children: <TextSpan>[
+                          const TextSpan(
+                            text: 'Herzlich Willkommen\n',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 26.0,
                             ),
                           ),
-                          const SizedBox(height: 32.0),
-                          // Eingabefeld für den Vornamen
-                          TextFormField(
-                            controller: _vorName,
-                            focusNode: myFocusNode,
-                            autofocus: true,
-                            keyboardType: TextInputType.text,
-                            autocorrect: false,
-                            decoration: const InputDecoration(
-                              labelText: 'Vorname',
-                              border: OutlineInputBorder(),
-                              filled: true,
-                            ),
-                            validator: (value) {
-                              if (value!.isEmpty) {
-                                return 'Bitte einen Vornamen eingeben';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                          // Eingabefeld für den Nachnamen
-                          TextFormField(
-                            controller: _nachName,
-                            keyboardType: TextInputType.text,
-                            autocorrect: false,
-                            decoration: const InputDecoration(
-                              labelText: 'Nachname',
-                              border: OutlineInputBorder(),
-                              filled: true,
-                            ),
-                            validator: (value) {
-                              if (value!.isEmpty) {
-                                return 'Bitte einen Nachnamen eingeben';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                          // Auswahl-Menü für das Geschlecht
-                          DropdownButtonFormField<String>(
-                            initialValue: _geschlecht,
-                            onChanged: (newValue) =>
-                                setState(() => _geschlecht = newValue!),
-                            items: [
-                              for (String i in _geschlechtListe)
-                                DropdownMenuItem(
-                                  value: i,
-                                  child: Text(i),
-                                )
-                            ],
-                            decoration: const InputDecoration(
-                              labelText: 'Geschlecht',
-                              filled: true,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          // Auswahl-Menü für den Jahrgang
-                          DropdownButtonFormField<int>(
-                            initialValue: _jahrgang,
-                            onChanged: (newValue) =>
-                                setState(() => _jahrgang = newValue!),
-                            items: [
-                              for (int i in _jahrgangListe)
-                                DropdownMenuItem(
-                                  value: i,
-                                  child: Text('$i'),
-                                )
-                            ],
-                            decoration: const InputDecoration(
-                              labelText: 'Jahrgang',
-                              filled: true,
-                            ),
-                          ),
-                          const SizedBox(height: 40),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              // Button um die Eingaben rückgängig zu machen, d.h. die Felder zu leeren,
-                              // um neue, korrekte Eingaben machen zu können und den Fokus wieder auf das erste Eingabefeld zu setzen.
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                ),
-                                onPressed: _istAmSpeichern
-                                    ? null
-                                    : () {
-                                        resetFelder();
-                                        myFocusNode.requestFocus();
-                                      },
-                                child: const Text('Löschen'),
-                              ),
-                              const SizedBox(width: 25),
-                              // Button um die Eingaben zu speichern.
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  foregroundColor: Colors.green,
-                                ),
-                                onPressed: _istAmSpeichern
-                                    ? null // während des Speicherns deaktiviert
-                                    : () async {
-                                        if (_formKey.currentState!.validate()) {
-                                          if (kDebugMode) {
-                                            print(
-                                                "Formular ist gültig und kann verarbeitet werden");
-                                          }
-                                          setState(
-                                              () => _istAmSpeichern = true);
-                                          try {
-                                            await pruefeUndSpeichere();
-                                          } finally {
-                                            if (mounted) {
-                                              setState(() =>
-                                                  _istAmSpeichern = false);
-                                            }
-                                          }
-                                        } else {
-                                          if (kDebugMode) {
-                                            print("Formular ist nicht gültig");
-                                          }
-                                        }
-                                      },
-                                child: const Text('Speichern'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 25),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.blue,
-                            ),
-                            onPressed: _istAmSpeichern
-                                ? null
-                                : () {
-                                    resetFelder();
-                                    Navigator.of(context)
-                                        .pushNamedAndRemoveUntil(
-                                      'dankeschoen',
-                                      (route) => false,
-                                    );
-                                  },
-                            child: const Text('Abbrechen'),
+                          TextSpan(
+                            text: '\nHier können Sie Ihr Kind\n'
+                                '(im Alter zwischen ${config.kindAlterMin} und ${config.kindAlterMax} Jahren)\n'
+                                'vorab für den Sporttag anmelden.\n'
+                                'Kinder in Alter bis ${config.fuenfkampfMaxAlter} Jahre absolvieren fünf,\n'
+                                'die älteren zehn  Disziplinen.\n\n'
+                                'Am Sporttag selbst bezahlen Sie lediglich noch\n'
+                                'die Startgebühr von € ${config.gebuehr.toStringAsFixed(2).replaceAll('.', ',')},\n'
+                                'damit die Anmeldung aktiv wird.\n',
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ),
-              )),
-          if (_istAmSpeichern)
-            Positioned.fill(
-              child: AbsorbPointer(
-                absorbing: true,
-                child: Container(
-                  color: Colors.black45,
-                  child: const Center(child: CircularProgressIndicator()),
+                    const SizedBox(height: 32.0),
+                    // Eingabefeld für den Vornamen
+                    TextFormField(
+                      controller: _vorName,
+                      focusNode: myFocusNode,
+                      autofocus: true,
+                      keyboardType: TextInputType.text,
+                      autocorrect: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Vorname',
+                        border: OutlineInputBorder(),
+                        filled: true,
+                        errorStyle: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      validator: KindValidator.validiereVorname,
+                    ),
+                    const SizedBox(height: 20),
+                    // Eingabefeld für den Nachnamen
+                    TextFormField(
+                      controller: _nachName,
+                      keyboardType: TextInputType.text,
+                      autocorrect: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Nachname',
+                        border: OutlineInputBorder(),
+                        filled: true,
+                        errorStyle: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      validator: KindValidator.validiereNachname,
+                    ),
+                    const SizedBox(height: 20),
+                    // Auswahl-Menü für das Geschlecht
+                    DropdownButtonFormField<String>(
+                      initialValue: _geschlecht,
+                      onChanged: (newValue) =>
+                          setState(() => _geschlecht = newValue!),
+                      items: [
+                        for (String i in GeschlechtOptionen.alle)
+                          DropdownMenuItem(
+                            value: i,
+                            child: Text(i),
+                          )
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Geschlecht',
+                        filled: true,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Auswahl-Menü für den Jahrgang
+                    DropdownButtonFormField<int>(
+                      initialValue: _jahrgang,
+                      onChanged: (newValue) =>
+                          setState(() => _jahrgang = newValue!),
+                      items: [
+                        for (int i in _jahrgangListe)
+                          DropdownMenuItem(
+                            value: i,
+                            child: Text('$i'),
+                          )
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Jahrgang',
+                        filled: true,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        // Button um die Eingaben rückgängig zu machen, d.h. die Felder zu leeren,
+                        // um neue, korrekte Eingaben machen zu können und den Fokus wieder auf das erste Eingabefeld zu setzen.
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          onPressed: istGesperrt
+                              ? null
+                              : () {
+                                  resetFelder();
+                                  myFocusNode.requestFocus();
+                                },
+                          child: const Text('Löschen'),
+                        ),
+                        const SizedBox(width: 25),
+                        // Button um die Eingaben zu speichern.
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.green,
+                          ),
+                          onPressed: istGesperrt
+                              ? null // während des Speicherns deaktiviert
+                              : () async {
+                                  if (_formKey.currentState!.validate()) {
+                                    await fuehreGesperrtAus(
+                                        () => pruefeUndSpeichere());
+                                  }
+                                },
+                          child: const Text('Speichern'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 25),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.blue,
+                      ),
+                      onPressed: istGesperrt
+                          ? null
+                          : () {
+                              resetFelder();
+                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                'dankeschoen',
+                                (route) => false,
+                              );
+                            },
+                      child: const Text('Abbrechen'),
+                    ),
+                  ],
                 ),
               ),
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -289,6 +242,14 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
       bezahlt: false,
     );
 
+    final alleKinder = await kindRepository.ladeAlleKinder();
+
+    final ergebnis = await pruefeKindVorSpeichern(vorschauKind, alleKinder);
+    if (!context.mounted || !ergebnis.istGueltig) {
+      return; // Fehlermeldung bzw. Rückfrage wurde bereits im Mixin gezeigt
+    }
+
+    // bestehender allgemeiner Bestätigungsdialog bleibt zusätzlich bestehen
     final bestaetigt = await KinderBestaetigenDialog.zeigen(
       context: context,
       kinder: [vorschauKind],
@@ -298,14 +259,9 @@ class AnmeldenVorherState extends State<AnmeldenVorher> {
       abbrechenText: 'Abbrechen',
     );
 
-    if (!bestaetigt) {
-      // Anwender möchte die Angaben noch korrigieren -> zurück zum Formular,
-      // die bereits eingegebenen Werte bleiben erhalten.
-      return;
-    }
+    if (!bestaetigt) return;
 
     await doSaveData(vorschauKind);
-    // Namensfelder leeren und Fokus zurücksetzen
     resetFelder();
     myFocusNode.requestFocus();
   }
