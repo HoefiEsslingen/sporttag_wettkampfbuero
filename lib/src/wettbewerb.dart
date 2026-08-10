@@ -246,9 +246,12 @@ class WettbewerbState extends State<Wettbewerb> {
   Widget build(BuildContext context) {
     // Solange Riege oder Stationen noch nicht geladen sind: Ladeanzeige.
     if (riegenPointer == null || erlaubteStationen == null) {
-      return Scaffold(
-        appBar: MeineAppBar(titel: 'Sporttag-Wettbewerbe'),
-        body: const Center(child: CircularProgressIndicator()),
+      return PopScope(
+        canPop: false,
+        child: Scaffold(
+          appBar: MeineAppBar(titel: 'Sporttag-Wettbewerbe'),
+          body: const Center(child: CircularProgressIndicator()),
+        ),
       );
     }
 
@@ -263,161 +266,181 @@ class WettbewerbState extends State<Wettbewerb> {
     const String dieLetzeStation = 'Stadionrunde';
     final List<String> disziplinNamen = angeboteneDisziplinen.keys.toList();
 
-    return Scaffold(
-      appBar: MeineAppBar(
-        titel: 'Riege ${riegenPointer?.riegenNummer} Sporttag-Wettbewerbe',
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Linke Seite: Kinderliste ──────────────────────────
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Riegenmitglieder',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: riegenKinder.isEmpty
-                        ? const Center(
-                            child: CircularProgressIndicator(),
-                          )
-                        : ListView.builder(
-                            itemCount: riegenKinder.length,
-                            itemBuilder: (context, index) {
-                              final kind = riegenKinder[index];
-                              return MeinKartenEintrag(
-                                child: ListTile(
-                                  title:
-                                      Text('${kind.vorname} ${kind.nachname}'),
-                                  trailing: Text(
-                                    '${kind.erreichtePunkte} Pkt.',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 24),
-            // ── Rechte Seite: Disziplin-Buttons ───────────────────
-            Expanded(
-              flex: 3,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: disziplinNamen.map((disziplin) {
-                          final istBesucht =
-                              besuchteDisziplinen.contains(disziplin);
-                          final istLetzteStation = disziplin == dieLetzeStation;
-                          final alleAnderenBesucht =
-                              besuchteDisziplinen.length ==
-                                  angeboteneDisziplinen.length - 1;
-                          final istAktiv = !istBesucht &&
-                              (!istLetzteStation || alleAnderenBesucht);
-
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: ElevatedButton(
-                              onPressed: istAktiv
-                                  ? () async {
-                                      final bestaetigt =
-                                          await _bestaetigeDisziplinAuswahl(
-                                        context,
-                                        disziplin,
-                                      );
-                                      if (bestaetigt != true) {
-                                        return; // abgebrochen → nichts weiter tun
-                                      }
-                                      if (!context.mounted) {
-                                        return; // NEU: Guard gegen async-gap-Warnung
-                                      }
-                                      await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              angeboteneDisziplinen[disziplin]
-                                                  ?.call() ??
-                                              const Center(
-                                                  child: Text(
-                                                      'Disziplin nicht gefunden')),
-                                        ),
-                                      );
-                                      setState(() {
-                                        besuchteDisziplinen.add(disziplin);
-                                      });
-                                    }
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    istBesucht ? Colors.grey : Colors.red,
-                              ),
-                              child: Text(
-                                istBesucht ? '$disziplin (besucht)' : disziplin,
-                                style: TextStyle(
-                                  color: istBesucht
-                                      ? Colors.black45
-                                      : Colors.white,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        // Optional: Hinweis anzeigen, warum "Zurück" nicht funktioniert
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Zurück-Navigation ist auf dieser Seite deaktiviert.'),
+          ),
+        );
+      },
+      child: Scaffold(
+        appBar: MeineAppBar(
+          titel: 'Riege ${riegenPointer?.riegenNummer} Sporttag-Wettbewerbe',
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Linke Seite: Kinderliste ──────────────────────────
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Riegenmitglieder',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  if (besuchteDisziplinen.length ==
-                      angeboteneDisziplinen.length)
-                    ElevatedButton(
-                      onPressed: () {
-                        _clearState();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const DankeEnde(),
-                          ),
-                        );
-                      },
-                      child: const Text('Ende Sporttag'),
-                    )
-                  else if (!pauseGemacht &&
-                      wettbewerbsTyp == 'Zehnkampf' &&
-                      besuchteDisziplinen.length >= 4)
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          pauseGemacht = true;
-                        });
-                        _saveState();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const Pause(),
-                          ),
-                        );
-                      },
-                      child: const Text('Pause'),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: riegenKinder.isEmpty
+                          ? const Center(
+                              child: CircularProgressIndicator(),
+                            )
+                          : ListView.builder(
+                              itemCount: riegenKinder.length,
+                              itemBuilder: (context, index) {
+                                final kind = riegenKinder[index];
+                                return MeinKartenEintrag(
+                                  child: ListTile(
+                                    title: Text(
+                                        '${kind.vorname} ${kind.nachname}'),
+                                    trailing: Text(
+                                      '${kind.erreichtePunkte} Pkt.',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                     ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 24),
+              // ── Rechte Seite: Disziplin-Buttons ───────────────────
+              Expanded(
+                flex: 3,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: disziplinNamen.map((disziplin) {
+                            final istBesucht =
+                                besuchteDisziplinen.contains(disziplin);
+                            final istLetzteStation =
+                                disziplin == dieLetzeStation;
+                            final alleAnderenBesucht =
+                                besuchteDisziplinen.length ==
+                                    angeboteneDisziplinen.length - 1;
+                            final istAktiv = !istBesucht &&
+                                (!istLetzteStation || alleAnderenBesucht);
+
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: ElevatedButton(
+                                onPressed: istAktiv
+                                    ? () async {
+                                        final bestaetigt =
+                                            await _bestaetigeDisziplinAuswahl(
+                                          context,
+                                          disziplin,
+                                        );
+                                        if (bestaetigt != true) {
+                                          return; // abgebrochen → nichts weiter tun
+                                        }
+                                        if (!context.mounted) {
+                                          return; // NEU: Guard gegen async-gap-Warnung
+                                        }
+                                        await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                PopScope(
+                                                  canPop: false,
+                                                  child: angeboteneDisziplinen[disziplin]
+                                                      ?.call() ??
+                                                  const Center(
+                                                      child: Text(
+                                                          'Disziplin nicht gefunden')),
+                                                ),
+                                          ),
+                                        );
+                                        setState(() {
+                                          besuchteDisziplinen.add(disziplin);
+                                        });
+                                      }
+                                    : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      istBesucht ? Colors.grey : Colors.red,
+                                ),
+                                child: Text(
+                                  istBesucht
+                                      ? '$disziplin (besucht)'
+                                      : disziplin,
+                                  style: TextStyle(
+                                    color: istBesucht
+                                        ? Colors.black45
+                                        : Colors.white,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (besuchteDisziplinen.length ==
+                        angeboteneDisziplinen.length)
+                      ElevatedButton(
+                        onPressed: () {
+                          _clearState();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DankeEnde(),
+                            ),
+                          );
+                        },
+                        child: const Text('Ende Sporttag'),
+                      )
+                    else if (!pauseGemacht &&
+                        wettbewerbsTyp == 'Zehnkampf' &&
+                        besuchteDisziplinen.length >= 4)
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            pauseGemacht = true;
+                          });
+                          _saveState();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const Pause(),
+                            ),
+                          );
+                        },
+                        child: const Text('Pause'),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
