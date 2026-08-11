@@ -24,7 +24,7 @@ class DisziplinKinderListe extends StatelessWidget {
   /// z. B. via `_kinderFuerAnzeige` in der jeweiligen Disziplin-Klasse).
   final List<Kind> kinder;
 
-  final List<Kind> selectedKinder;
+  final Set<Kind> selectedKinder;
   final Set<Kind> ausgewerteteKinder;
 
   /// Bereits erzielte Punkte/Zeiten je Kind, sofern vorhanden.

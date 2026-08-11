@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:sporttag/src/repositories/station_repository.dart';
-import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
+// import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
 import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
+import 'package:sporttag/src/tools/disziplin_kinder_liste.dart';
 import 'package:sporttag/src/tools/stationen_in_durchgaengen.dart';
 import 'package:sporttag/src/repositories/kind_repository.dart';
 import 'package:sporttag/src/tools/logger.util.dart';
@@ -28,7 +29,7 @@ class DrehwurfState extends State<Drehwurf> {
 
   late Riege riegenPointer;
   List<Kind> riegenKinder = [];
-  List<Kind> selectedKinder = [];
+  Set<Kind> selectedKinder = {};
   List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
   Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
   var istAusgewertet = false;
@@ -128,13 +129,12 @@ class DrehwurfState extends State<Drehwurf> {
             if (!istAusgewertet)
               ElevatedButton(
                   onPressed: (selectedKinder.isNotEmpty)
-                  // Wenn selektierte Kinder vorhanden sind, dann den Timer starten
                   ? () {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => StationenInDurchgaengen(
-                            teilnehmer: selectedKinder, //auskommentiert:  kinderZurAnzeige,
+                            teilnehmer: selectedKinder.toList(), //auskommentiert:  kinderZurAnzeige,
                             anzahlDurchgaenge: 3,
                             onErgebnisseAbschliessen: auswerten,
                             iconWidget: Image.asset(
@@ -152,34 +152,52 @@ class DrehwurfState extends State<Drehwurf> {
             // Abstandshalter
             const SizedBox(height: 10),
             // Zeigt die Liste der Kinder in der Riege an
-            // Hier können die Kinder, welche an der nächsten Runde teilnehmen sollen ausgewählt werden
+            // Hier kann das Kind gewählt werden, welches als nächstes drei Schleuder-Versuche hat
             Expanded(
-              child: ListView.builder(
-                itemCount: riegenKinder.length,
-                itemBuilder: (context, index) {
-                  final kind = kinderZurAnzeige[index];
-                  final zeit = kinderMitErreichtenPunkten[
-                      kind]; // erreichte Punkte abrufen
-                  final istAusgewertet = ausgewerteteKinder.contains(kind);
-                  final istSelektiert = selectedKinder.contains(kind);
-                  return MeinListenEintrag(
-                    kind: kind,
-                    istAusgewertet: istAusgewertet,
-                    istSelektiert: istSelektiert,
-                    erreichtePunkte: zeit,
-                    onSelectionChanged: (Kind kind, bool istSelektiert) {
-                      setState(() {
+              child: DisziplinKinderListe(
+                kinder: kinderZurAnzeige,
+                selectedKinder: selectedKinder,
+                ausgewerteteKinder: ausgewerteteKinder,
+                kinderMitZeiten: kinderMitErreichtenPunkten,
+                onSelectionChanged: (Kind kind, bool istSelektiert) {
+                  setState(() {
+                        // es kann nur ein Kind ausgewählt werden, welches die drei Versuche hat
                         if (selectedKinder.isEmpty && istSelektiert) {
                           selectedKinder.add(kind);
                         } else {
                           selectedKinder.remove(kind);
                         }
-                      });
-                    },
-                  );
+                   });
                 },
               ),
             ),
+            // Expanded(
+            //   child: ListView.builder(
+            //     itemCount: riegenKinder.length,
+            //     itemBuilder: (context, index) {
+            //       final kind = kinderZurAnzeige[index];
+            //       final zeit = kinderMitErreichtenPunkten[
+            //           kind]; // erreichte Punkte abrufen
+            //       final istAusgewertet = ausgewerteteKinder.contains(kind);
+            //       final istSelektiert = selectedKinder.contains(kind);
+            //       return MeinListenEintrag(
+            //         kind: kind,
+            //         istAusgewertet: istAusgewertet,
+            //         istSelektiert: istSelektiert,
+            //         erreichtePunkte: zeit,
+            //         onSelectionChanged: (Kind kind, bool istSelektiert) {
+            //           setState(() {
+            //             if (selectedKinder.isEmpty && istSelektiert) {
+            //               selectedKinder.add(kind);
+            //             } else {
+            //               selectedKinder.remove(kind);
+            //             }
+            //           });
+            //         },
+            //       );
+            //     },
+            //   ),
+            // ),
             if (riegenKinder.length == ausgewerteteKinder.length) // Beenden-Button anzeigen
             // wenn alle Kinder ausgewertet sind wird 
             // zur Disziplinen-Übersicht weitergeleitet und zuvor

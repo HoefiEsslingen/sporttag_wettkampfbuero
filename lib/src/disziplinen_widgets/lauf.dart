@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
-import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
-import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
-import 'package:sporttag/src/repositories/kind_repository.dart';
-import 'package:sporttag/src/tools/logger.util.dart';
-import 'package:sporttag/src/repositories/station_repository.dart';
+import 'package:sporttag/src/mixins/stationen_basis_mixin.dart';
+import 'package:sporttag/src/mixins/stop_uhr_auswertung_mixin.dart';
+import 'package:sporttag/src/tools/disziplin_kinder_liste.dart';
 import 'package:sporttag/src/tools/stop_uhr.dart';
 
 class Lauf extends StatefulWidget {
@@ -20,74 +18,23 @@ class Lauf extends StatefulWidget {
   LaufState createState() => LaufState();
 }
 
-class LaufState extends State<Lauf> {
-  late Riege riegenPointer;
-  late String stationsName;
-
-  // Repository-Objekte
-  final KindRepository kindRepository = KindRepository();
-  final StationRepository stationRepository = StationRepository();
-  
-  List<Kind> riegenKinder = [];
-  List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
-  Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
-  List<Kind> selectedKinder = [];
-  Map<Kind, int> kinderMitZeiten = {}; // Speichert gestoppte Zeiten
-  Station? station; // Speichert die Station
-
-  final log = getLogger();
-
+class LaufState extends State<Lauf>
+    with StationenBasisMixin<Lauf>, StopUhrAuswertungMixin<Lauf> {
   @override
   void initState() {
     super.initState();
     stationsName = '30sec-Lauf';
     riegenPointer = widget.riegenPointer;
-    _loadData();
+    // stopUhrAuswerten() wertet beim ersten Aufruf direkt (kein Testlauf).
+    // berechnePunkte() muss nicht überschrieben werden: der Mixin-Default
+    // (Rohwert = Punkte) entspricht genau "Runden direkt als Punktzahl".
+    ladeStationsdaten();
   }
 
-  Future<void> _loadData() async {
-    riegenKinder =
-        await kindRepository.ladeKinderDerRiege(riege: riegenPointer);
-    station = await stationRepository.ladeStationNachName(stationsName: stationsName);
-    // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
-        alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
-    setState(() {}); // UI aktualisieren
-  }
-
-  Future<void> auswerten(Map<Kind, int> resultate) async {
-    log.i(
-        'in auswerten -> Ergebniss erstes Kind: ${resultate.values.first.toString()}');
-    setState(() async {
-      kinderMitZeiten.addAll(resultate); // Gestoppte Zeiten hinzufügen
-      // Gestoppte Zeiten hinzufügen und Punkte berechnen
-      for (var entry in resultate.entries) {
-        final kind = entry.key;
-        final runden = entry.value;
-
-        kinderMitZeiten[kind] =
-            runden; // erreichte Punkte (halbe Runden) speichern
-        log.i('in auswerten $runden für ${kind.nachname}');
-        //kind.erreichtePunkte += punkte; // Punkte zuweisen
-        await kindRepository.speichereResultat(kind: kind, station: station!, punkte: runden);
-      }
-
-      // Teilnehmer als ausgewertet markieren
-      ausgewerteteKinder.addAll(resultate.keys);
-
-      // Auswahl nach der Auswertung zurücksetzen
-      selectedKinder.clear();
-
-      // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-      kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
-          alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
-    });
-
-    // Speichern der ausgewerteten Kinder in der Datenbank
-    final zuSpeicherndeKinder = resultate.keys.toList();
-    for (var dasKind in zuSpeicherndeKinder) {
-      await kindRepository.saveKind(kind: dasKind);
-    }
+  @override
+  void dispose() {
+    resetStationsdaten();
+    super.dispose();
   }
 
   @override
@@ -109,60 +56,47 @@ class LaufState extends State<Lauf> {
             const SizedBox(height: 10),
             // Liste der Kinder in der ausgewählten Riege
             ElevatedButton(
-              onPressed: (selectedKinder.isNotEmpty)
+              onPressed: (selectedKinder.isNotEmpty && !wertungWirdVerarbeitet)
                   // Wenn selektierte Kinder vorhanden sind, dann den Timer starten
                   ? () {
-                      Navigator.push(
+                      starteStopUhr(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => MyStopUhr(
-                            teilNehmer: selectedKinder,
-                            rufendeStation: stationsName,
-                            auswertenDerWerte:
-                                auswerten, // Ergebnisse verarbeiten)
-                          ),
+                        builder: (context) => MyStopUhr(
+                          teilNehmer: selectedKinder,
+                          rufendeStation: stationsName,
+                          auswertenDerWerte:
+                              stopUhrAuswerten, // Ergebnisse verarbeiten)
                         ),
                       );
                     }
                   : null,
-              child: const Text(
-                'Wertungslauf mit ausgewählten Namen',
-                textAlign: TextAlign.center,
-              ),
+              child: wertungWirdVerarbeitet
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text(
+                      'Wertungslauf mit ausgewählten Namen',
+                      textAlign: TextAlign.center,
+                    ),
             ),
+            // Hier können die Kinder aus der Riege gewählt werden, welche im nächsten Durchgang miteinander die Runden laufen.
             Expanded(
-              child: ListView.builder(
-                itemCount: riegenKinder.length,
-                itemBuilder: (context, index) {
-                  final kind = kinderZurAnzeige[index];
-                  final erreichtePunkte =
-                      kinderMitZeiten[kind]; // Gestoppte Zeit abrufen
-                  final istAusgewertet = ausgewerteteKinder.contains(kind);
-                  final istSelektiert = selectedKinder.contains(kind);
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment
-                        .spaceBetween, // Platzierung der Widgets
-                    children: [
-                      Expanded(
-                        flex: 3, // 3 Teile für den Listeneintrag
-                        child: MeinListenEintrag(
-                            kind: kind,
-                            istAusgewertet: istAusgewertet,
-                            istSelektiert: istSelektiert,
-                            erreichtePunkte: erreichtePunkte,
-                            onSelectionChanged:
-                                (Kind kind, bool istSelektiert) {
-                              setState(() {
-                                if (istSelektiert) {
-                                  selectedKinder.add(kind);
-                                } else {
-                                  selectedKinder.remove(kind);
-                                }
-                              });
-                            }),
-                      ),
-                    ],
-                  );
+              child: DisziplinKinderListe(
+                kinder: kinderZurAnzeige,
+                selectedKinder: selectedKinder,
+                ausgewerteteKinder: ausgewerteteKinder,
+                kinderMitZeiten: kinderMitZeiten,
+                onSelectionChanged: (Kind kind, bool istSelektiert) {
+                  setState(() {
+                    // mehrere Kinder können ausgewählt werden
+                    if (istSelektiert) {
+                      selectedKinder.add(kind);
+                    } else {
+                      selectedKinder.remove(kind);
+                    }
+                  });
                 },
               ),
             ),

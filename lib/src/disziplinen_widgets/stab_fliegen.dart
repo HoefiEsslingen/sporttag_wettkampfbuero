@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
 import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
 import 'package:sporttag/src/repositories/station_repository.dart';
+import 'package:sporttag/src/tools/disziplin_kinder_liste.dart';
 import 'package:sporttag/src/tools/stationen_in_durchgaengen.dart';
 import 'package:sporttag/src/repositories/kind_repository.dart';
 import 'package:sporttag/src/tools/logger.util.dart';
@@ -28,8 +28,8 @@ class StabfliegenState extends State<Stabfliegen> {
 
   late Riege riegenPointer; // Speichert die aktuelle Riege
   List<Kind> riegenKinder = [];
-  List<Kind> selectedKinder = [];
-  List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
+  Set<Kind> selectedKinder = {};
+  List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer mit Reihenfolge
   Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
   var istAusgewertet = false;
   Map<Kind, int> kinderMitErreichtenPunkten =
@@ -148,30 +148,43 @@ class StabfliegenState extends State<Stabfliegen> {
             // Abstandshalter
             const SizedBox(height: 10),
             // Zeigt die Liste der Kinder in der Riege an
-            // Hier können die Kinder, welche an der nächsten Runde teilnehmen sollen ausgewählt werden
             Expanded(
-              child: ListView.builder(
-                itemCount: riegenKinder.length,
-                itemBuilder: (context, index) {
-                  final kind = kinderZurAnzeige[index];
-                  final zeit = kinderMitErreichtenPunkten[
-                      kind]; // Gestoppte Zeit abrufen
-                  final istAusgewertet = ausgewerteteKinder.contains(kind);
-                  final istSelektiert = selectedKinder.contains(kind);
-                  return MeinListenEintrag(
-                    kind: kind,
-                    istAusgewertet: istAusgewertet,
-                    istSelektiert: istSelektiert,
-                    erreichtePunkte: zeit,
-                    onSelectionChanged: (Kind kind, bool istSelektiert) {
-                      setState(() {
-                        // Keine Aktion
-                      });
-                    },
-                  );
+              child: DisziplinKinderListe(
+                kinder: kinderZurAnzeige,
+                selectedKinder: selectedKinder,
+                ausgewerteteKinder: ausgewerteteKinder,
+                kinderMitZeiten: kinderMitErreichtenPunkten,
+                onSelectionChanged: (Kind kind, bool istSelektiert) {
+                  setState(() {
+                    // Keine Aktion
+                  });
                 },
               ),
             ),
+            // // Hier können die Kinder, welche an der nächsten Runde teilnehmen sollen ausgewählt werden
+            // Expanded(
+            //   child: ListView.builder(
+            //     itemCount: riegenKinder.length,
+            //     itemBuilder: (context, index) {
+            //       final kind = kinderZurAnzeige[index];
+            //       final zeit = kinderMitErreichtenPunkten[
+            //           kind]; // Gestoppte Zeit abrufen
+            //       final istAusgewertet = ausgewerteteKinder.contains(kind);
+            //       final istSelektiert = selectedKinder.contains(kind);
+            //       return MeinListenEintrag(
+            //         kind: kind,
+            //         istAusgewertet: istAusgewertet,
+            //         istSelektiert: istSelektiert,
+            //         erreichtePunkte: zeit,
+            //         onSelectionChanged: (Kind kind, bool istSelektiert) {
+            //           setState(() {
+            //             // Keine Aktion
+            //           });
+            //         },
+            //       );
+            //     },
+            //   ),
+            // ),
             if (riegenKinder.length ==
                 ausgewerteteKinder.length) // Beenden-Button anzeigen
             // wenn alle Kinder ausgewertet sind wird 

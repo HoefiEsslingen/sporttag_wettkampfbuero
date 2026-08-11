@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'package:sporttag/src/hilfs_widgets/mein_karten_eintrag.dart';
-// import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
@@ -132,7 +130,11 @@ class SprintState extends State<Sprint>
                       value: gewaehlteHuetchen[kind],
                       items: [1, 2, 3, 4]
                           .map((v) => DropdownMenuItem(
-                              value: v, child: Text('Hütchen $v')))
+                              value: v,
+                              child: Text(
+                                'Hütchen $v',
+                                style: TextStyle(color: Colors.green),
+                              )))
                           .toList(),
                       onChanged: (newValue) {
                         if (newValue != null) {

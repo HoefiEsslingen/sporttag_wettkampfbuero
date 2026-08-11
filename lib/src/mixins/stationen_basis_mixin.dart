@@ -39,7 +39,7 @@ mixin StationenBasisMixin<T extends StatefulWidget> on State<T> {
   late Riege riegenPointer;
 
   List<Kind> riegenKinder = [];
-  List<Kind> selectedKinder = [];
+  Set<Kind> selectedKinder = {};
   List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
   Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
   Station? station; // Speichert die Station

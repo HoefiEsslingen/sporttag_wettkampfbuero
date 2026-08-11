@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-
-import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
-import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
-import 'package:sporttag/src/repositories/kind_repository.dart';
-import 'package:sporttag/src/tools/logger.util.dart';
-import 'package:sporttag/src/repositories/station_repository.dart';
+import 'package:sporttag/src/mixins/stationen_basis_mixin.dart';
+import 'package:sporttag/src/mixins/stop_uhr_auswertung_mixin.dart';
+import 'package:sporttag/src/tools/disziplin_kinder_liste.dart';
 import 'package:sporttag/src/tools/stop_uhr.dart';
 
 class Stadionrunde extends StatefulWidget {
@@ -21,22 +18,8 @@ class Stadionrunde extends StatefulWidget {
   StadionrundeState createState() => StadionrundeState();
 }
 
-class StadionrundeState extends State<Stadionrunde> {
-  late String stationsName; // Variable für die zugewiesene Ausgabe
-
-// Repository-Objekte
-  final KindRepository kindRepository = KindRepository();
-  final StationRepository stationRepository = StationRepository();
-
-  late Riege riegenPointer; // Speichert die aktuelle Riege
-  List<Kind> riegenKinder = [];
-  List<Kind> selectedKinder = [];
-  List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
-  Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
-  Map<Kind, int> kinderMitZeiten = {}; // Speichert gestoppte Zeiten
-  Station? station; // Speichert die Station
-  
-  final log = getLogger();
+class StadionrundeState extends State<Stadionrunde>
+    with StationenBasisMixin<Stadionrunde>, StopUhrAuswertungMixin<Stadionrunde> {
 
   @override
   void initState() {
@@ -44,7 +27,7 @@ class StadionrundeState extends State<Stadionrunde> {
     // widget.toString() der Variable zuweisen
     stationsName = "Stadionrunde";
     riegenPointer = widget.riegenPointer;
-    _loadData();
+    ladeStationsdaten();
   }
 
   @override
@@ -55,20 +38,7 @@ class StadionrundeState extends State<Stadionrunde> {
     kinderZurAnzeige.clear();
     ausgewerteteKinder.clear();
     kinderMitZeiten.clear();
-  }
-
-  Future<void> _loadData() async {
-    riegenKinder =
-        await kindRepository.ladeKinderDerRiege(riege: riegenPointer);
-    station = await stationRepository.ladeStationNachName(stationsName: stationsName);
-    // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
-        alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
-    // Kinder in die selektiert-Liste übernehmen
-    for (var kind in riegenKinder) {
-      selectedKinder.add(kind);
-    }
-    setState(() {}); // UI aktualisieren
+    resetStationsdaten();
   }
 
   Future<void> auswerten(Map<Kind, int> resultate) async {
@@ -188,35 +158,24 @@ class StadionrundeState extends State<Stadionrunde> {
           ),
           // Alle Kinder werden als selektiert dargestellt
           // Die Kinder können hier durch einen Klick auf den Namen von der Teilnahme an der Stadion-Runde gewählt werden
-          Expanded(
-            child: ListView.builder(
-              itemCount: riegenKinder.length,
-              itemBuilder: (context, index) {
-                final kind = kinderZurAnzeige[index];
-                final zeit = kinderMitZeiten[kind]; // Gestoppte Zeit abrufen
-                final istAusgewertet = ausgewerteteKinder.contains(kind);
-                log.i(
-                    'in ListViewBuilder ${kind.nachname} ist selektiert? -> ${selectedKinder.contains(kind).toString()}');
-                final istSelektiert = selectedKinder.contains(kind);
-                return MeinListenEintrag(
-                  kind: kind,
-                  istAusgewertet: istAusgewertet,
-                  istSelektiert: istSelektiert,
-                  erreichtePunkte: zeit,
-                  onSelectionChanged: (Kind kind, bool istSelektiert) {
-                    setState(() {
-                      if (istSelektiert) {
-                        selectedKinder.add(kind); // Hinzufügen, wenn ausgewählt
-                      } else {
-                        selectedKinder
-                            .remove(kind); // Entfernen, wenn abgewählt
-                      }
-                    });
-                  },
-                );
-              },
+            Expanded(
+              child: DisziplinKinderListe(
+                kinder: kinderZurAnzeige,
+                selectedKinder: selectedKinder,
+                ausgewerteteKinder: ausgewerteteKinder,
+                kinderMitZeiten: kinderMitZeiten,
+                onSelectionChanged: (Kind kind, bool istSelektiert) {
+                  setState(() {
+                    // mehrere Kinder können ausgewählt werden
+                    if (istSelektiert) {
+                      selectedKinder.add(kind);
+                    } else {
+                      selectedKinder.remove(kind);
+                    }
+                  });
+                },
+              ),
             ),
-          ),
           if (riegenKinder.length ==
               ausgewerteteKinder.length) // Beenden-Button anzeigen
             // wenn alle Kinder ausgewertet sind wird

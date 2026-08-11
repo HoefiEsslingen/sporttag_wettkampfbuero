@@ -21,7 +21,7 @@ class MyStopUhr extends StatefulWidget {
     required this.auswertenDerWerte,
   });
 
-  final List<Kind> teilNehmer;
+  final Set<Kind> teilNehmer;
   final String rufendeStation; // Name der Station, die die Uhr aufruft
   final Function(Map<Kind, int>) auswertenDerWerte;
 
@@ -33,7 +33,7 @@ class _MyStopUhrState extends State<MyStopUhr> {
   final log = getLogger();
 
   // Initialisiere die Übergabeparameter
-  List<Kind> get teilNehmer => widget.teilNehmer;
+  Set<Kind> get teilNehmer => widget.teilNehmer;
   String get rufendeStation =>
       widget.rufendeStation; // Name der Station, die die Uhr aufruft
   dynamic Function(Map<Kind, int>) get auswertenDerWerte => widget.auswertenDerWerte;
@@ -241,7 +241,7 @@ class _MyStopUhrState extends State<MyStopUhr> {
             child: rufendeStation == 'Stadionrunde'
                 // Stadion-Runde: Teilnehmer können verschoben werden
                 ? TeilnehmerVerschiebbar(
-                    teilNehmer: teilNehmer,
+                    teilNehmer: teilNehmer.toList(),
                     kindMitWerten: _werte,
                     isRunning: isRunning,
                     modus: modus,
@@ -252,7 +252,7 @@ class _MyStopUhrState extends State<MyStopUhr> {
                         : (kind, _) => _stopForKind(kind),
                   )
                 : TeilnehmerListe(
-                    teilNehmer: teilNehmer,
+                    teilNehmer: teilNehmer.toList(),
                     kindMitWerten: _werte,
                     isRunning: isRunning,
                     modus: modus,

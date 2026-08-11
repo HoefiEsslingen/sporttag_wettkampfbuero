@@ -46,14 +46,14 @@ class MeinListenEintrag extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (erreichtePunkte != null)
-            Text('An dieser Station wurden $erreichtePunkte Punkte erzielt.'),
-            Text(              
-              'bisherige Gesamtpunktzahl: ${kind.erreichtePunkte}',
+            Text('An dieser Station wurden $erreichtePunkte Punkte erzielt.',
               style: TextStyle(
                 fontStyle: istAusgewertet ? FontStyle.italic : FontStyle.normal,
-                color: istAusgewertet ? Colors.amber : Colors.black,
-              ),
+                color: istAusgewertet ? Colors.amber : Colors.black,),
             ),
+            Text(              
+              'bisherige Gesamtpunktzahl: ${kind.erreichtePunkte}'
+              ),
         ],
       ),
       onTap: istAusgewertet

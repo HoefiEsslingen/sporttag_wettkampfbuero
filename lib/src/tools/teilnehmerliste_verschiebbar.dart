@@ -57,7 +57,7 @@ class _TeilnehmerVerschiebbarState extends State<TeilnehmerVerschiebbar> {
   Widget build(BuildContext context) {
     return ReorderableListView.builder(
       itemCount: _teilnehmer.length,
-      onReorder: (oldIndex, newIndex) {
+      onReorderItem: (oldIndex, newIndex) {
         setState(() {
           if (newIndex > oldIndex) newIndex--;
           final Kind movedKind = _teilnehmer.removeAt(oldIndex);
@@ -123,48 +123,6 @@ class _TeilnehmerVerschiebbarState extends State<TeilnehmerVerschiebbar> {
             ],
           ),
         );
-
-/*********************************************************************
- * auskommentiert für eine andere Positionierung der Icons
-        return ListTile(
-          key: ValueKey(kind),
-          title: Text('${kind.vorname} ${kind.nachname}'),
-          subtitle: widget.modus == 2
-              ? null
-              : wert != null
-                  ? Text(
-                      'Gestoppte Zeit: ${(wert / 1000).toStringAsFixed(1)} Sekunden')
-                  : null,
-          trailing: widget.modus == 2
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove),
-                      onPressed:
-                          widget.isRunning ? () => _decrement(kind) : null,
-                    ),
-                    Text(
-                      '${_rundenMap[kind] ?? 1}',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed:
-                          widget.isRunning ? () => _increment(kind) : null,
-                    ),
-                  ],
-                )
-              : wert != null
-                  ? const Icon(Icons.check, color: Colors.green)
-                  : widget.isRunning
-                      ? ElevatedButton(
-                          onPressed: () => widget.onValueChanged(kind, 0),
-                          child: Text(kind.vorname),
-                        )
-                      : null,
-        );
-*********************************************************************/
       },
     );
   }

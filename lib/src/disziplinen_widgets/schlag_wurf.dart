@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
-import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
-import 'package:sporttag/src/repositories/station_repository.dart';
+import 'package:sporttag/src/mixins/stationen_basis_mixin.dart';
+import 'package:sporttag/src/tools/disziplin_kinder_liste.dart';
 import 'package:sporttag/src/tools/stationen_in_durchgaengen.dart';
-import 'package:sporttag/src/repositories/kind_repository.dart';
-import 'package:sporttag/src/tools/logger.util.dart';
 
 class Schlagwurf extends StatefulWidget {
   final Riege riegenPointer;
@@ -20,23 +17,11 @@ class Schlagwurf extends StatefulWidget {
   SchlagwurfState createState() => SchlagwurfState();
 }
 
-class SchlagwurfState extends State<Schlagwurf> {
-  late String stationsName; // Variable für die zugewiesene Ausgabe
-  // Repository-Objekte
-  final KindRepository kindRepository = KindRepository();
-  final StationRepository stationRepository = StationRepository();
-  
-  late Riege riegenPointer;
-  List<Kind> riegenKinder = [];
-  List<Kind> selectedKinder = [];
-  List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
-  Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
+class SchlagwurfState extends State<Schlagwurf>
+    with StationenBasisMixin<Schlagwurf>  {
   var istAusgewertet = false;
   Map<Kind, int> kinderMitErreichtenPunkten =
       {}; // Speichert die Summe der beiden besten Würfe
-  Station? station; // Speichert die Station
-
-  final log = getLogger();
 
   @override
   void initState() {
@@ -44,7 +29,18 @@ class SchlagwurfState extends State<Schlagwurf> {
     // widget.toString() der Variable zuweisen
     stationsName = "Schlagwurf";
     riegenPointer = widget.riegenPointer;
-    _loadData();
+    ladeStationsdaten();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    riegenKinder.clear();
+    selectedKinder.clear();
+    kinderZurAnzeige.clear();
+    ausgewerteteKinder.clear();
+    kinderMitErreichtenPunkten.clear();
+    resetStationsdaten();
   }
 
   Future<void> auswerten(Map<Kind, List<int>> resultate) async {
@@ -83,26 +79,6 @@ class SchlagwurfState extends State<Schlagwurf> {
     for (var dasKind in zuSpeicherndeKinder) {
       await kindRepository.saveKind(kind: dasKind);
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    riegenKinder.clear();
-    selectedKinder.clear();
-    kinderZurAnzeige.clear();
-    ausgewerteteKinder.clear();
-    kinderMitErreichtenPunkten.clear();
-  }
-
-  Future<void> _loadData() async {
-    riegenKinder =
-        await kindRepository.ladeKinderDerRiege(riege: riegenPointer);
-    station = await stationRepository.ladeStationNachName(stationsName: stationsName);
-    // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    kinderZurAnzeige = kindRepository.zurAnzeigeSortieren(
-        alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
-    setState(() {}); // UI aktualisieren
   }
 
   @override
@@ -150,27 +126,16 @@ class SchlagwurfState extends State<Schlagwurf> {
             // Abstandshalter
             const SizedBox(height: 10),
             // Zeigt die Liste der Kinder in der Riege an
-            // Hier können die Kinder, welche an der nächsten Runde teilnehmen sollen ausgewählt werden
             Expanded(
-              child: ListView.builder(
-                itemCount: riegenKinder.length,
-                itemBuilder: (context, index) {
-                  final kind = kinderZurAnzeige[index];
-                  final zeit = kinderMitErreichtenPunkten[
-                      kind]; // Gestoppte Zeit abrufen
-                  final istAusgewertet = ausgewerteteKinder.contains(kind);
-                  final istSelektiert = selectedKinder.contains(kind);
-                  return MeinListenEintrag(
-                    kind: kind,
-                    istAusgewertet: istAusgewertet,
-                    istSelektiert: istSelektiert,
-                    erreichtePunkte: zeit,
-                    onSelectionChanged: (Kind kind, bool istSelektiert) {
-                      setState(() {
-                        // Keine Aktion
-                      });
-                    },
-                  );
+              child: DisziplinKinderListe(
+                kinder: kinderZurAnzeige,
+                selectedKinder: selectedKinder,
+                ausgewerteteKinder: ausgewerteteKinder,
+                kinderMitZeiten: kinderMitErreichtenPunkten,
+                onSelectionChanged: (Kind kind, bool istSelektiert) {
+                  setState(() {
+                    // Keine Aktion
+                  });
                 },
               ),
             ),
