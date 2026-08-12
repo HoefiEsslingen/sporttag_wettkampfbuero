@@ -3,6 +3,7 @@ import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
+import 'package:sporttag/src/mixins/beste_zwei_auswertung_mixin.dart';
 import 'package:sporttag/src/mixins/stationen_basis_mixin.dart';
 import 'package:sporttag/src/tools/disziplin_kinder_liste.dart';
 import 'package:sporttag/src/tools/stationen_in_durchgaengen.dart';
@@ -18,9 +19,7 @@ class Zonenweitsprung extends StatefulWidget {
 }
 
 class ZonenweitsprungState extends State<Zonenweitsprung>
-    with StationenBasisMixin<Zonenweitsprung> {
-  var istAusgewertet = false;
-  Map<Kind, int> kinderMitErreichtenPunkten = {}; // Speichert die Summe der beiden besten Würfe
+    with StationenBasisMixin<Zonenweitsprung>, BesteZweiAuswertungMixin<Zonenweitsprung> {
 
   @override
   void initState() {
@@ -31,53 +30,10 @@ class ZonenweitsprungState extends State<Zonenweitsprung>
     ladeStationsdaten();
   }
 
-  Future<void> auswerten(Map<Kind, List<int>> resultate) async {
-    // Auswertung zulassen, falls der Testlauf beendet ist
-    setState(() {
-      // resultate ist eine Liste von int-Werten
-      // aus dieser Liste sollen die besten zwei Werte ermittelt und addiert werden
-      // --> die Liste wird absteigend sortiert
-      resultate.forEach((kind, listeDerErreichtenZonen) async {
-        listeDerErreichtenZonen
-            .sort((a, b) => b.compareTo(a)); // Absteigend sortieren
-        final besteZwei =
-            listeDerErreichtenZonen.take(2).toList(); // Besten zwei Werte
-        final summe = besteZwei.reduce((a, b) => a + b); // Addieren
-        kinderMitErreichtenPunkten[kind] = summe; // Zeit speichern
-        //kind.erreichtePunkte += summe; // Punkte zuweisen
-        await kindRepository.speichereResultat(kind: kind, station: station!, punkte: summe);
-      });
-
-      // alle Teilnehmer als ausgewertet markieren --> resultate.keys sind die Kinder, die ausgewertet wurden
-      ausgewerteteKinder.addAll(resultate.keys);
-      // Auswahl nach der Auswertung zurücksetzen
-      selectedKinder.clear();
-
-      // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-      kinderZurAnzeige =
-          kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
-
-      // globale Variable 'istAusgewertet' setzen
-      // damit die AppBar den Button "Nächste Disziplin steht an" anzeigen kann
-      istAusgewertet = true;
-    });
-
-    // Speichern der ausgewerteten Kinder (hier: alle) in der Datenbank
-    final zuSpeicherndeKinder = resultate.keys.toList();
-    for (var dasKind in zuSpeicherndeKinder) {
-      await kindRepository.saveKind(kind:dasKind);
-    }
-  }
-
   @override
   void dispose() {
-    super.dispose();
-    riegenKinder.clear();
-    selectedKinder.clear();
-    kinderZurAnzeige.clear();
-    ausgewerteteKinder.clear();
-    kinderMitErreichtenPunkten.clear();
     resetStationsdaten();
+    super.dispose();
   }
 
   @override
@@ -93,17 +49,18 @@ class ZonenweitsprungState extends State<Zonenweitsprung>
             Text(
               'Aus einem definierten Anlauf sollen die Kinder mit einem Bein abspringen und beidbeinig in einem Reifen landen.\nNach einem Probedurchgang, der nicht protokolliert wird, werden für jedes Kind drei Durchgänge gewertet.\nJeder Reifen entspricht einer Zone.\nDie zwei besten Sprünge werden addiert.',
               textAlign: TextAlign.center,
-              style:
-                  Theme.of(context).textTheme.bodySmall, // Verwenden des Themes
+              style: Theme.of(context).textTheme.bodySmall, // Verwenden des Themes
             ),
             // Abstandshalter
             const SizedBox(height: 10),
             Text(
               'Jetzt in einen Probedurchgang starten.\n Danach:',
               textAlign: TextAlign.center,
-              style:
-                  TextStyle(color: Colors.green, fontWeight: FontWeight.bold, backgroundColor: Colors.white),
-                  // Verwenden des Themes
+              style: TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                  backgroundColor: Colors.white),
+              // Verwenden des Themes
             ),
             const SizedBox(height: 10),
             // Liste der Kinder in der ausgewählten Riege
@@ -116,7 +73,7 @@ class ZonenweitsprungState extends State<Zonenweitsprung>
                           builder: (context) => StationenInDurchgaengen(
                             teilnehmer: kinderZurAnzeige,
                             anzahlDurchgaenge: 3,
-                            onErgebnisseAbschliessen: auswerten,
+                            onErgebnisseAbschliessen: besteZweiAuswerten,
                             iconWidget: Image.asset(
                               'assets/icons/weitsprung.png',
                               width: 30,
@@ -147,12 +104,13 @@ class ZonenweitsprungState extends State<Zonenweitsprung>
             ),
             if (riegenKinder.length ==
                 ausgewerteteKinder.length) // Beenden-Button anzeigen
-            // wenn alle Kinder ausgewertet sind wird 
-            // zur Disziplinen-Übersicht weitergeleitet und zuvor
-            // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
-              ZurueckButton(label: 'Nächste Disziplin steht an', 
-                            riegenPointer: riegenPointer,
-                            stationsPointer: station),  
+              // wenn alle Kinder ausgewertet sind wird
+              // zur Disziplinen-Übersicht weitergeleitet und zuvor
+              // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
+              ZurueckButton(
+                  label: 'Nächste Disziplin steht an',
+                  riegenPointer: riegenPointer,
+                  stationsPointer: station),
           ],
         ),
       ),

@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:sporttag/src/repositories/station_repository.dart';
-// import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
+import 'package:sporttag/src/mixins/beste_zwei_auswertung_mixin.dart';
+import 'package:sporttag/src/mixins/stationen_basis_mixin.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
-import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
 import 'package:sporttag/src/tools/disziplin_kinder_liste.dart';
 import 'package:sporttag/src/tools/stationen_in_durchgaengen.dart';
-import 'package:sporttag/src/repositories/kind_repository.dart';
-import 'package:sporttag/src/tools/logger.util.dart';
 
 class Drehwurf extends StatefulWidget {
   final Riege riegenPointer;
@@ -21,90 +18,21 @@ class Drehwurf extends StatefulWidget {
   DrehwurfState createState() => DrehwurfState();
 }
 
-class DrehwurfState extends State<Drehwurf> {
-  late String stationsName; // Variable für die zugewiesene Ausgabe
-  // Repository-Objekte
-  final KindRepository kindRepository = KindRepository();
-  final StationRepository stationRepository = StationRepository();
-
-  late Riege riegenPointer;
-  List<Kind> riegenKinder = [];
-  Set<Kind> selectedKinder = {};
-  List<Kind> kinderZurAnzeige = []; // Speichert anzuzeigende Teilnehmer
-  Set<Kind> ausgewerteteKinder = {}; // Speichert ausgewertete Teilnehmer
-  var istAusgewertet = false;
-  Map<Kind, int> kinderMitErreichtenPunkten =
-      {}; // Speichert die Summe der beiden besten Würfe
-  Station? station; // Speichert die Station
-
-  final log = getLogger();
-
+class DrehwurfState extends State<Drehwurf>
+    with StationenBasisMixin<Drehwurf>, BesteZweiAuswertungMixin<Drehwurf> {
   @override
   void initState() {
     super.initState();
     // widget.toString() der Variable zuweisen
     stationsName = "Drehwurf";
     riegenPointer = widget.riegenPointer;
-    _loadData();
-  }
-
-  Future<void> auswerten(Map<Kind, List<int>> resultate) async {
-    // Auswertung zulassen, falls der Testlauf beendet ist
-    setState(() {
-      // resultate ist eine Liste von int-Werten
-      // aus dieser Liste sollen die besten zwei Werte ermittelt und addiert werden
-      // --> die Liste wird absteigend sortiert
-      resultate.forEach((kind, listeDerErreichtenZonen) async {
-        listeDerErreichtenZonen.sort((a, b) => b.compareTo(a)); // Absteigend sortieren
-        final besteZwei = listeDerErreichtenZonen.take(2).toList(); // Besten zwei Werte
-        final summe = besteZwei.reduce((a, b) => a + b); // Addieren
-        kinderMitErreichtenPunkten[kind] = summe; // Punkte speichern
-        //kind.erreichtePunkte += summe; // Punkte zuweisen
-        await kindRepository.speichereResultat(kind: kind, station: station!, punkte: summe);
-      });
-
-      // alle Teilnehmer als ausgewertet markieren --> resultate.keys sind die Kinder, die ausgewertet wurden
-      ausgewerteteKinder.addAll(resultate.keys);
-      // Auswahl nach der Auswertung zurücksetzen
-      selectedKinder.clear();
-
-      // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-      kinderZurAnzeige =
-          kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
-
-      // globale Variable 'istAusgewertet' setzen
-      // damit die AppBar den Button "Nächste Disziplin steht an" anzeigen kann
-      if(ausgewerteteKinder.length == riegenKinder.length) {
-        istAusgewertet = true;
-      } else {
-        istAusgewertet = false;
-      }
-    });
-
-    // Speichern der ausgewerteten Kinder (hier: alle) in der Datenbank
-    final zuSpeicherndeKinder = resultate.keys.toList();
-    for (var dasKind in zuSpeicherndeKinder) {
-      await kindRepository.saveKind(kind: dasKind);
-    }
+    ladeStationsdaten();
   }
 
   @override
   void dispose() {
+    resetStationsdaten();
     super.dispose();
-    riegenKinder.clear();
-    selectedKinder.clear();
-    kinderZurAnzeige.clear();
-    ausgewerteteKinder.clear();
-    kinderMitErreichtenPunkten.clear();
-  }
-
-  Future<void> _loadData() async {
-    riegenKinder = await kindRepository.ladeKinderDerRiege(riege: riegenPointer);
-    station = await stationRepository.ladeStationNachName(stationsName: stationsName);
-    // Liste zur Anzeige aufbereiten -> nicht ausgewertete Kinder oben
-    kinderZurAnzeige =
-        kindRepository.zurAnzeigeSortieren(alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
-    setState(() {}); // UI aktualisieren
   }
 
   @override
@@ -129,22 +57,25 @@ class DrehwurfState extends State<Drehwurf> {
             if (!istAusgewertet)
               ElevatedButton(
                   onPressed: (selectedKinder.isNotEmpty)
-                  ? () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => StationenInDurchgaengen(
-                            teilnehmer: selectedKinder.toList(), //auskommentiert:  kinderZurAnzeige,
-                            anzahlDurchgaenge: 3,
-                            onErgebnisseAbschliessen: auswerten,
-                            iconWidget: Image.asset(
-                              'assets/icons/diskus.png',
-                              width: 30,
-                              height: 30,
+                      ? () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => StationenInDurchgaengen(
+                                teilnehmer: selectedKinder
+                                    .toList(), //auskommentiert:  kinderZurAnzeige,
+                                anzahlDurchgaenge: 3,
+                                onErgebnisseAbschliessen: besteZweiAuswerten,
+                                iconWidget: Image.asset(
+                                  'assets/icons/diskus.png',
+                                  width: 30,
+                                  height: 30,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),);}
-                  : null,
+                          );
+                        }
+                      : null,
                   child: const Text(
                     'Das selektiertes Kind startet seine drei Versuche',
                     textAlign: TextAlign.center,
@@ -161,50 +92,25 @@ class DrehwurfState extends State<Drehwurf> {
                 kinderMitZeiten: kinderMitErreichtenPunkten,
                 onSelectionChanged: (Kind kind, bool istSelektiert) {
                   setState(() {
-                        // es kann nur ein Kind ausgewählt werden, welches die drei Versuche hat
-                        if (selectedKinder.isEmpty && istSelektiert) {
-                          selectedKinder.add(kind);
-                        } else {
-                          selectedKinder.remove(kind);
-                        }
-                   });
+                    // es kann nur ein Kind ausgewählt werden, welches die drei Versuche hat
+                    if (selectedKinder.isEmpty && istSelektiert) {
+                      selectedKinder.add(kind);
+                    } else {
+                      selectedKinder.remove(kind);
+                    }
+                  });
                 },
               ),
             ),
-            // Expanded(
-            //   child: ListView.builder(
-            //     itemCount: riegenKinder.length,
-            //     itemBuilder: (context, index) {
-            //       final kind = kinderZurAnzeige[index];
-            //       final zeit = kinderMitErreichtenPunkten[
-            //           kind]; // erreichte Punkte abrufen
-            //       final istAusgewertet = ausgewerteteKinder.contains(kind);
-            //       final istSelektiert = selectedKinder.contains(kind);
-            //       return MeinListenEintrag(
-            //         kind: kind,
-            //         istAusgewertet: istAusgewertet,
-            //         istSelektiert: istSelektiert,
-            //         erreichtePunkte: zeit,
-            //         onSelectionChanged: (Kind kind, bool istSelektiert) {
-            //           setState(() {
-            //             if (selectedKinder.isEmpty && istSelektiert) {
-            //               selectedKinder.add(kind);
-            //             } else {
-            //               selectedKinder.remove(kind);
-            //             }
-            //           });
-            //         },
-            //       );
-            //     },
-            //   ),
-            // ),
-            if (riegenKinder.length == ausgewerteteKinder.length) // Beenden-Button anzeigen
-            // wenn alle Kinder ausgewertet sind wird 
-            // zur Disziplinen-Übersicht weitergeleitet und zuvor
-            // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
-              ZurueckButton(label: 'Nächste Disziplin steht an', 
-                            riegenPointer: riegenPointer, 
-                            stationsPointer: station),
+            if (riegenKinder.length ==
+                ausgewerteteKinder.length) // Beenden-Button anzeigen
+              // wenn alle Kinder ausgewertet sind wird
+              // zur Disziplinen-Übersicht weitergeleitet und zuvor
+              // die Anzahl der absolvierten Disziplinen für die aktuelle Riege erhöht
+              ZurueckButton(
+                  label: 'Nächste Disziplin steht an',
+                  riegenPointer: riegenPointer,
+                  stationsPointer: station),
           ],
         ),
       ),

@@ -18,9 +18,13 @@ class HochWeitSprung extends StatefulWidget {
 
 class HochWeitSprungState extends State<HochWeitSprung>
     with StationenBasisMixin<HochWeitSprung> {
+  // Wie Zonenweitsprung/Schlagwurf: eigener Flag statt riegenKinder.length
+  // == ausgewerteteKinder.length, da alle Kinder gemeinsam in einer
+  // Durchgangsserie antreten.
   var istAusgewertet = false;
-  Map<Kind, int> kinderMitErreichtenPunkten =
-      {}; // Speichert die Summe der beiden besten Würfe
+
+  // Speichert die (verdoppelten) Punkte je Kind.
+  Map<Kind, int> kinderMitErreichtenPunkten = {};
 
   @override
   void initState() {
@@ -32,24 +36,24 @@ class HochWeitSprungState extends State<HochWeitSprung>
 
   @override
   void dispose() {
-    super.dispose();
-    riegenKinder.clear();
-    selectedKinder.clear();
-    kinderZurAnzeige.clear();
-    ausgewerteteKinder.clear();
-    kinderMitErreichtenPunkten.clear();
     resetStationsdaten();
+    kinderMitErreichtenPunkten.clear();
+    istAusgewertet = false;
+    super.dispose();
   }
 
   Future<void> _auswertungAbschliessen(Map<Kind, int> ergebnisse) async {
     for (var dasKind in riegenKinder) {
-      final punkte = ergebnisse[dasKind];
-      kinderMitErreichtenPunkten[dasKind] = punkte! * 2;
-      // dasKind.erreichtePunkte += punkte * 2;
-      // await kindRepository.saveKind(kind: dasKind);
+      // ergebnisse[dasKind]! durch Null-Safe-Zugriff ersetzt:
+      //fehlt ein Kind im Ergebnis (z. B. nicht angetreten),
+      //gab es sonst einen Crash statt einer sinnvollen 0-Punkte-Wertung.
+      final punkte = (ergebnisse[dasKind] ?? 0) * 2;
+      kinderMitErreichtenPunkten[dasKind] = punkte;
       await kindRepository.speichereResultat(
           kind: dasKind, station: station!, punkte: punkte * 2);
+      await kindRepository.saveKind(kind: dasKind);
     }
+    ausgewerteteKinder.addAll(riegenKinder);
     if (!mounted) return; // Widget bereits disposed → abbrechen
     setState(() {
       istAusgewertet = true;

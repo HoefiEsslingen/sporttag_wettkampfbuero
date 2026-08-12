@@ -1,4 +1,3 @@
-import 'package:sporttag/src/hilfs_widgets/mein_listen_eintrag.dart';
 import 'package:sporttag/src/mixins/stationen_basis_mixin.dart';
 import 'package:sporttag/src/mixins/stop_uhr_auswertung_mixin.dart';
 import 'package:flutter/material.dart';
@@ -32,32 +31,22 @@ class HuerdenlaufState extends State<Huerdenlauf>
 
   @override
   void dispose() {
+    resetStationsdaten();
     super.dispose();
-    riegenKinder.clear();
-    selectedKinder.clear();
-    kinderZurAnzeige.clear();
-    ausgewerteteKinder.clear();
-    kinderMitZeiten.clear();
   }
 
-  // // int _werteZeitenAus(int zeitInMillis) {
-  // int berechnePunkte(int zeitInMillis) {
-  //   // Beispielhafte Bewertung basierend auf Zeit
-  //   final seconds = zeitInMillis ~/ 1000;
-  //   if (seconds > 17) {
-  //     return 0;
-  //   } else if (seconds > 16) {
-  //     return 1;
-  //   } else if (seconds > 15) {
-  //     return 2;
-  //   } else if (seconds > 14) {
-  //     return 3;
-  //   } else if (seconds > 13) {
-  //     return 4;
-  //   } else {
-  //     return 5;
-  //   }
-  // }
+  /// Stationsspezifische Formel: Zeit in Sekunden -> Punkte (0 bis 5).
+  /// Ersetzt das frühere private _werteZeitenAus().
+  @override
+  int berechnePunkte(int zeitInMillis, Kind kind) {
+    final seconds = zeitInMillis ~/ 1000;
+    if (seconds > 17) return 0;
+    if (seconds > 16) return 1;
+    if (seconds > 15) return 2;
+    if (seconds > 14) return 3;
+    if (seconds > 13) return 4;
+    return 5;
+  }
 
   @override
   Widget build(BuildContext context) {
