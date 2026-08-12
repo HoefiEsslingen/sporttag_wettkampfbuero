@@ -267,6 +267,7 @@ class WettbewerbState extends State<Wettbewerb> {
     final List<String> disziplinNamen = angeboteneDisziplinen.keys.toList();
 
     return PopScope(
+      // Verhindert versehentliches Schließen ohne bewusste Wahl
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
@@ -367,15 +368,15 @@ class WettbewerbState extends State<Wettbewerb> {
                                         await Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) =>
-                                                PopScope(
-                                                  canPop: false,
-                                                  child: angeboteneDisziplinen[disziplin]
+                                            builder: (context) => PopScope(
+                                              canPop: false,
+                                              child: angeboteneDisziplinen[
+                                                          disziplin]
                                                       ?.call() ??
                                                   const Center(
                                                       child: Text(
                                                           'Disziplin nicht gefunden')),
-                                                ),
+                                            ),
                                           ),
                                         );
                                         setState(() {

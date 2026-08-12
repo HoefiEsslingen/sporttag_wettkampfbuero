@@ -1,12 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-// import 'package:sporttag/src/klassen/kind_klasse.dart';
-// import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
-
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
-
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
 import 'package:sporttag/src/tools/logger.util.dart';
@@ -50,6 +45,42 @@ class _MyStopUhrState extends State<MyStopUhr> {
   bool isBlinking = false;
   double opacity = 1.0;
   int modus = -1;
+
+  // Wird true gesetzt, nachdem der Nutzer das Verlassen im Dialog
+  // bestätigt hat -> lässt den zweiten Pop-Versuch tatsächlich durch.
+  bool _erzwingeVerlassen = false;
+
+  // Solange noch keine Messung läuft und noch keine Werte erfasst wurden,
+  // kann gefahrlos zurücknavigiert werden -> kein Datenverlust möglich.
+  bool get _kannGefahrlosVerlassenWerden =>
+      _erzwingeVerlassen || (!stopwatch.isRunning && _werte.isEmpty);
+
+  Future<void> _zeigeVerlassenBestaetigung(BuildContext context) async {
+    final bestaetigt = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Messung abbrechen?'),
+        content: const Text(
+            'Es wurden bereits Werte erfasst. Beim Verlassen gehen diese verloren.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Weiter messen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Verlassen'),
+          ),
+        ],
+      ),
+    );
+
+    if (bestaetigt == true && mounted) {
+      setState(() => _erzwingeVerlassen = true);
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -196,85 +227,97 @@ class _MyStopUhrState extends State<MyStopUhr> {
   @override
   Widget build(BuildContext context) {
     final bool isRunning = stopwatch.isRunning;
-    return Scaffold(
-      appBar: MeineAppBar(
-        titel: 'Klick die Uhr zum Start.',
-      ),
-      body: Column(
-        children: [
-          // Hier wird die Uhr angezeigt
-          CupertinoButton(
-            onPressed: !isRunning
-                ? handleStartStop
-                : null, // StoppUhr selbst soll nicht ausgeschaltet werden können
-            padding: EdgeInsets.zero,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 500),
-              opacity: remainingTime.inSeconds <= 2 ? opacity : 1.0,
-              child: Container(
-                height: 200,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: getUhrFarbe(),
-                  border: Border.all(color: Colors.blue, width: 4),
-                ),
-                child: Text(
-                  returnFormattedText(),
-                  style: const TextStyle(
-                      fontSize: 40, fontWeight: FontWeight.bold),
+    return PopScope(
+        canPop: _kannGefahrlosVerlassenWerden,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return; // Pop wurde bereits zugelassen -> nichts zu tun
+        _zeigeVerlassenBestaetigung(context);
+      },
+    child: Scaffold(
+        appBar: MeineAppBar(
+          titel: 'Klick die Uhr zum Start.',
+        ),
+        body: Column(
+          children: [
+            // Hier wird die Uhr angezeigt
+            CupertinoButton(
+              onPressed: !isRunning
+                  ? handleStartStop
+                  : null, // StoppUhr selbst soll nicht ausgeschaltet werden können
+              padding: EdgeInsets.zero,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 500),
+                opacity: remainingTime.inSeconds <= 2 ? opacity : 1.0,
+                child: Container(
+                  height: 200,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: getUhrFarbe(),
+                    border: Border.all(color: Colors.blue, width: 4),
+                  ),
+                  child: Text(
+                    returnFormattedText(),
+                    style: const TextStyle(
+                        fontSize: 40, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),
-          ),
-          // Abstandshalter
-          const SizedBox(height: 10),
-          // Hier wird der Modus angezeigt
-          Text(
-            (modus == 2)
-                // Rundenzähler-Modus
-                ? 'Plus/Minus für halbe Runden – solange Uhr läuft'
-                : 'Stoppe individuell pro Teilnehmer',
-          ),
-          // Liste der an dieser Runde teilnehmenden Kinder
-          Expanded(
-            child: rufendeStation == 'Stadionrunde'
-                // Stadion-Runde: Teilnehmer können verschoben werden
-                ? TeilnehmerVerschiebbar(
-                    teilNehmer: teilNehmer.toList(),
-                    kindMitWerten: _werte,
-                    isRunning: isRunning,
-                    modus: modus,
-                    onValueChanged: (modus == 2)
-                        // Runden-Modus: Plus/Minus-Buttons
-                        ? _setRunden
-                        // Timer- oder Stoppuhr-Modus: Stoppe den Teilnehmer
-                        : (kind, _) => _stopForKind(kind),
-                  )
-                : TeilnehmerListe(
-                    teilNehmer: teilNehmer.toList(),
-                    kindMitWerten: _werte,
-                    isRunning: isRunning,
-                    modus: modus,
-                    onValueChanged: (modus == 2)
-                        // Runden-Modus: Plus/Minus-Buttons
-                        ? _setRunden
-                        // Timer- oder Stoppuhr-Modus: Stoppe den Teilnehmer
-                        : (kind, _) => _stopForKind(kind),
-                  ),
-          ),
-          // Hier wird ein Button angezeigt, um diese Runde zu beenden
-          // als Stoppuhr --> Ende wenn alle gestoppt sind
-          // als Timer --> Ende wenn alle vor Ablauf des Timers gestoppt sind oder der Timer abgelaufen ist
-          if (alleGestoppt)
-            ZurueckButton(
-              label: 'Zurück und auswerten',
-              auswertenDerErgebnisse: () {
-                log.i('Rückgabe: ${_werte.length} Einträge');
-                auswertenDerWerte(_werte);
-              },
+            // Abstandshalter
+            const SizedBox(height: 10),
+            // Hier wird der Modus angezeigt
+            Text(
+              (modus == 2)
+                  // Rundenzähler-Modus
+                  ? 'Plus/Minus für halbe Runden – solange Uhr läuft'
+                  : 'Stoppe individuell pro Teilnehmer',
             ),
-        ],
+            // Liste der an dieser Runde teilnehmenden Kinder
+            Expanded(
+              // TeilnehmerVerschiebbar/TeilnehmerListe erwarten eine geordnete,
+              // indizierbare List<Kind> (Reordering bzw. Anzeigereihenfolge).
+              // teilNehmer ist hier bewusst ein Set<Kind> (nur Mitgliedschaft
+              // zählt beim Aufruf der Uhr) -> Konvertierung genau an dieser
+              // Stelle, wo eine Reihenfolge tatsächlich gebraucht wird.
+              child: rufendeStation == 'Stadionrunde'
+                  // Stadion-Runde: Teilnehmer können verschoben werden
+                  ? TeilnehmerVerschiebbar(
+                      teilNehmer: teilNehmer.toList(),
+                      kindMitWerten: _werte,
+                      isRunning: isRunning,
+                      modus: modus,
+                      onValueChanged: (modus == 2)
+                          // Runden-Modus: Plus/Minus-Buttons
+                          ? _setRunden
+                          // Timer- oder Stoppuhr-Modus: Stoppe den Teilnehmer
+                          : (kind, _) => _stopForKind(kind),
+                    )
+                  : TeilnehmerListe(
+                      teilNehmer: teilNehmer.toList(),
+                      kindMitWerten: _werte,
+                      isRunning: isRunning,
+                      modus: modus,
+                      onValueChanged: (modus == 2)
+                          // Runden-Modus: Plus/Minus-Buttons
+                          ? _setRunden
+                          // Timer- oder Stoppuhr-Modus: Stoppe den Teilnehmer
+                          : (kind, _) => _stopForKind(kind),
+                    ),
+            ),
+            // Hier wird ein Button angezeigt, um diese Runde zu beenden
+            // als Stoppuhr --> Ende wenn alle gestoppt sind
+            // als Timer --> Ende wenn alle vor Ablauf des Timers gestoppt sind oder der Timer abgelaufen ist
+            if (alleGestoppt)
+              ZurueckButton(
+                label: 'Zurück und auswerten',
+                auswertenDerErgebnisse: () {
+                  log.i('Rückgabe: ${_werte.length} Einträge');
+                  auswertenDerWerte(_werte);
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
