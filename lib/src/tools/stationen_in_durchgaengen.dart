@@ -177,21 +177,27 @@ class _MehrfacheEingabeDialogWidgetState
                 child: Column(
                   children: [
                     Text(
-                      '${aktivBearbeitetesKind!.vorname} ${aktivBearbeitetesKind!.nachname}: erreichte Zone',
+                      'Zonen 1 bis 6 \n${aktivBearbeitetesKind!.vorname} ${aktivBearbeitetesKind!.nachname}',
                       style: const TextStyle(fontSize: 20),
                     ),
                     const SizedBox(height: 10),
-                    Slider(
-                      value: selectedValue.toDouble(),
-                      min: 1,
-                      max: 6,
-                      divisions: 5, // divisions = max-min
-                      label: 'Zone $selectedValue',
-                      onChanged: (double value) {
-                        setState(() {
-                          selectedValue = value.toInt();
-                        });
-                      },
+                    SliderTheme(
+                      data: SliderThemeData(
+                        showValueIndicator:
+                            ShowValueIndicator.onDrag, // ← IMMER anzeigen
+                      ),
+                      child: Slider(
+                        value: selectedValue.toDouble(),
+                        min: 1,
+                        max: 6,
+                        divisions: 5,
+                        label: 'Zone $selectedValue',
+                        onChanged: (double value) {
+                          setState(() {
+                            selectedValue = value.toInt();
+                          });
+                        },
+                      ),
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton(
