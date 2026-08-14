@@ -50,7 +50,7 @@ class StabfliegenState extends State<Stabfliegen>
               'Von einem Podest sollen sich die Kinder am geführten Stab festhalten und fliegen.\nSie sollen mit beiden Beinen in einem der ausgelegten Reifen landen.\nEin nicht protokollierter Probeversuch ist möglich.\nJeder Reifen entspricht einer Zone.\nDie zwei besten Flüge werden addiert.',
               textAlign: TextAlign.center,
               style:
-                  Theme.of(context).textTheme.bodySmall, // Verwenden des Themes
+                  Theme.of(context).textTheme.bodyLarge, // Verwenden des Themes
             ),
             // Abstandshalter
             const SizedBox(height: 10),

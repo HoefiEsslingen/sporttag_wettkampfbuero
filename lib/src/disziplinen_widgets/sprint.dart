@@ -78,7 +78,7 @@ class SprintState extends State<Sprint>
               Text(
                 'Die Kinder führen nach Wahl der Hütchen einen Probedurchgang durch. \nDanach kann die Hütchenwahl geändert werden.\nBitte selektieren Sie die an der nächsten Runde teilnehmenden Kinder,\nwählen Sie die gewünschten Hütchen aus.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodyLarge,
               ),
               const SizedBox(height: 10),
               ElevatedButton(
@@ -146,60 +146,6 @@ class SprintState extends State<Sprint>
                   ),
                 ),
               ),
-              // Expanded(
-              //   child: ListView.builder(
-              //     itemCount: _kinderFuerAnzeige.length,
-              //     itemBuilder: (context, index) {
-              //       final kind = _kinderFuerAnzeige[index];
-              //       final zeit = kinderMitZeiten[kind];
-              //       final istAusgewertet = ausgewerteteKinder.contains(kind);
-              //       final istSelektiert = selectedKinder.contains(kind);
-
-              //       return MeinKartenEintrag(
-              //         istSelektiert: istSelektiert,
-              //         istAusgewertet: istAusgewertet,
-              //         trailing: (istSelektiert && !istAusgewertet)
-              //             ? Padding(
-              //                 padding:
-              //                     const EdgeInsets.symmetric(horizontal: 10.0),
-              //                 child: DropdownButton<int>(
-              //                   value: gewaehlteHuetchen[kind],
-              //                   items: [1, 2, 3, 4]
-              //                       .map((v) => DropdownMenuItem(
-              //                           value: v, child: Text('Hütchen $v')))
-              //                       .toList(),
-              //                   onChanged: (newValue) {
-              //                     if (newValue != null) {
-              //                       setState(() =>
-              //                           gewaehlteHuetchen[kind] = newValue);
-              //                     }
-              //                   },
-              //                 ),
-              //               )
-              //             : null,
-              //         child: MeinListenEintrag(
-              //           kind: kind,
-              //           istAusgewertet: istAusgewertet,
-              //           istSelektiert: istSelektiert,
-              //           erreichtePunkte: zeit,
-              //           onSelectionChanged: (Kind kind, bool istSelektiert) {
-              //             // Nach dem Testlauf steht die Teilnehmerliste fest.
-              //             if (!testLauf) return;
-              //             setState(() {
-              //               if (istSelektiert) {
-              //                 selectedKinder.add(kind);
-              //                 gewaehlteHuetchen.putIfAbsent(kind, () => 1);
-              //               } else {
-              //                 selectedKinder.remove(kind);
-              //                 gewaehlteHuetchen.remove(kind);
-              //               }
-              //             });
-              //           },
-              //         ),
-              //       );
-              //     },
-              //   ),
-              // ),
               if (riegenKinder.length == ausgewerteteKinder.length)
                 ZurueckButton(
                   label: 'Nächste Disziplin steht an',

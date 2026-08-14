@@ -151,9 +151,9 @@ class WettbewerbState extends State<Wettbewerb> {
                     vertical: 12.0,
                   ),
                   child: Text(
-                    'Ist "$disziplin" die richtige Station?',
+                    'Ist "$disziplin" die richtige Station?\n\nDie Wahl kann nicht rückgängig gemacht werden.',
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,

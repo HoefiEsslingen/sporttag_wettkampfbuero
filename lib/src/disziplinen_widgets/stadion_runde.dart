@@ -78,7 +78,7 @@ class StadionrundeState extends State<Stadionrunde>
           // in Stop-Uhr wechseln
           // Kinder mit Zeit speichern
           Text(
-            'Alle Kinder nehmen an der Stadion-Runde teil.\nSolllten Kinder nicht teilnehmen, dann diese bitte abwählen.',
+            '\nAlle Kinder nehmen an der Stadion-Runde teil.\nSollten Kinder nicht teilnehmen, dann diese bitte abwählen.',
             textAlign: TextAlign.center,
             style:
                 Theme.of(context).textTheme.bodyLarge, // Verwenden des Themes
@@ -89,7 +89,8 @@ class StadionrundeState extends State<Stadionrunde>
             'Je nach Verlauf des Rundenlaufs können Sie die Kinder in ihrer Reihenfolge verschieben.',
             textAlign: TextAlign.center,
             style:
-                Theme.of(context).textTheme.bodyLarge, // Verwenden des Themes
+                Theme.of(context).textTheme.bodyLarge,
+                 // Verwenden des Themes
           ),
           // Abstandshalter
           const SizedBox(height: 10),

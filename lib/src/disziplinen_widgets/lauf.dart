@@ -50,7 +50,7 @@ class LaufState extends State<Lauf>
             Text(
               'In 30 sek laufen mehrere Kinder (empfohlen 3 oder 4)\nso viele Runden wie möglich. \nGezählt wird zu Beginn jeder halben Runde',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(context).textTheme.bodyLarge,
             ),
             // Abstandshalter
             const SizedBox(height: 10),

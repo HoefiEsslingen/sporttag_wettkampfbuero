@@ -49,7 +49,7 @@ class DrehwurfState extends State<Drehwurf>
               'Jedes Kind darf in drei Durchgängen je einmal einen Reifen schleudern.\nDie erreichten Zonen werden notiert.\nDie zwei besten Drehwürfe werden addiert.',
               textAlign: TextAlign.center,
               style:
-                  Theme.of(context).textTheme.bodySmall, // Verwenden des Themes
+                  Theme.of(context).textTheme.bodyLarge, // Verwenden des Themes
             ),
             // Abstandshalter
             const SizedBox(height: 10),

@@ -59,10 +59,10 @@ class HuerdenlaufState extends State<Huerdenlauf>
         child: Column(
           children: [
             Text(
-              'Bitte selektieren Sie die an der nächsten Runde teilnehmenden Kinder.',
+              'Bitte selektieren Sie die am nächsten Lauf teilnehmenden Kinder.',
               textAlign: TextAlign.center,
               style:
-                  Theme.of(context).textTheme.bodySmall, // Verwenden des Themes
+                  Theme.of(context).textTheme.bodyLarge, // Verwenden des Themes
             ),
             // Abstandshalter
             const SizedBox(height: 10),

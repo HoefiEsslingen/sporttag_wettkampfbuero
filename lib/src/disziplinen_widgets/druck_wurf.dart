@@ -50,7 +50,7 @@ class DruckwurfState extends State<Druckwurf>
               'Jedes Kind darf in drei Durchgängen je einmal einen Ball einarmig stoßen.\nDie erreichten Zonen werden notiert.\nDie zwei besten Stöße werden addiert.',
               textAlign: TextAlign.center,
               style:
-                  Theme.of(context).textTheme.bodySmall, // Verwenden des Themes
+                  Theme.of(context).textTheme.bodyLarge, // Verwenden des Themes
             ),
             // Abstandshalter
             const SizedBox(height: 10),

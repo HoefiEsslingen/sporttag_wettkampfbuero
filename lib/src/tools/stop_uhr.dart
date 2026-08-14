@@ -347,7 +347,7 @@ class _MyStopUhrState extends State<MyStopUhr> {
             // als Timer --> Ende wenn alle vor Ablauf des Timers gestoppt sind oder der Timer abgelaufen ist
             if (alleGestoppt)
               ZurueckButton(
-                label: 'Zurück und auswerten',
+                label: 'Zurück', // bisher: 'Zurück und auswerten',
                 auswertenDerErgebnisse: () {
                   log.i('Rückgabe: ${_werte.length} Einträge');
                   // WICHTIG: den bevorstehenden Pop freigeben, BEVOR
