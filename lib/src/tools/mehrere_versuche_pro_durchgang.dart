@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sporttag/src/hilfs_widgets/mein_karten_eintrag.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
@@ -284,23 +285,61 @@ class _VersucheInDurchgaengenWidgetState extends State<VersucheInDurchgaengen> {
                 children: aktuellerDurchgang
                     // Für jedes kind wird ein ListTile erzeugt (Iterabel von ListTile)
                     .map(
-                      (kind) => ListTile(
-                        title: Text('${kind.vorname} ${kind.nachname}'),
-                        subtitle: Text(
-                            'bisher geschaffte Höhe: ${punktestand[kind]}'),
-                        trailing: IconButton(
-                          icon: widget.iconWidget,
-                          iconSize: 30,
-                          // ... bei Klick des Buttons
-                          onPressed: () {
-                            setState(() {
-                              // ... wird das Kind aktiv und die
-                              aktivBearbeitetesKind = kind;
-                            });
-                          },
+                      (kind) => MeinKartenEintrag(
+                        istSelektiert: aktivBearbeitetesKind == kind,
+                        trailingFullWidth: true,
+                        onTap: aktivBearbeitetesKind != kind
+                            ? () {
+                                setState(() {
+                                  aktivBearbeitetesKind = kind;
+                                });
+                              }
+                            : null,
+                        trailing: SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: widget.iconWidget,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '${kind.vorname} ${kind.nachname}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'bisher geschaffte Höhe: ${punktestand[kind]}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     )
+                      // (kind) => ListTile(
+                      //   title: Text('${kind.vorname} ${kind.nachname}'),
+                      //   subtitle: Text(
+                      //       'bisher geschaffte Höhe: ${punktestand[kind]}'),
+                      //   trailing: IconButton(
+                      //     icon: widget.iconWidget,
+                      //     iconSize: 30,
+                      //     // ... bei Klick des Buttons
+                      //     onPressed: () {
+                      //       setState(() {
+                      //         // ... wird das Kind aktiv und die
+                      //         aktivBearbeitetesKind = kind;
+                      //       });
+                      //     },
+                      //   ),
+                      // ),
+                    // )
                     // konvertiert das Iterable (von ListTile) zurück in eine List<Widget> als erwartetes Format
                     .toList(),
               ),

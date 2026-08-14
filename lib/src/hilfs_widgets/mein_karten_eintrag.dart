@@ -29,6 +29,8 @@ class MeinKartenEintrag extends StatelessWidget {
 
   final EdgeInsetsGeometry margin;
   final EdgeInsetsGeometry padding;
+    // Neu: trailingFullWidth-Parameter hinzugefügt
+  final bool trailingFullWidth;
 
   const MeinKartenEintrag({
     super.key,
@@ -42,6 +44,8 @@ class MeinKartenEintrag extends StatelessWidget {
     this.standardFarbe,
     this.margin = const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
     this.padding = const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+  // Neu: Wenn true, nimmt das trailing-Widget die volle Breite der Karte ein
+    this.trailingFullWidth = false, 
   });
 
   @override
@@ -54,16 +58,42 @@ class MeinKartenEintrag extends StatelessWidget {
             ? (selektiertFarbe ?? theme.colorScheme.primary.withValues(alpha: 0.15))
             : (standardFarbe ?? theme.cardColor);
 
-    final inhalt = Padding(
-      padding: padding,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(flex: 3, child: child),
-          if (trailing != null) Expanded(flex: 1, child: trailing!),
-        ],
-      ),
-    );
+    // final inhalt = Padding(
+    //   padding: padding,
+    //   child: Row(
+    //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    //     children: [
+    //       Expanded(flex: 3, child: child),
+    //       if (trailing != null) Expanded(flex: 1, child: trailing!),
+    //     ],
+    //   ),
+    // );
+    final inhalt = trailingFullWidth
+        // ← Neue Variante mit fullWidth-Trailing
+        ? Row(
+            children: [
+              Expanded(flex: 3, child: Padding(padding: padding, child: child)),
+              if (trailing != null)
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    color: Colors.amber,//.grey[200],
+                    child: Center(child: trailing!),
+                  ),
+                ),
+            ],
+          )
+        // ← Original-Variante
+        : Padding(
+            padding: padding,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(flex: 3, child: child),
+                if (trailing != null) Expanded(flex: 1, child: trailing!),
+              ],
+            ),
+          );
 
     return Card(
       color: farbe,

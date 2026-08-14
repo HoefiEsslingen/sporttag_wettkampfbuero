@@ -212,26 +212,44 @@ class _MehrfacheEingabeDialogWidgetState
                 itemCount: teilnehmerReihenfolge.length,
                 itemBuilder: (context, index) {
                   final kind = teilnehmerReihenfolge[index];
-                  return ListTile(
-                    title: Text('${kind.vorname} ${kind.nachname}'),
-                    subtitle: Text(
-                        'Bisher erreicht: ${ergebnisse[kind]!.join(' | ')}'),
-                    trailing: bearbeitet.contains(kind)
-                        ? const Icon(Icons.check, color: Colors.green, size: 40)
-                        : IconButton(
-                            icon:
-                                iconWidget, // <-- Bild-Icon nutzen  //auskommentiert:  const Icon(Icons.sports_handball),
-                            tooltip:
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: ListTile(
+                          title: Text('${kind.vorname} ${kind.nachname}'),
+                          subtitle: Text(
+                              'Bisher erreicht: ${ergebnisse[kind]!.join(' | ')}'),
+                          trailing: null,
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          color: Colors.grey[200],
+                          child: Tooltip(
+                            message:
                                 'Nachdem die erzielten Punkte erfasst und bestätigt wurden, wird der Teilnehmer an das Ende der Liste verschoben.',
-                            iconSize: 40,
-                            onPressed: () {
-                              setState(() {
-                                aktivBearbeitetesKind = kind;
-                                selectedValue =
-                                    1 /* auskommentiert: aktuellerWert[kind] ?? 1*/;
-                              });
-                            },
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  aktivBearbeitetesKind = kind;
+                                  selectedValue = 1;
+                                });
+                              },
+                              child: Center(
+                                child: bearbeitet.contains(kind)
+                                    ? Icon(Icons.check,
+                                        color: Colors.green, size: 40)
+                                    : SizedBox(
+                                        width: 40,
+                                        height: 40,
+                                        child: iconWidget, // ← Bild-Icon
+                                      ),
+                              ),
+                            ),
                           ),
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sporttag/src/hilfs_widgets/mein_karten_eintrag.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
 
 class TeilnehmerListe extends StatefulWidget {
@@ -41,7 +42,7 @@ class _TeilnehmerListeState extends State<TeilnehmerListe> {
       _rundenMap[kind] = kindMitWerten[kind] ?? 1;
     }
   }
-  
+
   // Erhöht den Rundenzähler, nur wenn die Uhr läuft
   void _increment(Kind kind) {
     if (!isRunning) return;
@@ -72,10 +73,12 @@ class _TeilnehmerListeState extends State<TeilnehmerListe> {
 
         // Modus 2: Runden-Modus mit Plus- und Minus-Buttons
         if (widget.modus == 2) {
-          return ListTile(
-            title: Text('${kind.vorname} ${kind.nachname}'),
+          return MeinKartenEintrag(
+            istAusgewertet: wert != null,
+            trailingFullWidth: true,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Button zum Verringern
                 IconButton(
@@ -83,9 +86,13 @@ class _TeilnehmerListeState extends State<TeilnehmerListe> {
                   onPressed: isRunning ? () => _decrement(kind) : null,
                 ),
                 // Anzeige des aktuellen Rundenwerts
-                Text(
-                  '${_rundenMap[kind] ?? 1}',
-                  style: const TextStyle(fontSize: 18),
+                SizedBox(
+                  width: 50,
+                  child: Text(
+                    '${_rundenMap[kind] ?? 1}',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
                 // Button zum Erhöhen
                 IconButton(
@@ -94,27 +101,68 @@ class _TeilnehmerListeState extends State<TeilnehmerListe> {
                 ),
               ],
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '${kind.vorname} ${kind.nachname}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
           );
         }
-        return ListTile(
-            title: Text('${kind.vorname} ${kind.nachname}'),
-            // dem angezeigten Kind wurde bereits ein Wert zugewiesen (wert != null), dann wird dieser angezeigt
-            subtitle: wert != null
-                // Zeige die gestoppte Zeit an, wenn verfügbar
-                ? Text(
-                    'Gestoppte Zeit: ${(wert / 1000).toStringAsFixed(1)} Sekunden')
-                : null,
-            trailing: wert != null
-                // Zeige Haken, wenn schon gestoppt, d.h ein Wert in onValueChanged(...) zugewiesen wurde
-                ? const Icon(Icons.check, color: Colors.green)
-                : isRunning
-                    // Sonst Button zur Zeitnahme (nur aktiv, wenn Uhr läuft)
-                    ? ElevatedButton(
-                        onPressed: () => onValueChanged(kind, 0),
-                        child: Text(kind.vorname),
-                      )
-                    : null
-            );
+
+        // Modus 0 und 1: Timer/StoppUhr-Modus
+        return MeinKartenEintrag(
+          istAusgewertet: wert != null,
+          trailingFullWidth: true,
+          trailing: wert != null
+              // Zeige Haken, wenn schon gestoppt
+              ? const Icon(
+                  Icons.check,
+                  color: Colors.green,
+                  size: 28,
+                )
+              : isRunning
+                  // Button zur Zeitnahme (nur aktiv, wenn Uhr läuft)
+                  ? ElevatedButton(
+                      onPressed: () => onValueChanged(kind, 0),
+                      child: Text(kind.vorname),
+                    )
+                  : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '${kind.vorname} ${kind.nachname}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                ),
+              ),
+              if (wert != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text(
+                      'Gestoppte Zeit: ${(wert / 1000).toStringAsFixed(1)} Sekunden',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        );
       },
     );
   }
