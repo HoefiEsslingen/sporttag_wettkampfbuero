@@ -4,6 +4,7 @@ import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
 import 'package:sporttag/src/klassen/riegen_klasse.dart';
 import 'package:sporttag/src/mixins/stationen_basis_mixin.dart';
+import 'package:sporttag/src/mixins/versuche_auswertung_mixin.dart';
 import 'package:sporttag/src/tools/disziplin_kinder_liste.dart';
 import 'package:sporttag/src/tools/mehrere_versuche_pro_durchgang.dart';
 
@@ -17,19 +18,22 @@ class HochWeitSprung extends StatefulWidget {
 }
 
 class HochWeitSprungState extends State<HochWeitSprung>
-    with StationenBasisMixin<HochWeitSprung> {
-  // Wie Zonenweitsprung/Schlagwurf: eigener Flag statt riegenKinder.length
-  // == ausgewerteteKinder.length, da alle Kinder gemeinsam in einer
-  // Durchgangsserie antreten.
-  var istAusgewertet = false;
-
-  // Speichert die (verdoppelten) Punkte je Kind.
-  Map<Kind, int> kinderMitErreichtenPunkten = {};
+    with
+        StationenBasisMixin<HochWeitSprung>,
+        VersucheAuswertungMixin<HochWeitSprung> {
+  // Ersetzt die frühere manuelle "* 2" beim Speichern in
+  // _auswertungAbschliessen() -- dort wurden die Punkte durch
+  // "kinderMitErreichtenPunkten[dasKind] = punkte" (bereits *2) UND
+  // zusätzlich "punkte: punkte * 2" beim Speichern jeweils verdoppelt,
+  // macht in Summe *4 statt *2. Der Multiplikator wird jetzt genau EINMAL
+  // angewendet, zentral im Mixin (versucheAuswerten()).
+  @override
+  int get punkteMultiplikator => 2;
 
   @override
   void initState() {
     super.initState();
-    stationsName = 'Hoch-Weitsprung';
+    stationsName = 'Hochsprung';
     riegenPointer = widget.riegenPointer;
     ladeStationsdaten();
   }
@@ -37,27 +41,7 @@ class HochWeitSprungState extends State<HochWeitSprung>
   @override
   void dispose() {
     resetStationsdaten();
-    kinderMitErreichtenPunkten.clear();
-    istAusgewertet = false;
     super.dispose();
-  }
-
-  Future<void> _auswertungAbschliessen(Map<Kind, int> ergebnisse) async {
-    for (var dasKind in riegenKinder) {
-      // ergebnisse[dasKind]! durch Null-Safe-Zugriff ersetzt:
-      //fehlt ein Kind im Ergebnis (z. B. nicht angetreten),
-      //gab es sonst einen Crash statt einer sinnvollen 0-Punkte-Wertung.
-      final punkte = (ergebnisse[dasKind] ?? 0) * 2;
-      kinderMitErreichtenPunkten[dasKind] = punkte;
-      await kindRepository.speichereResultat(
-          kind: dasKind, station: station!, punkte: punkte * 2);
-      await kindRepository.saveKind(kind: dasKind);
-    }
-    ausgewerteteKinder.addAll(riegenKinder);
-    if (!mounted) return; // Widget bereits disposed → abbrechen
-    setState(() {
-      istAusgewertet = true;
-    });
   }
 
   @override
@@ -72,35 +56,45 @@ class HochWeitSprungState extends State<HochWeitSprung>
           : Column(
               children: [
                 Text(
-                  'Jedes Kind hat pro Durchgang zwei Versuche.\nBestandene Versuche erhöhen den Punktestand um 1.\nEs gibt so viele Durchgänge, bis alle Kinder ausgeschieden sind.\nAm Ende werden die Punkte verdoppelt.',
+                  'Jedes Kind hat pro Durchgang zwei Versuche.\nBestandene Versuche erhöhen den Punktestand um 1.\nKinder mit zwei Fehlversuchen dürfen dann anfeuern.\nEs wird so lange gesprungen, bis alle Kinder anfeuern dürfen.\nAm Ende werden die Punkte verdoppelt.',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 10),
-                // Liste der Kinder in der ausgewählten Riege
+                // Liste der Kinder in der ausgewählten Riege. HochWeitSprung
+                // ist wie Zonenweitsprung/Stabfliegen ein "alle gemeinsam"-
+                // Muster (eine einzige Durchgangsserie für die ganze Riege)
+                // -> anders als bei Drehwurf/Schlagwurf ist "if (!istAusgewertet)"
+                // hier korrekt: nach der einen Auswertung gibt es nichts
+                // mehr zu starten.
                 if (!istAusgewertet)
                   ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => VersucheInDurchgaengen(
-                                teilnehmer: riegenKinder,
-                                anzahlVersuche: 2,
-                                onErgebnisseAbschliessen:
-                                    _auswertungAbschliessen,
-                                iconWidget: Image.asset(
-                                  'assets/icons/hochsprung.png',
-                                  width: 30,
-                                  height: 30,
+                      onPressed: !wertungWirdVerarbeitet
+                          ? () => starteVersuche(
+                                context,
+                                builder: (context) => VersucheInDurchgaengen(
+                                  teilnehmer: riegenKinder,
+                                  anzahlVersuche: 2,
+                                  onErgebnisseAbschliessen: versucheAuswerten,
+                                  onAbgebrochen: versucheAbgebrochen,
+                                  iconWidget: Image.asset(
+                                    'assets/icons/hochsprung.png',
+                                    width: 30,
+                                    height: 30,
+                                  ),
                                 ),
-                              ),
-                            ));
-                      },
-                      child: const Text(
-                        'In den ersten Durchgang starten',
-                        textAlign: TextAlign.center,
-                      )),
+                              )
+                          : null,
+                      child: wertungWirdVerarbeitet
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text(
+                              'In den ersten Durchgang starten',
+                              textAlign: TextAlign.center,
+                            )),
                 // Abstandshalter
                 const SizedBox(height: 10),
                 // Zeigt die Liste der Kinder in der Riege an

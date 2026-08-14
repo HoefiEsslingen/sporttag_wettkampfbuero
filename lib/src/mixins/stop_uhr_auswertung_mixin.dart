@@ -61,6 +61,18 @@ mixin StopUhrAuswertungMixin<T extends StatefulWidget>
     Navigator.push(context, MaterialPageRoute(builder: builder));
   }
 
+  /// Wird von MyStopUhr als onAbgebrochen-Callback übergeben. Greift, wenn
+  /// der Nutzer eine laufende Messung über die Zurück-Bestätigung in
+  /// MyStopUhr abbricht, OHNE dass stopUhrAuswerten() je aufgerufen wird.
+  /// Ohne diesen Reset bliebe wertungWirdVerarbeitet dauerhaft true -> der
+  /// Start-Button dieser Station wäre für immer im Spinner-Zustand
+  /// gefangen, da starteStopUhr() bei wertungWirdVerarbeitet == true
+  /// jeden weiteren Aufruf ignoriert.
+  void stopUhrAbgebrochen() {
+    if (!mounted) return;
+    setState(() => wertungWirdVerarbeitet = false);
+  }
+
   /// Callback für MyStopUhr.auswertenDerWerte.
   Future<void> stopUhrAuswerten(Map<Kind, int> resultate) async {
     log.i(

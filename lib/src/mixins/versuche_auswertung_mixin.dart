@@ -15,10 +15,41 @@ mixin VersucheAuswertungMixin<T extends StatefulWidget>
   Map<Kind, int> kinderMitErreichtenPunkten = {};
   bool istAusgewertet = false;
 
+  /// Schutz gegen Doppel-Start, analog zu StopUhrAuswertungMixin und
+  /// BesteZweiAuswertungMixin: wird SYNCHRON gesetzt, sobald der
+  /// Start-Button gedrückt wird, und erst wieder zurückgesetzt, wenn
+  /// versucheAuswerten() vollständig fertig ist ODER die Durchgangsserie
+  /// über versucheAbgebrochen() explizit abgebrochen wurde.
+  bool wertungWirdVerarbeitet = false;
+
   /// Multiplikator für die vom Eingabe-Widget gelieferten Punkte.
   /// Default: 1 (unverändert). HochWeitSprung überschreibt dies mit 2.
   int get punkteMultiplikator => 1;
 
+
+  /// Von der konkreten Station statt eines direkten Navigator.push
+  /// aufzurufen. Sperrt den Button SOFORT (synchron), bevor überhaupt
+  /// navigiert wird.
+  void starteVersuche(
+    BuildContext context, {
+    required WidgetBuilder builder,
+  }) {
+    if (wertungWirdVerarbeitet) return; // bereits in Bearbeitung -> ignorieren
+    setState(() => wertungWirdVerarbeitet = true);
+    Navigator.push(context, MaterialPageRoute(builder: builder));
+  }
+
+  /// Wird von VersucheInDurchgaengen als onAbgebrochen-Callback übergeben.
+  /// Greift, wenn der Nutzer eine laufende Durchgangsserie über die
+  /// Zurück-Bestätigung abbricht, OHNE dass versucheAuswerten() je
+  /// aufgerufen wird. Ohne diesen Reset bliebe wertungWirdVerarbeitet
+  /// dauerhaft true -> der Start-Button dieser Station wäre für immer im
+  /// Spinner-Zustand gefangen (siehe StopUhrAuswertungMixin.stopUhrAbgebrochen
+  /// bzw. BesteZweiAuswertungMixin.besteZweiAbgebrochen).
+  void versucheAbgebrochen() {
+    if (!mounted) return;
+    setState(() => wertungWirdVerarbeitet = false);
+  }
   /// Callback für VersucheInDurchgaengen.onErgebnisseAbschliessen.
   Future<void> versucheAuswerten(Map<Kind, int> ergebnisse) async {
     for (final kind in riegenKinder) {
@@ -36,6 +67,7 @@ mixin VersucheAuswertungMixin<T extends StatefulWidget>
       ausgewerteteKinder.addAll(riegenKinder);
       istAusgewertet = true;
       aktualisiereAnzeigeSortierung();
+      wertungWirdVerarbeitet = false; // Sperre wieder freigeben
     });
 
     await markiereStationFallsKomplett();
@@ -45,5 +77,7 @@ mixin VersucheAuswertungMixin<T extends StatefulWidget>
   void resetStationsdaten() {
     super.resetStationsdaten();
     kinderMitErreichtenPunkten.clear();
+    istAusgewertet = false;
+    wertungWirdVerarbeitet = false;
   }
 }

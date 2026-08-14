@@ -90,6 +90,7 @@ class SprintState extends State<Sprint>
                                 teilNehmer: selectedKinder,
                                 rufendeStation: stationsName,
                                 auswertenDerWerte: stopUhrAuswerten,
+                                onAbgebrochen: stopUhrAbgebrochen,
                               ),
                             )
                         : null,

@@ -26,6 +26,39 @@ mixin BesteZweiAuswertungMixin<T extends StatefulWidget>
   /// als Auslöser für den Start-Button.
   bool istAusgewertet = false;
 
+  /// Schutz gegen Doppel-Start, analog zu
+  /// StopUhrAuswertungMixin.wertungWirdVerarbeitet: wird SYNCHRON gesetzt,
+  /// sobald der Start-Button gedrückt wird, und erst wieder zurückgesetzt,
+  /// wenn besteZweiAuswerten() vollständig fertig ist. Ohne diesen Schutz
+  /// zeigt die UI zwischen dem Rücksprung aus StationenInDurchgaengen und
+  /// dem abschließenden setState() weiterhin den Start-Button an, obwohl
+  /// im Hintergrund noch DB-Schreibvorgänge laufen -> ein zweiter Klick
+  /// könnte eine parallele Auswertung anstoßen.
+  bool wertungWirdVerarbeitet = false;
+
+  /// Von der konkreten Station statt eines direkten Navigator.push
+  /// aufzurufen. Sperrt den Button SOFORT (synchron), bevor überhaupt
+  /// navigiert wird.
+  void starteDurchgaenge(
+    BuildContext context, {
+    required WidgetBuilder builder,
+  }) {
+    if (wertungWirdVerarbeitet) return; // bereits in Bearbeitung -> ignorieren
+    setState(() => wertungWirdVerarbeitet = true);
+    Navigator.push(context, MaterialPageRoute(builder: builder));
+  }
+
+  /// Wird von StationenInDurchgaengen als onAbgebrochen-Callback übergeben.
+  /// Greift, wenn der Nutzer eine laufende Durchgangsserie über die
+  /// Zurück-Bestätigung abbricht, OHNE dass besteZweiAuswerten() je
+  /// aufgerufen wird. Ohne diesen Reset bliebe wertungWirdVerarbeitet
+  /// dauerhaft true -> der Start-Button dieser Station wäre für immer im
+  /// Spinner-Zustand gefangen (siehe StopUhrAuswertungMixin.stopUhrAbgebrochen).
+  void besteZweiAbgebrochen() {
+    if (!mounted) return;
+    setState(() => wertungWirdVerarbeitet = false);
+  }
+
   /// Callback für StationenInDurchgaengen.onErgebnisseAbschliessen.
   /// resultate: je Kind die Liste der in den Durchgängen erreichten Werte
   /// (z. B. Zonen, Weiten). Die zwei besten Werte werden addiert.
@@ -57,6 +90,7 @@ mixin BesteZweiAuswertungMixin<T extends StatefulWidget>
       selectedKinder.clear();
       aktualisiereAnzeigeSortierung();
       istAusgewertet = true;
+      wertungWirdVerarbeitet = false; // Sperre wieder freigeben, wenn Verarbeitung abgeschlossen
     });
   }
 
@@ -71,5 +105,6 @@ mixin BesteZweiAuswertungMixin<T extends StatefulWidget>
     super.resetStationsdaten();
     kinderMitErreichtenPunkten.clear();
     istAusgewertet = false;
+    wertungWirdVerarbeitet = false;
   }
 }

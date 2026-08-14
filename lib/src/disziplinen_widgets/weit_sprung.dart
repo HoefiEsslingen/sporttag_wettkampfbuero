@@ -25,7 +25,7 @@ class ZonenweitsprungState extends State<Zonenweitsprung>
   void initState() {
     super.initState();
     // widget.toString() der Variable zuweisen
-    stationsName = 'Zonenweitsprung';
+    stationsName = 'Weitsprung';
     riegenPointer = widget.riegenPointer;
     ladeStationsdaten();
   }
@@ -47,45 +47,58 @@ class ZonenweitsprungState extends State<Zonenweitsprung>
         child: Column(
           children: [
             Text(
-              'Aus einem definierten Anlauf sollen die Kinder mit einem Bein abspringen und beidbeinig in einem Reifen landen.\nNach einem Probedurchgang, der nicht protokolliert wird, werden für jedes Kind drei Durchgänge gewertet.\nJeder Reifen entspricht einer Zone.\nDie zwei besten Sprünge werden addiert.',
+              'Aus einem definierten Anlauf sollen die Kinder mit einem Bein abspringen\nund beidbeinig in einem Reifen landen.\nNach einem Probedurchgang, der nicht protokolliert wird, werden für jedes Kind drei Durchgänge gewertet.\nJeder Reifen entspricht einer Zone.\nDie zwei besten Sprünge werden addiert.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall, // Verwenden des Themes
+              style: Theme.of(context).textTheme.bodyLarge, // Verwenden des Themes
             ),
             // Abstandshalter
             const SizedBox(height: 10),
             Text(
-              'Jetzt in einen Probedurchgang starten.\n Danach:',
+              'Jetzt einen Probedurchgang für jedes Kind durchführen.',
               textAlign: TextAlign.center,
               style: TextStyle(
                   color: Colors.green,
                   fontWeight: FontWeight.bold,
+                  fontSize: 20,
                   backgroundColor: Colors.white),
               // Verwenden des Themes
+            ),
+            Text(
+              'Danach:',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge, // Verwenden des Themes
             ),
             const SizedBox(height: 10),
             // Liste der Kinder in der ausgewählten Riege
             if (!istAusgewertet)
               ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: !wertungWirdVerarbeitet
+                    ? ()  => starteDurchgaenge(
                         context,
-                        MaterialPageRoute(
                           builder: (context) => StationenInDurchgaengen(
                             teilnehmer: kinderZurAnzeige,
                             anzahlDurchgaenge: 3,
                             onErgebnisseAbschliessen: besteZweiAuswerten,
+                            onAbgebrochen: besteZweiAbgebrochen,
                             iconWidget: Image.asset(
                               'assets/icons/weitsprung.png',
                               width: 30,
                               height: 30,
                             ),
                           ),
-                        ));
-                  },
-                  child: const Text(
-                    'In die Wertungsdurchgänge starten',
-                    textAlign: TextAlign.center,
-                  )),
+                        )
+                    : null,
+                child: wertungWirdVerarbeitet
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'In die Wertungsdurchgänge starten',
+                        textAlign: TextAlign.center,
+                      ),
+              ),
             // Abstandshalter
             const SizedBox(height: 10),
             // Zeigt die Liste der Kinder in der Riege an

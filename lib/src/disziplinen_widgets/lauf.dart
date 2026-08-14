@@ -58,17 +58,15 @@ class LaufState extends State<Lauf>
             ElevatedButton(
               onPressed: (selectedKinder.isNotEmpty && !wertungWirdVerarbeitet)
                   // Wenn selektierte Kinder vorhanden sind, dann den Timer starten
-                  ? () {
-                      starteStopUhr(
+                  ? () => starteStopUhr(
                         context,
                         builder: (context) => MyStopUhr(
                           teilNehmer: selectedKinder,
                           rufendeStation: stationsName,
-                          auswertenDerWerte:
-                              stopUhrAuswerten, // Ergebnisse verarbeiten)
+                          auswertenDerWerte: stopUhrAuswerten, // Ergebnisse verarbeiten)
+                          onAbgebrochen: stopUhrAbgebrochen,
                         ),
-                      );
-                    }
+                      )
                   : null,
               child: wertungWirdVerarbeitet
                   ? const SizedBox(

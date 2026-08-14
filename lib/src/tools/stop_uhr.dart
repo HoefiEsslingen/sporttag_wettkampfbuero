@@ -14,11 +14,19 @@ class MyStopUhr extends StatefulWidget {
     required this.teilNehmer,
     required this.rufendeStation, // 0: Timer, 1: Stoppuhr, 2: Rundenmodus
     required this.auswertenDerWerte,
+    this.onAbgebrochen,
   });
 
   final Set<Kind> teilNehmer;
   final String rufendeStation; // Name der Station, die die Uhr aufruft
   final Function(Map<Kind, int>) auswertenDerWerte;
+
+  /// Wird aufgerufen, wenn der Nutzer eine laufende Messung über die
+  /// Zurück-Bestätigung abbricht (siehe _zeigeVerlassenBestaetigung),
+  /// OHNE dass auswertenDerWerte je aufgerufen wurde. Die aufrufende
+  /// Station nutzt dies typischerweise, um einen "wertungWirdVerarbeitet"-
+  /// Sperrzustand zurückzusetzen, der sonst dauerhaft hängen bliebe.
+  final VoidCallback? onAbgebrochen;
 
   @override
   State<MyStopUhr> createState() => _MyStopUhrState();
@@ -31,7 +39,8 @@ class _MyStopUhrState extends State<MyStopUhr> {
   Set<Kind> get teilNehmer => widget.teilNehmer;
   String get rufendeStation =>
       widget.rufendeStation; // Name der Station, die die Uhr aufruft
-  dynamic Function(Map<Kind, int>) get auswertenDerWerte => widget.auswertenDerWerte;
+  dynamic Function(Map<Kind, int>) get auswertenDerWerte =>
+      widget.auswertenDerWerte;
 
   late Stopwatch stopwatch;
   late Timer t;
@@ -55,6 +64,22 @@ class _MyStopUhrState extends State<MyStopUhr> {
   bool get _kannGefahrlosVerlassenWerden =>
       _erzwingeVerlassen || (!stopwatch.isRunning && _werte.isEmpty);
 
+  Future<void> _handlePopVersuch(BuildContext context) async {
+    if (_kannGefahrlosVerlassenWerden) {
+      // Nichts zu verlieren -> ohne Rückfrage verlassen. Trotzdem über
+      // denselben expliziten Navigator.pop()-Pfad wie im bestätigten Fall,
+      // NICHT über canPop:true/Plattform-Navigation direkt -- nur so ist
+      // garantiert, dass onAbgebrochen zuverlässig aufgerufen wird und
+      // Navigator.push(...).then() im aufrufenden Mixin sicher feuert.
+      widget.onAbgebrochen?.call();
+      if (!mounted) return;
+      setState(() => _erzwingeVerlassen = true);
+      Navigator.of(context).pop();
+      return;
+    }
+    await _zeigeVerlassenBestaetigung(context);
+  }
+
   Future<void> _zeigeVerlassenBestaetigung(BuildContext context) async {
     final bestaetigt = await showDialog<bool>(
       context: context,
@@ -69,13 +94,17 @@ class _MyStopUhrState extends State<MyStopUhr> {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Verlassen'),
+            child: const Text('Verlassen und neu starten'),
           ),
         ],
       ),
     );
 
     if (bestaetigt == true && mounted) {
+      // Caller benachrichtigen, BEVOR gepoppt wird -> stopUhrAbgebrochen()
+      // im Mixin kann noch setState() auf dieser (noch existierenden)
+      // Seite auslösen, ohne von Navigator-Timing abhängig zu sein.
+      widget.onAbgebrochen?.call();
       setState(() => _erzwingeVerlassen = true);
       Navigator.of(context).pop();
     }
@@ -228,12 +257,20 @@ class _MyStopUhrState extends State<MyStopUhr> {
   Widget build(BuildContext context) {
     final bool isRunning = stopwatch.isRunning;
     return PopScope(
-        canPop: _kannGefahrlosVerlassenWerden,
+      // IMMER false: jeder Pop-Versuch (Browser-Zurück, System-Geste,
+      // AppBar-Pfeil) läuft dadurch zwingend über _handlePopVersuch() und
+      // damit über einen expliziten Navigator.pop() -- nicht über
+      // Plattform-Navigation außerhalb von Flutters Navigator. Das ist
+      // nötig, damit Navigator.push(...).then() im aufrufenden
+      // StopUhrAuswertungMixin zuverlässig feuert, auch bevor die Uhr
+      // gestartet wurde (siehe _handlePopVersuch für den ungefragten Pop).
+      canPop: false,
+      // Browser-Zurück soll den Dialog NICHT schließen, wenn false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return; // Pop wurde bereits zugelassen -> nichts zu tun
-        _zeigeVerlassenBestaetigung(context);
+        _handlePopVersuch(context);
       },
-    child: Scaffold(
+      child: Scaffold(
         appBar: MeineAppBar(
           titel: 'Klick die Uhr zum Start.',
         ),
@@ -313,6 +350,11 @@ class _MyStopUhrState extends State<MyStopUhr> {
                 label: 'Zurück und auswerten',
                 auswertenDerErgebnisse: () {
                   log.i('Rückgabe: ${_werte.length} Einträge');
+                  // WICHTIG: den bevorstehenden Pop freigeben, BEVOR
+                  // ZurueckButton ihn auslöst. Sonst würde auch der
+                  // normale, gewollte Abschluss fälschlich als Abbruch
+                  // erkannt und der Bestätigungsdialog gezeigt.
+                  setState(() => _erzwingeVerlassen = true);
                   auswertenDerWerte(_werte);
                 },
               ),

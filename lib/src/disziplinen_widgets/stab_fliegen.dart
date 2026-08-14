@@ -57,26 +57,33 @@ class StabfliegenState extends State<Stabfliegen>
             // Liste der Kinder in der ausgewählten Riege
             if (!istAusgewertet)
               ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: !wertungWirdVerarbeitet
+                    ? () => starteDurchgaenge(
                         context,
-                        MaterialPageRoute(
                           builder: (context) => StationenInDurchgaengen(
                             teilnehmer: kinderZurAnzeige,
                             anzahlDurchgaenge: 3,
                             onErgebnisseAbschliessen: besteZweiAuswerten,
+                            onAbgebrochen: besteZweiAbgebrochen,
                             iconWidget: Image.asset(
                               'assets/icons/stabfliegen.png',
                               width: 30,
                               height: 30,
                             ),
                           ),
-                        ));
-                  },
-                  child: const Text(
-                    'In den ersten gewerteten Durchgang starten',
-                    textAlign: TextAlign.center,
-                  )),
+                        )
+                    : null,
+                child: wertungWirdVerarbeitet
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'In die Wertungsdurchgänge starten',
+                        textAlign: TextAlign.center,
+                      ),
+              ),
             // Abstandshalter
             const SizedBox(height: 10),
             // Zeigt die Liste der Kinder in der Riege an

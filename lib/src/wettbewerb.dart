@@ -345,8 +345,8 @@ class WettbewerbState extends State<Wettbewerb> {
                             final alleAnderenBesucht =
                                 besuchteDisziplinen.length ==
                                     angeboteneDisziplinen.length - 1;
-                            final istAktiv = !istBesucht &&
-                                (!istLetzteStation || alleAnderenBesucht);
+                            final istAktiv = !istBesucht; //&&
+                                //(!istLetzteStation || alleAnderenBesucht);
 
                             return Padding(
                               padding:

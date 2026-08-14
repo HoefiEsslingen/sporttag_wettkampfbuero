@@ -47,37 +47,42 @@ class SchlagwurfState extends State<Schlagwurf>
         child: Column(
           children: [
             Text(
-              'Jedes Kind darf in drei Durchgängen je mit einem Tennis- bzw. Schweifball werfen.\nDie erreichten Zonen werden notiert.\nDie zwei besten Würfe werden addiert.',
+              'Jedes Kind darf in drei Durchgängen je mit einem Tennis- (U8) bzw. Schweifball (8+) werfen.\nDie erreichten Zonen werden notiert.\nDie zwei besten Würfe werden addiert.',
               textAlign: TextAlign.center,
               style:
-                  Theme.of(context).textTheme.bodySmall, // Verwenden des Themes
+                  Theme.of(context).textTheme.bodyLarge, // Verwenden des Themes
             ),
             // Abstandshalter
             const SizedBox(height: 10),
             // Liste der Kinder in der ausgewählten Riege
-            if (!istAusgewertet)
               ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: (selectedKinder.isNotEmpty && !wertungWirdVerarbeitet)
+                    ? () => starteDurchgaenge(
                         context,
-                        MaterialPageRoute(
                           builder: (context) => StationenInDurchgaengen(
-                            teilnehmer: kinderZurAnzeige,
+                            teilnehmer: selectedKinder.toList(), //auskommentiert:  kinderZurAnzeige,
                             anzahlDurchgaenge: 3,
                             onErgebnisseAbschliessen: besteZweiAuswerten,
+                            onAbgebrochen: besteZweiAbgebrochen,
                             iconWidget: Image.asset(
                               'assets/icons/speerwurf.png',
                               width: 30,
                               height: 30,
                             ),
                           ),
-                        ));
-                  },
-                  // Rücksprung auf
-                  child: const Text(
-                    'In den ersten Durchgang starten',
-                    textAlign: TextAlign.center,
-                  )),
+                        )
+                    : null,
+                child: wertungWirdVerarbeitet
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'In die Wertungsdurchgänge starten',
+                        textAlign: TextAlign.center,
+                      ),
+              ),
             // Abstandshalter
             const SizedBox(height: 10),
             // Zeigt die Liste der Kinder in der Riege an
@@ -89,7 +94,12 @@ class SchlagwurfState extends State<Schlagwurf>
                 kinderMitZeiten: kinderMitErreichtenPunkten,
                 onSelectionChanged: (Kind kind, bool istSelektiert) {
                   setState(() {
-                    // Keine Aktion
+                    // es kann nur ein Kind ausgewählt werden, welches die drei Versuche hat
+                    if (selectedKinder.isEmpty && istSelektiert) {
+                      selectedKinder.add(kind);
+                    } else {
+                      selectedKinder.remove(kind);
+                    }
                   });
                 },
               ),

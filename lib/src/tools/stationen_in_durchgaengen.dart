@@ -10,12 +10,20 @@ class StationenInDurchgaengen extends StatefulWidget {
   final Function(Map<Kind, List<int>>) onErgebnisseAbschliessen;
   final Widget iconWidget;
 
+  /// Wird aufgerufen, wenn der Nutzer eine laufende Durchgangsserie über
+  /// die Zurück-Bestätigung abbricht, OHNE dass onErgebnisseAbschliessen
+  /// je aufgerufen wurde. Die aufrufende Station nutzt dies typischerweise,
+  /// um einen "wertungWirdVerarbeitet"-Sperrzustand zurückzusetzen, der
+  /// sonst dauerhaft hängen bliebe (siehe MyStopUhr.onAbgebrochen).
+  final VoidCallback? onAbgebrochen;
+
   const StationenInDurchgaengen({
     super.key,
     required this.teilnehmer,
     required this.anzahlDurchgaenge,
     required this.onErgebnisseAbschliessen,
     required this.iconWidget,
+    this.onAbgebrochen,
   });
 
   @override
@@ -40,6 +48,64 @@ class _MehrfacheEingabeDialogWidgetState
   late Widget iconWidget;
   late Function(Map<Kind, List<int>>) onErgebnisseAbschliessen;
 
+  // Wird true, sobald mindestens ein Wert bestätigt wurde -> ab dann
+  // würde ein Verlassen echten Fortschritt vernichten.
+  bool _hatFortschritt = false;
+
+  // Wird true gesetzt, nachdem der Nutzer das Verlassen im Dialog
+  // bestätigt hat ODER wenn der reguläre Abschluss-Button gedrückt wurde
+  // -> lässt den (nächsten) Pop-Versuch tatsächlich durch.
+  bool _erzwingeVerlassen = false;
+
+  bool get _kannGefahrlosVerlassenWerden =>
+      _erzwingeVerlassen || !_hatFortschritt;
+
+  Future<void> _handlePopVersuch(BuildContext context) async {
+    if (_kannGefahrlosVerlassenWerden) {
+      // Nichts zu verlieren -> ohne Rückfrage verlassen. Trotzdem über
+      // denselben expliziten Navigator.pop()-Pfad wie im bestätigten Fall,
+      // NICHT über canPop:true/Plattform-Navigation direkt -- nur so ist
+      // garantiert, dass onAbgebrochen zuverlässig aufgerufen wird und
+      // Navigator.push(...).then() im aufrufenden Mixin sicher feuert.
+      widget.onAbgebrochen?.call();
+      if (!mounted) return;
+      setState(() => _erzwingeVerlassen = true);
+      Navigator.of(context).pop();
+      return;
+    }
+    await _zeigeVerlassenBestaetigung(context);
+  }
+
+  Future<void> _zeigeVerlassenBestaetigung(BuildContext context) async {
+    final bestaetigt = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Durchgänge abbrechen?'),
+        content: const Text(
+            'Es wurden bereits Werte erfasst. Beim Verlassen gehen diese verloren.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Weiter erfassen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Verlassen und neu starten'),
+          ),
+        ],
+      ),
+    );
+
+    if (bestaetigt == true && mounted) {
+      // Caller benachrichtigen, BEVOR gepoppt wird -> der Reset des
+      // Sperrzustands passiert noch auf dieser (noch existierenden) Seite,
+      // unabhängig vom Navigator-Timing.
+      widget.onAbgebrochen?.call();
+      setState(() => _erzwingeVerlassen = true);
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +125,7 @@ class _MehrfacheEingabeDialogWidgetState
     if (aktivBearbeitetesKind == null) return;
 
     setState(() {
+      _hatFortschritt = true;
       aktuellerWert[aktivBearbeitetesKind!] = selectedValue;
       ergebnisse[aktivBearbeitetesKind!]![aktuellerDurchgang - 1] =
           selectedValue;
@@ -83,81 +150,101 @@ class _MehrfacheEingabeDialogWidgetState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: MeineAppBar(
-        titel: 'Durchgang $aktuellerDurchgang von $anzahlDurchgaenge',
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
-          if (aktivBearbeitetesKind != null)
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Text(
-                    '${aktivBearbeitetesKind!.vorname} ${aktivBearbeitetesKind!.nachname}: erreichte Zone',
-                    style: const TextStyle(fontSize: 20),
-                  ),
-                  const SizedBox(height: 10),
-                  Slider(
-                    value: selectedValue.toDouble(),
-                    min: 1,
-                    max: 6,
-                    divisions: 5,  // divisions = max-min
-                    label: 'Zone $selectedValue',
-                    onChanged: (double value) {
-                      setState(() {
-                        selectedValue = value.toInt();
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _bestaetigeWert,
-                    child: const Text('Bestätigen'),
-                  ),
-                ],
+    return PopScope(
+      // IMMER false: jeder Pop-Versuch (Browser-Zurück, System-Geste,
+      // AppBar-Pfeil) läuft dadurch zwingend über _handlePopVersuch() und
+      // damit über einen expliziten Navigator.pop() -- nicht über
+      // Plattform-Navigation außerhalb von Flutters Navigator. Das ist
+      // nötig, damit Navigator.push(...).then() im aufrufenden
+      // StopUhrAuswertungMixin zuverlässig feuert, auch bevor die Uhr
+      // gestartet wurde (siehe _handlePopVersuch für den ungefragten Pop).
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return; // Pop wurde bereits zugelassen -> nichts zu tun
+        _handlePopVersuch(context);
+      },
+      child: Scaffold(
+        appBar: MeineAppBar(
+          titel: 'Durchgang $aktuellerDurchgang von $anzahlDurchgaenge',
+        ),
+        body: Column(
+          children: [
+            const SizedBox(height: 10),
+            if (aktivBearbeitetesKind != null)
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text(
+                      '${aktivBearbeitetesKind!.vorname} ${aktivBearbeitetesKind!.nachname}: erreichte Zone',
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                    const SizedBox(height: 10),
+                    Slider(
+                      value: selectedValue.toDouble(),
+                      min: 1,
+                      max: 6,
+                      divisions: 5, // divisions = max-min
+                      label: 'Zone $selectedValue',
+                      onChanged: (double value) {
+                        setState(() {
+                          selectedValue = value.toInt();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _bestaetigeWert,
+                      child: const Text('Bestätigen'),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: teilnehmerReihenfolge.length,
+                itemBuilder: (context, index) {
+                  final kind = teilnehmerReihenfolge[index];
+                  return ListTile(
+                    title: Text('${kind.vorname} ${kind.nachname}'),
+                    subtitle: Text(
+                        'Bisher erreicht: ${ergebnisse[kind]!.join(' | ')}'),
+                    trailing: bearbeitet.contains(kind)
+                        ? const Icon(Icons.check, color: Colors.green, size: 40)
+                        : IconButton(
+                            icon:
+                                iconWidget, // <-- Bild-Icon nutzen  //auskommentiert:  const Icon(Icons.sports_handball),
+                            tooltip:
+                                'Nachdem die erzielten Punkte erfasst und bestätigt wurden, wird der Teilnehmer an das Ende der Liste verschoben.',
+                            iconSize: 40,
+                            onPressed: () {
+                              setState(() {
+                                aktivBearbeitetesKind = kind;
+                                selectedValue =
+                                    1 /* auskommentiert: aktuellerWert[kind] ?? 1*/;
+                              });
+                            },
+                          ),
+                  );
+                },
               ),
             ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: teilnehmerReihenfolge.length,
-              itemBuilder: (context, index) {
-                final kind = teilnehmerReihenfolge[index];
-                return ListTile(
-                  title: Text('${kind.vorname} ${kind.nachname}'),
-                  subtitle:
-                      Text('Bisher erreicht: ${ergebnisse[kind]!.join(' | ')}'),
-                  trailing: bearbeitet.contains(kind)
-                      ? const Icon(Icons.check, color: Colors.green, size: 40)
-                      : IconButton(
-                          icon:
-                              iconWidget, // <-- Bild-Icon nutzen  //auskommentiert:  const Icon(Icons.sports_handball),
-                          tooltip:
-                              'Nachdem die erzielten Punkte erfasst und bestätigt wurden, wird der Teilnehmer an das Ende der Liste verschoben.',
-                          iconSize: 40,
-                          onPressed: () {
-                            setState(() {
-                              aktivBearbeitetesKind = kind;
-                              selectedValue =
-                                  1 /* auskommentiert: aktuellerWert[kind] ?? 1*/;
-                            });
-                          },
-                        ),
-                );
-              },
-            ),
-          ),
-          if (aktuellerDurchgang == anzahlDurchgaenge && alleBearbeitet())
-            ZurueckButton(
-              label: 'Ergebnisse auswerten und zurück',
-              auswertenDerErgebnisse: () =>
-                  onErgebnisseAbschliessen(ergebnisse),
-            ),
-          const SizedBox(height: 20),
-        ],
+            if (aktuellerDurchgang == anzahlDurchgaenge && alleBearbeitet())
+              ZurueckButton(
+                label: 'Ergebnisse auswerten und zurück',
+                auswertenDerErgebnisse: () {
+                  // WICHTIG: den bevorstehenden Pop freigeben, BEVOR
+                  // ZurueckButton ihn auslöst. Sonst würde auch der
+                  // normale, gewollte Abschluss fälschlich als Abbruch
+                  // erkannt und der Bestätigungsdialog gezeigt.
+                  setState(() => _erzwingeVerlassen = true);
+                  onErgebnisseAbschliessen(ergebnisse);
+                },
+              ),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }

@@ -54,32 +54,35 @@ class DrehwurfState extends State<Drehwurf>
             // Abstandshalter
             const SizedBox(height: 10),
             // Liste der Kinder in der ausgewählten Riege
-            if (!istAusgewertet)
-              ElevatedButton(
-                  onPressed: (selectedKinder.isNotEmpty)
-                      ? () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => StationenInDurchgaengen(
-                                teilnehmer: selectedKinder
-                                    .toList(), //auskommentiert:  kinderZurAnzeige,
-                                anzahlDurchgaenge: 3,
-                                onErgebnisseAbschliessen: besteZweiAuswerten,
-                                iconWidget: Image.asset(
-                                  'assets/icons/diskus.png',
-                                  width: 30,
-                                  height: 30,
-                                ),
-                              ),
-                            ),
-                          );
-                        }
-                      : null,
-                  child: const Text(
-                    'Das selektiertes Kind startet seine drei Versuche',
-                    textAlign: TextAlign.center,
-                  )),
+            ElevatedButton(
+              onPressed: (selectedKinder.isNotEmpty && !wertungWirdVerarbeitet)
+                  ? () => starteDurchgaenge(
+                        context,
+                        builder: (context) => StationenInDurchgaengen(
+                          teilnehmer: selectedKinder
+                              .toList(), //auskommentiert:  kinderZurAnzeige,
+                          anzahlDurchgaenge: 3,
+                          onErgebnisseAbschliessen: besteZweiAuswerten,
+                          onAbgebrochen: besteZweiAbgebrochen,
+                          iconWidget: Image.asset(
+                            'assets/icons/diskus.png',
+                            width: 30,
+                            height: 30,
+                          ),
+                        ),
+                      )
+                  : null,
+              child: wertungWirdVerarbeitet
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text(
+                      'In die Wertungsdurchgänge starten',
+                      textAlign: TextAlign.center,
+                    ),
+            ),
             // Abstandshalter
             const SizedBox(height: 10),
             // Zeigt die Liste der Kinder in der Riege an

@@ -33,6 +33,13 @@ class StadionrundeState extends State<Stadionrunde>
     selectedKinder.addAll(riegenKinder);
   }
 
+  /// Hook, der nach dem Laden aufgerufen wird
+  @override
+  void nachLadenHook() {
+    // Alle Kinder der Riege als selektiert markieren
+    selectedKinder.addAll(riegenKinder);
+  }
+
   @override
   void dispose() {
     resetStationsdaten();
@@ -57,7 +64,6 @@ class StadionrundeState extends State<Stadionrunde>
     // < 1:20 min -> 5 Punkte
     return 5;
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,7 +81,7 @@ class StadionrundeState extends State<Stadionrunde>
             'Alle Kinder nehmen an der Stadion-Runde teil.\nSolllten Kinder nicht teilnehmen, dann diese bitte abwählen.',
             textAlign: TextAlign.center,
             style:
-                Theme.of(context).textTheme.bodySmall, // Verwenden des Themes
+                Theme.of(context).textTheme.bodyLarge, // Verwenden des Themes
           ),
           // Abstandshalter
           const SizedBox(height: 10),
@@ -96,7 +102,8 @@ class StadionrundeState extends State<Stadionrunde>
                       builder: (context) => MyStopUhr(
                         teilNehmer: selectedKinder,
                         rufendeStation: stationsName,
-                        auswertenDerWerte: stopUhrAuswerten, // Ergebnisse verarbeiten)
+                        auswertenDerWerte: stopUhrAuswerten, // Ergebnisse verarbeiten
+                        onAbgebrochen: stopUhrAbgebrochen,
                       ),
                     )
                 : null,
@@ -107,7 +114,7 @@ class StadionrundeState extends State<Stadionrunde>
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text(
-                      'Starte Timer mit ausgewählten Namen',
+                      'Starte Timer (alle Kinder der Riege nehmen teil!)',
                       textAlign: TextAlign.center,
                     ),
             ),
@@ -121,12 +128,12 @@ class StadionrundeState extends State<Stadionrunde>
               kinderMitZeiten: kinderMitZeiten,
               onSelectionChanged: (Kind kind, bool istSelektiert) {
                 setState(() {
-                  // mehrere Kinder können ausgewählt werden
-                  if (istSelektiert) {
-                    selectedKinder.add(kind);
-                  } else {
-                    selectedKinder.remove(kind);
-                  }
+                  // // mehrere Kinder können ausgewählt werden
+                  // if (istSelektiert) {
+                  //   selectedKinder.add(kind);
+                  // } else {
+                  //   selectedKinder.remove(kind);
+                  // }
                 });
               },
             ),
