@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sporttag/src/hilfs_widgets/mein_karten_eintrag.dart';
 import 'package:sporttag/src/hilfs_widgets/rueck_sprung_button.dart';
 import 'package:sporttag/src/hilfs_widgets/meine_appbar.dart';
 import 'package:sporttag/src/klassen/kind_klasse.dart';
@@ -212,44 +213,39 @@ class _MehrfacheEingabeDialogWidgetState
                 itemCount: teilnehmerReihenfolge.length,
                 itemBuilder: (context, index) {
                   final kind = teilnehmerReihenfolge[index];
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: ListTile(
-                          title: Text('${kind.vorname} ${kind.nachname}'),
-                          subtitle: Text(
-                              'Bisher erreicht: ${ergebnisse[kind]!.join(' | ')}'),
-                          trailing: null,
+                  final istBearbeitet = bearbeitet.contains(kind);
+
+                  return MeinKartenEintrag(
+                    key: ValueKey(kind),
+                    trailingFullWidth: true,
+//                    istAusgewertet: istBearbeitet,
+                    trailing: Tooltip(
+                      message:
+                          'Nachdem die erzielten Punkte erfasst und bestätigt wurden, wird der Teilnehmer an das Ende der Liste verschoben.',
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            aktivBearbeitetesKind = kind;
+                            selectedValue = 1;
+                          });
+                        },
+                        child: Center(
+                          child: istBearbeitet
+                              ? const Icon(Icons.check,
+                                  color: Colors.green, size: 40)
+                              : SizedBox(
+                                  width: 40,
+                                  height: 40,
+                                  child: iconWidget, // ← Bild-Icon
+                                ),
                         ),
                       ),
-                      Expanded(
-                        child: Container(
-                          color: Colors.grey[200],
-                          child: Tooltip(
-                            message:
-                                'Nachdem die erzielten Punkte erfasst und bestätigt wurden, wird der Teilnehmer an das Ende der Liste verschoben.',
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  aktivBearbeitetesKind = kind;
-                                  selectedValue = 1;
-                                });
-                              },
-                              child: Center(
-                                child: bearbeitet.contains(kind)
-                                    ? Icon(Icons.check,
-                                        color: Colors.green, size: 40)
-                                    : SizedBox(
-                                        width: 40,
-                                        height: 40,
-                                        child: iconWidget, // ← Bild-Icon
-                                      ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
+                    child: ListTile(
+                      title: Text('${kind.vorname} ${kind.nachname}'),
+                      subtitle: Text(
+                          'Bisher erreicht: ${ergebnisse[kind]!.join(' | ')}'),
+                    ),
                   );
                 },
               ),

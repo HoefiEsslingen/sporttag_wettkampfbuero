@@ -74,7 +74,7 @@ class _TeilnehmerListeState extends State<TeilnehmerListe> {
         // Modus 2: Runden-Modus mit Plus- und Minus-Buttons
         if (widget.modus == 2) {
           return MeinKartenEintrag(
-            istAusgewertet: wert != null,
+            // istAusgewertet: wert != null,
             trailingFullWidth: true,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -119,7 +119,7 @@ class _TeilnehmerListeState extends State<TeilnehmerListe> {
 
         // Modus 0 und 1: Timer/StoppUhr-Modus
         return MeinKartenEintrag(
-          istAusgewertet: wert != null,
+          // istAusgewertet: wert != null,
           trailingFullWidth: true,
           trailing: wert != null
               // Zeige Haken, wenn schon gestoppt

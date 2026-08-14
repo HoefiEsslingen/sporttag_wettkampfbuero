@@ -322,26 +322,8 @@ class _VersucheInDurchgaengenWidgetState extends State<VersucheInDurchgaengen> {
                           ],
                         ),
                       ),
-                    )
-                      // (kind) => ListTile(
-                      //   title: Text('${kind.vorname} ${kind.nachname}'),
-                      //   subtitle: Text(
-                      //       'bisher geschaffte Höhe: ${punktestand[kind]}'),
-                      //   trailing: IconButton(
-                      //     icon: widget.iconWidget,
-                      //     iconSize: 30,
-                      //     // ... bei Klick des Buttons
-                      //     onPressed: () {
-                      //       setState(() {
-                      //         // ... wird das Kind aktiv und die
-                      //         aktivBearbeitetesKind = kind;
-                      //       });
-                      //     },
-                      //   ),
-                      // ),
-                    // )
                     // konvertiert das Iterable (von ListTile) zurück in eine List<Widget> als erwartetes Format
-                    .toList(),
+                    ).toList(),
               ),
             ),
             if (_stationAbgeschlossen())
