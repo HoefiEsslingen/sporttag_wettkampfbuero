@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sporttag/src/hilfs_widgets/mein_karten_eintrag.dart';
 import 'package:sporttag/src/klassen/station_klasse.dart';
 import 'package:sporttag/src/tools/pdf_modal.dart';
@@ -42,7 +42,8 @@ class WettbewerbState extends State<Wettbewerb> {
 
   final bool isDevelopment = true;
   late Map<String, Widget Function()> disziplinPages;
-  final Set<String> besuchteDisziplinen = {};
+  Set<String> besuchteDisziplinen = {};
+  bool isLoading = true;
   bool pauseGemacht = false;
 
   // State-Variable in der Methode _ladeRiege() gesetzt abhängig von der
@@ -57,9 +58,13 @@ class WettbewerbState extends State<Wettbewerb> {
   String get wettbewerbsTyp =>
       (riegenPointer?.fuenfKampf ?? false) ? 'Fuenfkampf' : 'Zehnkampf';
 
+  // NEU: Verhindert Doppelverarbeitung während eine Disziplin gerade gespeichert wird
+  String? _disziplinInBearbeitung;
+
   @override
   void initState() {
     super.initState();
+    // Lade die Riege und die erlaubten Stationen aus der DB
     _ladeRiegeUndStationen();
 
     disziplinPages = {
@@ -94,8 +99,6 @@ class WettbewerbState extends State<Wettbewerb> {
           ? const Center(child: CircularProgressIndicator())
           : Stadionrunde(riegenPointer: riegenPointer!),
     };
-
-    _loadState();
   }
 
   Future<void> _ladeRiegeUndStationen() async {
@@ -119,12 +122,43 @@ class WettbewerbState extends State<Wettbewerb> {
 
     // Kinder der Riege + deren Punktesummen laden
     await _ladeKinderMitPunkten(geladeneRiege);
+    await _ladeBesuchteDisziplinen(
+        riege: geladeneRiege); // ← Riege übergeben statt neu laden
 
     if (!mounted) return;
 
     setState(() {
       erlaubteStationen = stationen;
     });
+  }
+
+  /// Lädt den aktuellen Stand aus der DB beim Start des Screens.
+  Future<void> _ladeBesuchteDisziplinen({required Riege riege}) async {
+    final absolvierte = await riegenRepository.ladeAbsolvierteStationen(
+      riege: riege,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      besuchteDisziplinen = absolvierte.toSet();
+      isLoading = false;
+    });
+  }
+
+  /// Wird nach jeder abgeschlossenen Disziplin aufgerufen.
+  Future<void> _disziplinAbschliessen({
+    required Riege riege,
+    required Station station,
+  }) async {
+    final ok = await riegenRepository.erhoeheStationszaehler(
+      riege: riege,
+      station: station,
+    );
+    if (ok && mounted) {
+      setState(() {
+        besuchteDisziplinen.add(station.stationsName);
+      });
+    }
   }
 
   /// Zeigt die Stationsbeschreibung (PDF) zur gewählten Disziplin an und
@@ -210,36 +244,6 @@ class WettbewerbState extends State<Wettbewerb> {
     setState(() {
       riegenKinder = kinder;
     });
-  }
-
-  Future<void> _loadState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedDisziplinen = prefs.getStringList('besuchteDisziplinen');
-    if (savedDisziplinen != null) {
-      setState(() {
-        besuchteDisziplinen.addAll(savedDisziplinen);
-      });
-    }
-    final savedPause = prefs.getBool('pauseGemacht');
-    if (savedPause != null) {
-      setState(() {
-        pauseGemacht = savedPause;
-      });
-    }
-  }
-
-  Future<void> _saveState() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-      'besuchteDisziplinen',
-      besuchteDisziplinen.toList(),
-    );
-    prefs.setBool('pauseGemacht', pauseGemacht);
-  }
-
-  Future<void> _clearState() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
   }
 
   @override
@@ -346,42 +350,61 @@ class WettbewerbState extends State<Wettbewerb> {
                                 besuchteDisziplinen.length ==
                                     angeboteneDisziplinen.length - 1;
                             final istAktiv = !istBesucht; //&&
-                                //(!istLetzteStation || alleAnderenBesucht);
+                            //(!istLetzteStation || alleAnderenBesucht);
 
                             return Padding(
                               padding:
                                   const EdgeInsets.symmetric(vertical: 8.0),
                               child: ElevatedButton(
-                                onPressed: istAktiv
+                                onPressed: (istAktiv &&
+                                        _disziplinInBearbeitung == null)
                                     ? () async {
-                                        final bestaetigt =
-                                            await _bestaetigeDisziplinAuswahl(
-                                          context,
-                                          disziplin,
-                                        );
-                                        if (bestaetigt != true) {
-                                          return; // abgebrochen → nichts weiter tun
+                                        // Sofort sperren – noch bevor der Dialog überhaupt öffnet
+                                        setState(() => _disziplinInBearbeitung =
+                                            disziplin);
+
+                                        try {
+                                          final bestaetigt =
+                                              await _bestaetigeDisziplinAuswahl(
+                                                  context, disziplin);
+                                          if (bestaetigt != true) return;
+                                          if (!context.mounted) return;
+
+                                          await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => PopScope(
+                                                  canPop: false,
+                                                  child: angeboteneDisziplinen[
+                                                              disziplin]
+                                                          ?.call() ??
+                                                      const Center(
+                                                          child: Text(
+                                                              'Disziplin nicht gefunden')),
+                                                ),
+                                              ));
+
+                                          if (!mounted) {
+                                            return; // Guard nach zweitem await
+                                          }
+
+                                          // Passendes Station-Objekt aus den geladenen Stationen holen
+                                          final station =
+                                              erlaubteStationen!.firstWhere(
+                                            (s) => s.stationsName == disziplin,
+                                          );
+
+                                          // ECHTER DB-Write: Zähler + Array in riegenLogging aktualisieren
+                                          await _disziplinAbschliessen(
+                                              riege: riegenPointer!,
+                                              station: station);
+                                        } finally {
+                                          // Entsperren, egal ob erfolgreich oder nicht
+                                          if (mounted) {
+                                            setState(() =>
+                                                _disziplinInBearbeitung = null);
+                                          }
                                         }
-                                        if (!context.mounted) {
-                                          return; // NEU: Guard gegen async-gap-Warnung
-                                        }
-                                        await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => PopScope(
-                                              canPop: false,
-                                              child: angeboteneDisziplinen[
-                                                          disziplin]
-                                                      ?.call() ??
-                                                  const Center(
-                                                      child: Text(
-                                                          'Disziplin nicht gefunden')),
-                                            ),
-                                          ),
-                                        );
-                                        setState(() {
-                                          besuchteDisziplinen.add(disziplin);
-                                        });
                                       }
                                     : null,
                                 style: ElevatedButton.styleFrom(
@@ -389,9 +412,11 @@ class WettbewerbState extends State<Wettbewerb> {
                                       istBesucht ? Colors.grey : Colors.red,
                                 ),
                                 child: Text(
-                                  istBesucht
-                                      ? '$disziplin (besucht)'
-                                      : disziplin,
+                                  _disziplinInBearbeitung == disziplin
+                                      ? 'Wird gespeichert…'
+                                      : (istBesucht
+                                          ? '$disziplin (besucht)'
+                                          : disziplin),
                                   style: TextStyle(
                                     color: istBesucht
                                         ? Colors.black45
@@ -409,7 +434,7 @@ class WettbewerbState extends State<Wettbewerb> {
                         angeboteneDisziplinen.length)
                       ElevatedButton(
                         onPressed: () {
-                          _clearState();
+//                          _clearState();
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -427,7 +452,7 @@ class WettbewerbState extends State<Wettbewerb> {
                           setState(() {
                             pauseGemacht = true;
                           });
-                          _saveState();
+//                          _saveState();
                           Navigator.push(
                             context,
                             MaterialPageRoute(

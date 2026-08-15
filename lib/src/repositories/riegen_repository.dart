@@ -115,6 +115,9 @@ import 'package:sporttag/src/tools/logger.util.dart';
 class RiegenRepository {
   final _log = getLogger();
 
+  // Sperrt parallele Schreibvorgänge pro Riege innerhalb dieser App-Instanz
+  static final Map<String, Future<bool>> _laufendeSchreibvorgaenge = {};
+
   // ─────────────────────────────────────────────────────────────────────────
   // INTERNE HILFSMETHODEN
   // ─────────────────────────────────────────────────────────────────────────
@@ -324,60 +327,155 @@ class RiegenRepository {
   ///
   ///   Idempotenz-Guard: Vor dem Increment wird geprüft, ob für diese
   ///   Kombination (Riege + Station) bereits ein Logging-Eintrag existiert.
+  /// Erhöht den Stationszähler und fügt den Stationsnamen zum Array hinzu.
+  /// ACID – Atomicity: Inkrement und Array-Append in einem einzigen Write.
   Future<bool> erhoeheStationszaehler({
     required Riege riege,
     required Station station,
   }) async {
-    // Guard: bereits protokolliert?
+    // Falls für diese Riege bereits ein Schreibvorgang läuft: darauf warten
+    // statt einen zweiten parallel zu starten.
+    final laufender = _laufendeSchreibvorgaenge[riege.objectId];
+    if (laufender != null) {
+      _log.w(
+          'Schreibvorgang für Riege ${riege.riegenNummer} läuft bereits – warte.');
+      return laufender;
+    }
+
+    final future =
+        _erhoeheStationszaehlerIntern(riege: riege, station: station);
+    _laufendeSchreibvorgaenge[riege.objectId] = future;
+
+    try {
+      return await future;
+    } finally {
+      _laufendeSchreibvorgaenge.remove(riege.objectId);
+    }
+  }
+
+  Future<bool> _erhoeheStationszaehlerIntern({
+    required Riege riege,
+    required Station station,
+  }) async {
     final vorhanden = await _loggingEintragVorhanden(
       riegenObjectId: riege.objectId,
-      stationsObjectId: station.objectId,
+      stationsName: station.stationsName,
     );
     if (vorhanden) {
-      _log.w(
-          'Station ${station.stationsName} für Riege ${riege.riegenNummer} bereits protokolliert.');
+      _log.w('Station ${station.stationsName} bereits protokolliert.');
       return false;
     }
 
-    // Bestehenden riegenLogging-Eintrag für diese Riege suchen
     final riegePointer = ParseObject('Riege')..objectId = riege.objectId;
+    final stationPointer = ParseObject('Station')..objectId = station.objectId;
+
     final query = QueryBuilder<ParseObject>(ParseObject('riegenLogging'))
       ..whereEqualTo('riegenID', riegePointer)
-      ..keysToReturn(['objectId']); // nur objectId laden
+      ..keysToReturn(['objectId']);
     final existing = await query.query();
-
-    final stationPointer = ParseObject('Station')..objectId = station.objectId;
-    final ParseObject loggingObj;
 
     if (existing.success &&
         existing.results != null &&
         existing.results!.isNotEmpty) {
-      // Update: atomares Inkrement auf dem bestehenden Eintrag
-      loggingObj = ParseObject('riegenLogging')
+      // ── UPDATE-Pfad: hat objectId → Retry ist hier sicher (PUT, kein Duplikat möglich)
+      final loggingObj = ParseObject('riegenLogging')
         ..objectId = (existing.results!.first as ParseObject).objectId
-        ..setIncrement('anzAbsolvierterStationen', 1) // atomar!
-        ..set('stationsID', stationPointer) // letzte Station
+        ..setIncrement('anzAbsolvierterStationen', 1)
+        ..setAdd('absolvierteStationen', station.stationsName)
+        ..set('stationsID', stationPointer)
         ..set('letzteStationUm', DateTime.now())
         ..setIncrement('version', 1);
-    } else {
-      // Erstanlage: erster Logging-Eintrag für diese Riege
-      loggingObj = ParseObject('riegenLogging')
+      final response = await _saveWithRetry(loggingObj);
+      return response.success;
+    }
+
+    // ── CREATE-Pfad: NEUER, idempotenz-sicherer Retry ──────────────────────
+    return await _erstelleLoggingEintragIdempotent(
+      riegePointer: riegePointer,
+      stationPointer: stationPointer,
+      stationsName: station.stationsName,
+    );
+  }
+
+  /// Legt einen neuen riegenLogging-Eintrag an. Bei Fehlschlag wird VOR jedem
+  /// Retry erneut geprüft, ob der Eintrag inzwischen doch angelegt wurde
+  /// (z. B. weil der vorherige Versuch serverseitig erfolgreich war, die
+  /// Antwort aber durch einen 502 verloren ging). Nur wenn er wirklich fehlt,
+  /// wird ein neuer Create-Versuch gestartet.
+  Future<bool> _erstelleLoggingEintragIdempotent({
+    required ParseObject riegePointer,
+    required ParseObject stationPointer,
+    required String stationsName,
+    int maxVersuche = 3,
+  }) async {
+    for (int versuch = 1; versuch <= maxVersuche; versuch++) {
+      final neuerEintrag = ParseObject('riegenLogging')
         ..set('riegenID', riegePointer)
         ..set('stationsID', stationPointer)
         ..set('anzAbsolvierterStationen', 1)
+        ..set('absolvierteStationen', [stationsName])
         ..set('letzteStationUm', DateTime.now())
         ..set('version', 1);
+
+      final response = await neuerEintrag.save();
+      if (response.success) return true;
+
+      // Duplicate-Value-Fehler (bei aktiviertem Unique Index) → bereits vorhanden
+      if (response.error?.code == 137) {
+        _log.w('riegenLogging bereits vorhanden (Unique-Index-Treffer).');
+        return true; // kein Fehler – Ziel bereits erreicht
+      }
+
+      if (versuch < maxVersuche) {
+        await Future.delayed(Duration(seconds: 1 << (versuch - 1)));
+
+        // ── ENTSCHEIDENDER SCHRITT ─────────────────────────────────────────
+        // Vor dem nächsten Create-Versuch prüfen, ob der vorherige Versuch
+        // in Wahrheit doch erfolgreich war (Antwort ging nur verloren).
+        final nochmalsPruefen =
+            QueryBuilder<ParseObject>(ParseObject('riegenLogging'))
+              ..whereEqualTo('riegenID', riegePointer)
+              ..keysToReturn(['objectId']);
+        final pruefResponse = await nochmalsPruefen.query();
+
+        if (pruefResponse.success &&
+            pruefResponse.results != null &&
+            pruefResponse.results!.isNotEmpty) {
+          _log.i(
+              'Vorheriger Create war serverseitig bereits erfolgreich. Kein erneuter Insert.');
+          return true; // Eintrag existiert bereits – NICHT nochmal anlegen
+        }
+
+        _log.w(
+            'Create-Versuch $versuch/$maxVersuche fehlgeschlagen, Eintrag fehlt noch – erneuter Versuch.');
+      }
     }
 
-    final response = await _saveWithRetry(loggingObj);
-    if (response.success) {
-      _log.i(
-          'Stationszähler für Riege ${riege.riegenNummer} erhöht → Station: ${station.stationsName}.');
-      return true;
-    }
     _log.e(
-        'Stationszähler-Erhöhung fehlgeschlagen: ${response.error?.message}');
+        'riegenLogging-Erstanlage endgültig fehlgeschlagen nach $maxVersuche Versuchen.');
     return false;
+  }
+
+  /// Lädt die bereits absolvierten Stationsnamen für eine Riege.
+  Future<List<String>> ladeAbsolvierteStationen({
+    required Riege riege,
+  }) async {
+    final riegePointer = ParseObject('Riege')..objectId = riege.objectId;
+
+    final query = QueryBuilder<ParseObject>(ParseObject('riegenLogging'))
+      ..whereEqualTo('riegenID', riegePointer)
+      ..keysToReturn(['absolvierteStationen']);
+
+    final response = await query.query();
+    if (!response.success ||
+        response.results == null ||
+        response.results!.isEmpty) {
+      return [];
+    }
+
+    final obj = response.results!.first as ParseObject;
+    final liste = obj.get<List>('absolvierteStationen') ?? [];
+    return liste.map((e) => e.toString()).toList();
   }
 
   /// Reiner Lese-Check, OHNE Seiteneffekt: wurde diese Station für diese
@@ -389,7 +487,7 @@ class RiegenRepository {
   }) {
     return _loggingEintragVorhanden(
       riegenObjectId: riege.objectId,
-      stationsObjectId: station.objectId,
+      stationsName: station.stationsName,
     );
   }
 
@@ -443,7 +541,7 @@ class RiegenRepository {
   /// (Idempotenz-Guard für erhoeheStationszaehler)
   Future<bool> _loggingEintragVorhanden({
     required String riegenObjectId,
-    required String stationsObjectId,
+    required String stationsName,
   }) async {
     // riegenLogging hat einen Eintrag PRO Riege (nicht pro Riege+Station),
     // daher prüfen wir hier, ob die stationsID bereits die letzte absolvierte
@@ -452,15 +550,23 @@ class RiegenRepository {
     // Hier: pragmatische Lösung via resultate-Eintrag (wird von KindRepository gesetzt).
     // Dieser Guard verhindert doppeltes Hochzählen bei re-Aufruf derselben Station.
     final riegePointer = ParseObject('Riege')..objectId = riegenObjectId;
-    final stationPointer = ParseObject('Station')..objectId = stationsObjectId;
+    // final stationPointer = ParseObject('Station')..objectId = stationsObjectId;
+    // final query = QueryBuilder<ParseObject>(ParseObject('riegenLogging'))
+    //   ..whereEqualTo('riegenID', riegePointer)
+    //   ..whereEqualTo('stationsID', stationPointer);
 
     final query = QueryBuilder<ParseObject>(ParseObject('riegenLogging'))
       ..whereEqualTo('riegenID', riegePointer)
-      ..whereEqualTo('stationsID', stationPointer);
+      ..keysToReturn(['absolvierteStationen']);
 
     final response = await query.query();
-    return response.success &&
+    if (response.success &&
         response.results != null &&
-        response.results!.isNotEmpty;
+        response.results!.isNotEmpty) {
+      final obj = response.results!.first as ParseObject;
+      final besucht = obj.get<List>('absolvierteStationen') ?? [];
+      return besucht.contains(stationsName);
+    }
+    return false;
   }
 }

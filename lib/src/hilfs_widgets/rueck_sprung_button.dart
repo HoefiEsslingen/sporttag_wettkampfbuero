@@ -19,17 +19,6 @@ class ZurueckButton extends StatelessWidget {
     this.auswertenDerErgebnisse, // Callback-Funktion zur Rückgabe der Zeiten
   });
 
-
-  void _disziplinenHochzaehlen() {
-    RiegenRepository riegenRepository = RiegenRepository();
-    if (riegenPointer != null) {
-      riegenRepository.erhoeheStationszaehler(
-          riege: riegenPointer!, station: stationsPointer!); // Erhöht den Stationszähler für die angegebene Riege  
-    } else {
-      getLogger().w('Riegen-Nummer ist null, kann Disziplinen nicht hochzählen.');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final log = getLogger();
@@ -48,7 +37,6 @@ class ZurueckButton extends StatelessWidget {
                   }
                 : riegenPointer != null // Wenn eine Riegen-Nummer angegeben ist
                     ? () {
-                      _disziplinenHochzaehlen();
                         Navigator.pop(context);
                       }
                     : () => Navigator.pop(context),

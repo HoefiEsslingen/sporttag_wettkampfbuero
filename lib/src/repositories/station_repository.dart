@@ -86,7 +86,7 @@ class StationRepository {
 
   /// Lokaler Cache: stationsName → Station
   /// Verhindert wiederholte DB-Abfragen für dieselben Stammdaten.
-  final Map<String, Station> _cache = {};
+  static final Map<String, Station> _cache = {};
 
   // ─────────────────────────────────────────────────────────────────────────
   // INTERNE HILFSMETHODEN
@@ -94,17 +94,18 @@ class StationRepository {
 
   Station _stationVonParse(ParseObject p) {
     return Station(
-      objectId:       p.objectId ?? '',
-      stationsName:   p.get<String>('stationsName')   ?? '',
-      stationsNummer: p.get<int>('stationsNummer')     ?? 0,
-      nurZehnKampf:   p.get<bool>('nurZehnKampf')      ?? false,
-    // NEU: Parse-File-Feld auslesen. get<ParseFile> gibt ein Objekt mit .url zurück.
-    beschreibungUrl: p.get<ParseFileBase>('beschreibung')?.url,
-      version:        p.get<int>('version')             ?? 1,
+      objectId: p.objectId ?? '',
+      stationsName: p.get<String>('stationsName') ?? '',
+      stationsNummer: p.get<int>('stationsNummer') ?? 0,
+      nurZehnKampf: p.get<bool>('nurZehnKampf') ?? false,
+      // NEU: Parse-File-Feld auslesen. get<ParseFile> gibt ein Objekt mit .url zurück.
+      beschreibungUrl: p.get<ParseFileBase>('beschreibung')?.url,
+      version: p.get<int>('version') ?? 1,
     );
   }
 
-  Future<ParseResponse> _saveWithRetry(ParseObject obj, {int maxVersuche = 3}) async {
+  Future<ParseResponse> _saveWithRetry(ParseObject obj,
+      {int maxVersuche = 3}) async {
     ParseResponse response = await obj.save();
     for (int v = 2; v <= maxVersuche && !response.success; v++) {
       await Future.delayed(Duration(seconds: 1 << (v - 2)));
@@ -125,10 +126,8 @@ class StationRepository {
     final response = await query.query();
     if (!response.success || response.results == null) return [];
 
-    final stationen = response.results!
-        .cast<ParseObject>()
-        .map(_stationVonParse)
-        .toList();
+    final stationen =
+        response.results!.cast<ParseObject>().map(_stationVonParse).toList();
 
     // Cache füllen
     for (final s in stationen) {
@@ -147,7 +146,9 @@ class StationRepository {
       ..whereEqualTo('stationsName', stationsName);
 
     final response = await query.query();
-    if (response.success && response.results != null && response.results!.isNotEmpty) {
+    if (response.success &&
+        response.results != null &&
+        response.results!.isNotEmpty) {
       final station = _stationVonParse(response.results!.first as ParseObject);
       _cache[stationsName] = station;
       return station;
@@ -157,11 +158,12 @@ class StationRepository {
   }
 
   /// Gibt nur Stationen zurück, die für den angegebenen Wettkampftyp relevant sind.
-  Future<List<Station>> ladeStationenFuerWettkampf({required bool istZehnkampf}) async {
+  Future<List<Station>> ladeStationenFuerWettkampf(
+      {required bool istZehnkampf}) async {
     if (_cache.isNotEmpty) {
       final gefiltert = _cache.values.where((s) {
-        if (istZehnkampf) return true;         // Zehnkampf: alle Stationen
-        return !s.nurZehnKampf;               // Fünfkampf: nur nicht-exklusive
+        if (istZehnkampf) return true; // Zehnkampf: alle Stationen
+        return !s.nurZehnKampf; // Fünfkampf: nur nicht-exklusive
       }).toList()
         ..sort((a, b) => a.stationsNummer.compareTo(b.stationsNummer));
       return gefiltert;
@@ -178,14 +180,14 @@ class StationRepository {
 
   Future<bool> saveStation({required Station station}) async {
     final isNew = station.objectId.isEmpty;
-    final obj   = ParseObject('Station');
+    final obj = ParseObject('Station');
 
     if (!isNew) obj.objectId = station.objectId;
 
     obj
-      ..set('stationsName',   station.stationsName)
+      ..set('stationsName', station.stationsName)
       ..set('stationsNummer', station.stationsNummer)
-      ..set('nurZehnKampf',   station.nurZehnKampf)
+      ..set('nurZehnKampf', station.nurZehnKampf)
       ..setIncrement('version', 1);
 
     final response = await _saveWithRetry(obj);
