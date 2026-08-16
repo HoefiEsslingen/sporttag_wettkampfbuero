@@ -38,6 +38,8 @@ class _MehrfacheEingabeDialogWidgetState
   final Map<Kind, List<int>> ergebnisse = {};
   final Map<Kind, int> aktuellerWert = {};
   final Set<Kind> bearbeitet = {};
+  final Set<Kind> vollstaendigFertig =
+      {}; // ← NEU: dauerhaft, nicht pro Durchgang geleert
   List<Kind> teilnehmerReihenfolge = [];
 
   Kind? aktivBearbeitetesKind;
@@ -52,6 +54,7 @@ class _MehrfacheEingabeDialogWidgetState
   // Wird true, sobald mindestens ein Wert bestätigt wurde -> ab dann
   // würde ein Verlassen echten Fortschritt vernichten.
   bool _hatFortschritt = false;
+  bool alleBearbeitet() => bearbeitet.length == teilnehmerReihenfolge.length;
 
   // Wird true gesetzt, nachdem der Nutzer das Verlassen im Dialog
   // bestätigt hat ODER wenn der reguläre Abschluss-Button gedrückt wurde
@@ -60,6 +63,19 @@ class _MehrfacheEingabeDialogWidgetState
 
   bool get _kannGefahrlosVerlassenWerden =>
       _erzwingeVerlassen || !_hatFortschritt;
+
+  @override
+  void initState() {
+    super.initState();
+    anzahlDurchgaenge = widget.anzahlDurchgaenge;
+    iconWidget = widget.iconWidget;
+    onErgebnisseAbschliessen = widget.onErgebnisseAbschliessen;
+    teilnehmerReihenfolge = List.from(widget.teilnehmer);
+    for (final kind in teilnehmerReihenfolge) {
+      ergebnisse[kind] = List<int>.filled(anzahlDurchgaenge, 0);
+      aktuellerWert[kind] = 0;
+    }
+  }
 
   Future<void> _handlePopVersuch(BuildContext context) async {
     if (_kannGefahrlosVerlassenWerden) {
@@ -107,21 +123,6 @@ class _MehrfacheEingabeDialogWidgetState
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    anzahlDurchgaenge = widget.anzahlDurchgaenge;
-    iconWidget = widget.iconWidget;
-    onErgebnisseAbschliessen = widget.onErgebnisseAbschliessen;
-    teilnehmerReihenfolge = List.from(widget.teilnehmer);
-    for (final kind in teilnehmerReihenfolge) {
-      ergebnisse[kind] = List<int>.filled(anzahlDurchgaenge, 0);
-      aktuellerWert[kind] = 0;
-    }
-  }
-
-  bool alleBearbeitet() => bearbeitet.length == teilnehmerReihenfolge.length;
-
   void _bestaetigeWert() {
     if (aktivBearbeitetesKind == null) return;
 
@@ -131,6 +132,11 @@ class _MehrfacheEingabeDialogWidgetState
       ergebnisse[aktivBearbeitetesKind!]![aktuellerDurchgang - 1] =
           selectedValue;
       bearbeitet.add(aktivBearbeitetesKind!);
+      // NEU: Wenn dies der letzte Durchgang war, ist das Kind endgültig fertig
+      if (aktuellerDurchgang == anzahlDurchgaenge) {
+        vollstaendigFertig.add(aktivBearbeitetesKind!);
+      }
+
       teilnehmerReihenfolge.remove(aktivBearbeitetesKind);
       teilnehmerReihenfolge.add(aktivBearbeitetesKind!);
       aktivBearbeitetesKind = null;
@@ -214,30 +220,39 @@ class _MehrfacheEingabeDialogWidgetState
                 itemBuilder: (context, index) {
                   final kind = teilnehmerReihenfolge[index];
                   final istBearbeitet = bearbeitet.contains(kind);
+                  final istFertig = vollstaendigFertig.contains(kind); // ← NEU
 
                   return MeinKartenEintrag(
                     key: ValueKey(kind),
                     trailingFullWidth: true,
 //                    istAusgewertet: istBearbeitet,
                     trailing: Tooltip(
-                      message:
-                          'Nachdem die erzielten Punkte erfasst und bestätigt wurden, wird der Teilnehmer an das Ende der Liste verschoben.',
+                      message: istFertig
+                          ? 'Alle Durchgänge für dieses Kind sind abgeschlossen.'
+                          : 'Nachdem die erzielten Punkte erfasst und bestätigt wurden, wird der Teilnehmer an das Ende der Liste verschoben.',
                       child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            aktivBearbeitetesKind = kind;
-                            selectedValue = 1;
-                          });
-                        },
+                        onTap: istFertig
+                            ? null
+                            : () {
+                                setState(() {
+                                  aktivBearbeitetesKind = kind;
+                                  selectedValue = 1;
+                                });
+                              },
                         child: Center(
-                          child: istBearbeitet
+                          child: istFertig
                               ? const Icon(Icons.check,
                                   color: Colors.green, size: 40)
-                              : SizedBox(
-                                  width: 40,
-                                  height: 40,
-                                  child: iconWidget, // ← Bild-Icon
-                                ),
+                              : istBearbeitet
+                                  ? const Icon(Icons.check,
+                                      color: Colors.orange,
+                                      size:
+                                          40) // optischer Unterschied: "diese Runde erledigt" vs. "endgültig fertig"
+                                  : SizedBox(
+                                      width: 40,
+                                      height: 40,
+                                      child: iconWidget, // ← Bild-Icon
+                                    ),
                         ),
                       ),
                     ),
