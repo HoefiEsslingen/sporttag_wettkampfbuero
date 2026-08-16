@@ -100,6 +100,20 @@ mixin BesteZweiAuswertungMixin<T extends StatefulWidget>
     return sortiert.take(2).reduce((a, b) => a + b);
   }
 
+  /// Übernimmt einen beim (Neu-)Laden aus der DB gefundenen Punktewert
+  /// (siehe StationenBasisMixin.uebernehmeVorhandeneResultate) in die
+  /// stationseigene Punkte-Map, damit bereits erfasste Kinder nach einem
+  /// App-Neustart korrekt mit ihren Punkten als ausgewertet erscheinen.
+  @override
+  void uebernimmVorhandenePunkte(Kind kind, int punkte) {
+    kinderMitErreichtenPunkten[kind] = punkte;
+  }
+
+  /// Falls nach dem Laden bereits ALLE Kinder ein Resultat für diese
+  /// Station haben (z. B. App wurde erst nach vollständigem Abschluss neu
+  /// gestartet), muss istAusgewertet ebenfalls gesetzt werden -- sonst
+  /// würde der "Start"-Button trotz bereits abgeschlossener Station wieder
+  /// angezeigt.
   @override
   void resetStationsdaten() {
     super.resetStationsdaten();

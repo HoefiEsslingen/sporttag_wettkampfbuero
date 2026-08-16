@@ -73,6 +73,28 @@ mixin VersucheAuswertungMixin<T extends StatefulWidget>
     await markiereStationFallsKomplett();
   }
 
+  /// Falls nach dem Laden bereits ALLE Kinder ein Resultat für diese
+  /// Station haben, muss istAusgewertet ebenfalls gesetzt werden -- sonst
+  /// würde der "Start"-Button trotz bereits abgeschlossener Station wieder
+  /// angezeigt.
+  /// Übernimmt einen beim (Neu-)Laden aus der DB gefundenen Punktewert
+  /// (siehe StationenBasisMixin.uebernehmeVorhandeneResultate) in die
+  /// stationseigene Punkte-Map, damit bereits erfasste Kinder nach einem
+  /// App-Neustart korrekt mit ihren Punkten als ausgewertet erscheinen.
+  ///
+  /// WICHTIG: punkte kommt hier bereits aus der DB, also bereits inkl.
+  /// punkteMultiplikator (der wurde beim ursprünglichen Speichern in
+  /// versucheAuswerten() schon angewendet) -> hier NICHT nochmal
+  /// multiplizieren.
+  @override
+  void uebernimmVorhandenePunkte(Kind kind, int punkte) {
+    kinderMitErreichtenPunkten[kind] = punkte;
+  }
+
+  /// Falls nach dem Laden bereits ALLE Kinder ein Resultat für diese
+  /// Station haben, muss istAusgewertet ebenfalls gesetzt werden -- sonst
+  /// würde der "Start"-Button trotz bereits abgeschlossener Station wieder
+  /// angezeigt.
   @override
   void resetStationsdaten() {
     super.resetStationsdaten();

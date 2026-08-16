@@ -124,6 +124,15 @@ mixin StopUhrAuswertungMixin<T extends StatefulWidget>
     });
   }
 
+  /// Übernimmt einen beim (Neu-)Laden aus der DB gefundenen Punktewert
+  /// (siehe StationenBasisMixin.uebernehmeVorhandeneResultate) in die
+  /// stationseigene Punkte-Map, damit bereits erfasste Kinder nach einem
+  /// App-Neustart korrekt mit ihren Punkten als ausgewertet erscheinen.
+  @override
+  void uebernimmVorhandenePunkte(Kind kind, int punkte) {
+    kinderMitZeiten[kind] = punkte;
+  }
+
   @override
   void resetStationsdaten() {
     super.resetStationsdaten();

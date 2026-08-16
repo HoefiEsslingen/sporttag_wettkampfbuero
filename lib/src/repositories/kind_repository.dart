@@ -582,6 +582,48 @@ class KindRepository {
     return summen;
   }
 
+  /// Lädt die an EINER bestimmten Station bereits erzielten Resultate für
+  /// mehrere Kinder in einem einzigen DB-Request.
+  ///
+  /// Anders als ladePunkteSummenFuerKinder() (summiert über ALLE Stationen)
+  /// filtert diese Methode zusätzlich nach stationsID. Wird beim
+  /// (Neu-)Laden einer Station gebraucht, um nach einem App-Neustart
+  /// bereits erfasste Kinder korrekt als "ausgewertet" anzuzeigen, statt
+  /// sie erneut antreten zu lassen.
+  ///
+  /// Input:  kinder (List von Kind), station (Station)
+  /// Output: Future von Map von (String, int) (Key = Kind-objectId, Value = punkte
+  ///         AN DIESER Station; Kinder ohne Resultat fehlen im Ergebnis)
+  Future<Map<String, int>> ladeResultateFuerStation({
+    required List<Kind> kinder,
+    required Station station,
+  }) async {
+    if (kinder.isEmpty) return {};
+
+    final stationPointer = ParseObject('Station')..objectId = station.objectId;
+    final kindPointers =
+        kinder.map((k) => ParseObject('Kind')..objectId = k.objectId).toList();
+
+    final query = QueryBuilder<ParseObject>(ParseObject('resultate'))
+      ..whereEqualTo('stationsID', stationPointer)
+      ..whereContainedIn('kindID', kindPointers);
+
+    final response = await query.query();
+    if (!response.success || response.results == null) return {};
+
+    final ergebnisse = <String, int>{};
+    for (final obj in response.results!.cast<ParseObject>()) {
+      final kindPointer = obj.get<ParseObject>('kindID');
+      final objectId = kindPointer?.objectId ?? '';
+      final punkte = obj.get<int>('punkte') ?? 0;
+      // Pro Kind gibt es dank speichereResultat()-Idempotenz-Guard nur
+      // EIN Resultat je Station -> kein Aufsummieren nötig, letzter
+      // (einziger) Treffer gewinnt.
+      ergebnisse[objectId] = punkte;
+    }
+    return ergebnisse;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // HILFSMETHODEN  –  Darstellung / Sortierung (reine Logik, kein DB-Zugriff)
   // ─────────────────────────────────────────────────────────────────────────

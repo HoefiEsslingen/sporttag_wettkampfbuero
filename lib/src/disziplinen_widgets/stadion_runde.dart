@@ -29,19 +29,32 @@ class StadionrundeState extends State<Stadionrunde>
     stationsName = "Stadionrunde";
     riegenPointer = widget.riegenPointer;
     ladeStationsdaten();
-    // Alle Kinder der Riege als selektiert anzeigen
-    selectedKinder.addAll(riegenKinder);
   }
 
-  /// Hook, der nach dem Laden aufgerufen wird
+  /// Läuft innerhalb von ladeStationsdaten(), NACHDEM riegenKinder UND
+  /// ausgewerteteKinder (inkl. eines eventuellen Wiederaufnahme-Standes)
+  /// feststehen, aber VOR dem abschließenden setState() -> kein separater,
+  /// zeitlich versetzter Rebuild nötig (siehe StationenBasisMixin).
+  ///
+  /// Alle noch nicht ausgewerteten Kinder der Riege werden vorselektiert.
+  /// Bereits ausgewertete Kinder (z. B. nach einem App-Neustart mitten in
+  /// der Stadionrunde) werden bewusst NICHT vorselektiert -- sie haben ihr
+  /// Resultat schon, ein erneutes Starten der Uhr für sie wäre falsch.
   @override
   void nachLadenHook() {
     // Alle Kinder der Riege als selektiert markieren
-    selectedKinder.addAll(riegenKinder);
+    selectedKinder.addAll(
+      riegenKinder.where((kind) => !ausgewerteteKinder.contains(kind)),
+);
   }
 
   @override
   void dispose() {
+    // resetStationsdaten() (aus StationenBasisMixin) übernimmt bereits
+    // riegenKinder/selectedKinder/kinderZurAnzeige/ausgewerteteKinder, und
+    // wird durch StopUhrAuswertungMixin um kinderMitZeiten/
+    // wertungWirdVerarbeitet erweitert -> die vorherigen manuellen
+    // .clear()-Aufrufe hier waren redundant.
     resetStationsdaten();
     super.dispose();
   }

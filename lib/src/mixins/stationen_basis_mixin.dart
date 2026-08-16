@@ -65,6 +65,14 @@ mixin StationenBasisMixin<T extends StatefulWidget> on State<T> {
       ausgewerteteKinder.addAll(riegenKinder);
     }
 
+    // Individuelle Resultate je Kind für DIESE Station nachladen. Deckt
+    // zusätzlich den Fall ab, dass die Station nur TEILWEISE abgeschlossen
+    // ist (Abbruch mitten im Wettkampf, riegenLogging also noch nicht
+    // aktualisiert), UND liefert in BEIDEN Fällen (Teil- wie Komplett-
+    // abschluss) erstmals auch die tatsächlich erzielten Punkte nach, die
+    // der bereitsAbgeschlossen-Fast-Path oben nie gesetzt hat.
+    await uebernehmeVorhandeneResultate();
+
     // Hook für Sonderfälle beim Laden (z. B. Stadionrunde: alle Kinder
     // initial als selektiert markieren).
     nachLadenHook();
@@ -75,6 +83,55 @@ mixin StationenBasisMixin<T extends StatefulWidget> on State<T> {
           alleKinder: riegenKinder, ausgewerteteKinder: ausgewerteteKinder);
     });
   }
+
+  /// Lädt die für diese Riege+Station bereits vorhandenen Einzel-Resultate
+  /// nach (siehe KindRepository.ladeResultateFuerStation) und markiert die
+  /// betroffenen Kinder als ausgewertet -- inklusive ihrer tatsächlichen
+  /// Punkte, über den überschreibbaren Hook uebernimmVorhandenePunkte().
+  ///
+  /// Ruft am Ende zusätzlich markiereStationFallsKomplett() auf, falls sich
+  /// dadurch herausstellt, dass bereits ALLE Kinder ein Resultat haben.
+  /// Das schließt eine sonst mögliche Lücke: Stürzt die App ab, NACHDEM
+  /// das letzte Kind-Resultat gespeichert wurde, aber BEVOR
+  /// markiereStationFallsKomplett() (und damit riegenLogging) aktualisiert
+  /// wurde, würde riegenLogging sonst dauerhaft hinter dem tatsächlichen
+  /// Stand zurückbleiben -- die Riege würde in ladeAuszuwertendeRiegen()
+  /// nie als "hat diese Station absolviert" erscheinen, obwohl die Station
+  /// hier bereits korrekt als fertig angezeigt wird. erhoeheStationszaehler()
+  /// ist idempotent (Guard über absolvierteStationen), ein wiederholter
+  /// Aufruf hier ist also unproblematisch.
+  Future<void> uebernehmeVorhandeneResultate() async {
+    if (station == null || riegenKinder.isEmpty) return;
+
+    final vorhandeneResultate = await kindRepository.ladeResultateFuerStation(
+      kinder: riegenKinder,
+      station: station!,
+    );
+    if (vorhandeneResultate.isEmpty) return;
+
+    for (final kind in riegenKinder) {
+      final punkte = vorhandeneResultate[kind.objectId];
+      if (punkte != null) {
+        ausgewerteteKinder.add(kind);
+        uebernimmVorhandenePunkte(kind, punkte);
+      }
+    }
+    nachUebernahmeVorhandenerResultateHook();
+    await markiereStationFallsKomplett();
+  }
+
+  /// Hook: schreibt einen aus der DB nachgeladenen Punktewert in die
+  /// disziplinspezifische Punkte-Map (kinderMitZeiten,
+  /// kinderMitErreichtenPunkten, ...). Default: no-op, wird von den
+  /// jeweiligen Auswertungs-Mixins überschrieben.
+  void uebernimmVorhandenePunkte(Kind kind, int punkte) {}
+
+  /// Hook: läuft einmal NACH der Übernahme aller vorhandenen Resultate.
+  /// Default: no-op. Stationen mit einem "istAusgewertet"-Flag
+  /// (Zonenweitsprung, Stabfliegen, HochWeitSprung, ...) überschreiben
+  /// dies, um den Start-Button korrekt verborgen zu halten, falls schon
+  /// ALLE Kinder ein Resultat haben.
+  void nachUebernahmeVorhandenerResultateHook() {}
 
   /// Optionaler Hook, den einzelne Stationen überschreiben können, um nach
   /// dem Laden zusätzlich etwas zu tun (z. B. alle Kinder vorselektieren).
