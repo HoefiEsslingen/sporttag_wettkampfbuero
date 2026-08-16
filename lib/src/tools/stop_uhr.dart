@@ -100,14 +100,15 @@ class _MyStopUhrState extends State<MyStopUhr> {
       ),
     );
 
-    if (bestaetigt == true && mounted) {
+    if (bestaetigt != true) return;
+    if (!context.mounted) return;
+
       // Caller benachrichtigen, BEVOR gepoppt wird -> stopUhrAbgebrochen()
       // im Mixin kann noch setState() auf dieser (noch existierenden)
       // Seite auslösen, ohne von Navigator-Timing abhängig zu sein.
       widget.onAbgebrochen?.call();
       setState(() => _erzwingeVerlassen = true);
       Navigator.of(context).pop();
-    }
   }
 
   @override

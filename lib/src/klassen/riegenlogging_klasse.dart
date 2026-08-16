@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_getters_setters
+
 // ──────────────────────────────────────────────
 // RiegenLogging  →  Back4App-Klasse "riegenLogging"
 // Protokolliert, welche Stationen eine Riege bereits absolviert hat

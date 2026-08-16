@@ -245,7 +245,10 @@ class AnmeldenVorherState extends State<AnmeldenVorher>
     final alleKinder = await kindRepository.ladeAlleKinder();
 
     final ergebnis = await pruefeKindVorSpeichern(vorschauKind, alleKinder);
-    if (!context.mounted || !ergebnis.istGueltig) {
+    if (!ergebnis.istGueltig) {
+      return; // Fehlermeldung bzw. Rückfrage wurde bereits im Mixin gezeigt
+    }
+    if (!mounted) {
       return; // Fehlermeldung bzw. Rückfrage wurde bereits im Mixin gezeigt
     }
 

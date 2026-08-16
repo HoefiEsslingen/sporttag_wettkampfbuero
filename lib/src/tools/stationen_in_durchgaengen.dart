@@ -113,14 +113,15 @@ class _MehrfacheEingabeDialogWidgetState
       ),
     );
 
-    if (bestaetigt == true && mounted) {
-      // Caller benachrichtigen, BEVOR gepoppt wird -> der Reset des
-      // Sperrzustands passiert noch auf dieser (noch existierenden) Seite,
-      // unabhängig vom Navigator-Timing.
-      widget.onAbgebrochen?.call();
-      setState(() => _erzwingeVerlassen = true);
-      Navigator.of(context).pop();
-    }
+    if (bestaetigt != true) return;
+    if (!context.mounted) return;
+
+    // Caller benachrichtigen, BEVOR gepoppt wird -> der Reset des
+    // Sperrzustands passiert noch auf dieser (noch existierenden) Seite,
+    // unabhängig vom Navigator-Timing.
+    widget.onAbgebrochen?.call();
+    setState(() => _erzwingeVerlassen = true);
+    Navigator.of(context).pop();
   }
 
   void _bestaetigeWert() {

@@ -5,13 +5,6 @@ import 'package:sporttag/src/tools/anmeldung/kind_validator.dart';
 
 /// Stellt eine einheitliche Duplikat-Prüfung mit Bestätigungsdialog
 /// für alle Anmelde-Screens bereit (Sporttag-Anmeldung, Vorabanmeldung).
-///
-/// Verwendung:
-///   class MeinState extends State<MeinWidget> with DuplikatPruefungMixin<MeinWidget> {
-///     ...
-///     final ok = await pruefeAufDuplikat(kind, alleKinder);
-///     if (!ok) { /* Nutzer hat abgelehnt */ }
-///   }
 mixin DuplikatPruefungMixin<T extends StatefulWidget> on State<T> {
   /// Prüft, ob [kind] ein Duplikat in [alleKinder] hat.
   /// Falls ja, wird ein Bestätigungsdialog gezeigt.
@@ -64,7 +57,7 @@ mixin DuplikatPruefungMixin<T extends StatefulWidget> on State<T> {
     // 1. Namens-Validierung
     final namensFehler = KindValidator.validiereNamen(kind);
     if (namensFehler.isNotEmpty) {
-      if (context.mounted) {
+      if (mounted) {
         await showDialog(
           context: context,
           builder: (context) => AlertDialog(

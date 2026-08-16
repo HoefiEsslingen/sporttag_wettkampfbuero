@@ -148,14 +148,16 @@ class AnmeldenSporttagState extends State<AnmeldenSporttag>
       });
       await _ladeKinder();
 
-      if (fehlgeschlagen.isNotEmpty && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '${fehlgeschlagen.length} Kind(er) konnten nicht gespeichert werden.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      if (fehlgeschlagen.isNotEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '${fehlgeschlagen.length} Kind(er) konnten nicht gespeichert werden.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     });
   }

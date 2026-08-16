@@ -99,14 +99,15 @@ class _VersucheInDurchgaengenWidgetState extends State<VersucheInDurchgaengen> {
       ),
     );
 
-    if (bestaetigt == true && mounted) {
-      // Caller benachrichtigen, BEVOR gepoppt wird -> der Reset des
-      // Sperrzustands passiert noch auf dieser (noch existierenden) Seite,
-      // unabhängig vom Navigator-Timing.
-      widget.onAbgebrochen?.call();
-      setState(() => _erzwingeVerlassen = true);
-      Navigator.of(context).pop();
-    }
+    if (bestaetigt != true) return;
+    if (!context.mounted) return;
+
+    // Caller benachrichtigen, BEVOR gepoppt wird -> der Reset des
+    // Sperrzustands passiert noch auf dieser (noch existierenden) Seite,
+    // unabhängig vom Navigator-Timing.
+    widget.onAbgebrochen?.call();
+    setState(() => _erzwingeVerlassen = true);
+    Navigator.of(context).pop();
   }
 
   final log = getLogger();
@@ -322,8 +323,9 @@ class _VersucheInDurchgaengenWidgetState extends State<VersucheInDurchgaengen> {
                           ],
                         ),
                       ),
-                    // konvertiert das Iterable (von ListTile) zurück in eine List<Widget> als erwartetes Format
-                    ).toList(),
+                      // konvertiert das Iterable (von ListTile) zurück in eine List<Widget> als erwartetes Format
+                    )
+                    .toList(),
               ),
             ),
             if (_stationAbgeschlossen())

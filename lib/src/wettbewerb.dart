@@ -458,13 +458,12 @@ class WettbewerbState extends State<Wettbewerb> {
                           // Sofort in DB persistieren, BEVOR navigiert wird
                           final ok = await riegenRepository.setzePauseGemacht(
                               riege: riegenPointer!);
-                          if (!mounted) return;
+                          if (!context.mounted) return;
                           if (ok) {
                             setState(() {
                               pauseGemacht = true;
                             });
                           }
-                          ;
                           Navigator.push(
                             context,
                             MaterialPageRoute(

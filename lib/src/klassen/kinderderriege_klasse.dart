@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_getters_setters
+
 // ──────────────────────────────────────────────
 // KindDerRiege  →  Back4App-Klasse "kinderDerRiege"
 // Verknüpft Kind (Pointer) mit Riege (Pointer)

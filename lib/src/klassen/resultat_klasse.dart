@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_getters_setters
+
 // ──────────────────────────────────────────────
 // Resultat  →  Back4App-Klasse "resultate"
 // Speichert Punkte eines Kindes für eine Station
