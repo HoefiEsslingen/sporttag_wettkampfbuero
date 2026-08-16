@@ -307,8 +307,8 @@ class _MyStopUhrState extends State<MyStopUhr> {
             Text(
               (modus == 2)
                   // Rundenzähler-Modus
-                  ? 'Plus/Minus für halbe Runden – solange Uhr läuft'
-                  : 'Stoppe individuell pro Teilnehmer',
+                  ? 'Plus/Minus für halbe Runden – solange Uhr läuft.'
+                  : 'Stoppe individuell pro Teilnehmer.',
             ),
             // Liste der an dieser Runde teilnehmenden Kinder
             Expanded(

@@ -137,12 +137,12 @@ class WettbewerbState extends State<Wettbewerb> {
     final absolvierte = await riegenRepository.ladeAbsolvierteStationen(
       riege: riege,
     );
-  final pause       = await riegenRepository.ladePauseGemacht(riege: riege);
+    final pause = await riegenRepository.ladePauseGemacht(riege: riege);
 
     if (!mounted) return;
     setState(() {
       besuchteDisziplinen = absolvierte.toSet();
-    pauseGemacht        = pause;   // ← NEU: aus DB statt Default false
+      pauseGemacht = pause; // ← NEU: aus DB statt Default false
       isLoading = false;
     });
   }
@@ -161,6 +161,10 @@ class WettbewerbState extends State<Wettbewerb> {
         besuchteDisziplinen.add(station.stationsName);
       });
     }
+
+    // Punktestand der Riege neu laden, da die soeben absolvierte
+    // Disziplin bereits Resultate in 'resultate' gespeichert hat.
+    await _ladeKinderMitPunkten(riege);
   }
 
   /// Zeigt die Stationsbeschreibung (PDF) zur gewählten Disziplin an und
@@ -450,14 +454,17 @@ class WettbewerbState extends State<Wettbewerb> {
                         wettbewerbsTyp == 'Zehnkampf' &&
                         besuchteDisziplinen.length >= 4)
                       ElevatedButton(
-                        onPressed: ()  async {
-      // Sofort in DB persistieren, BEVOR navigiert wird
-      final ok = await riegenRepository.setzePauseGemacht(riege: riegenPointer!);
-      if (!mounted) return;
-      if (ok) {
-                          setState(() {
-                            pauseGemacht = true;
-                          });};
+                        onPressed: () async {
+                          // Sofort in DB persistieren, BEVOR navigiert wird
+                          final ok = await riegenRepository.setzePauseGemacht(
+                              riege: riegenPointer!);
+                          if (!mounted) return;
+                          if (ok) {
+                            setState(() {
+                              pauseGemacht = true;
+                            });
+                          }
+                          ;
                           Navigator.push(
                             context,
                             MaterialPageRoute(
