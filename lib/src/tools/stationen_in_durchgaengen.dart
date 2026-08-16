@@ -225,7 +225,6 @@ class _MehrfacheEingabeDialogWidgetState
                   return MeinKartenEintrag(
                     key: ValueKey(kind),
                     trailingFullWidth: true,
-//                    istAusgewertet: istBearbeitet,
                     trailing: Tooltip(
                       message: istFertig
                           ? 'Alle Durchgänge für dieses Kind sind abgeschlossen.'

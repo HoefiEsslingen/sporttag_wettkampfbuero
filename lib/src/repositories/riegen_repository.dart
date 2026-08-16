@@ -569,4 +569,56 @@ class RiegenRepository {
     }
     return false;
   }
+
+  /// Markiert die Pause für eine Riege dauerhaft in riegenLogging.
+  /// Setzt direkt auf den bestehenden Eintrag (kein Read-Modify-Write nötig).
+  /// Der riegenLogging-Eintrag existiert zu diesem Zeitpunkt bereits sicher,
+  /// da der Pause-Button erst ab 4 absolvierten Stationen angezeigt wird.
+  Future<bool> setzePauseGemacht({required Riege riege}) async {
+    final riegePointer = ParseObject('Riege')..objectId = riege.objectId;
+
+    final query = QueryBuilder<ParseObject>(ParseObject('riegenLogging'))
+      ..whereEqualTo('riegenID', riegePointer)
+      ..keysToReturn(['objectId']);
+    final existing = await query.query();
+
+    if (!existing.success ||
+        existing.results == null ||
+        existing.results!.isEmpty) {
+      _log.e('setzePauseGemacht: kein riegenLogging-Eintrag für Riege '
+          '${riege.riegenNummer} gefunden.');
+      return false;
+    }
+
+    final obj = ParseObject('riegenLogging')
+      ..objectId = (existing.results!.first as ParseObject).objectId
+      ..set('pauseGemacht', true)
+      ..setIncrement('version', 1);
+
+    final response = await _saveWithRetry(obj);
+    if (response.success) {
+      _log.i('Pause für Riege ${riege.riegenNummer} protokolliert.');
+      return true;
+    }
+    _log.e('setzePauseGemacht fehlgeschlagen: ${response.error?.message}');
+    return false;
+  }
+
+  /// Lädt, ob für eine Riege bereits eine Pause gemacht wurde.
+  Future<bool> ladePauseGemacht({required Riege riege}) async {
+    final riegePointer = ParseObject('Riege')..objectId = riege.objectId;
+
+    final query = QueryBuilder<ParseObject>(ParseObject('riegenLogging'))
+      ..whereEqualTo('riegenID', riegePointer)
+      ..keysToReturn(['pauseGemacht']);
+
+    final response = await query.query();
+    if (response.success &&
+        response.results != null &&
+        response.results!.isNotEmpty) {
+      final obj = response.results!.first as ParseObject;
+      return obj.get<bool>('pauseGemacht') ?? false;
+    }
+    return false;
+  }
 }
